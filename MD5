@@ -1,0 +1,16 @@
+37a95afb0c3fcc08376db62fa8a655c3 *DESCRIPTION
+e80989b62acf10589d54632e0292b2a0 *NAMESPACE
+26beae9a85f2b90dbab48f9d27760475 *R/classesAndMethods.R
+d4020c4e17c368a2d374a7ccf67af624 *R/variousFunctions.R
+7a13e1a684b1c820ea64812e90177abf *demo/00Index
+7cb76c6870575173f07b9a8e46060c93 *demo/quickStart.R
+bc2d45b28128314fcf21943a3929524c *inst/CITATION
+01298d3b739680c905cfe987a7d3049d *man/absorbingStates.Rd
+085ccb1452865b5ad56f6a022b50dc71 *man/markovchain-class.Rd
+548a29d8297b71093328e7669f61bec6 *man/markovchain-package.Rd
+5d2e7504d77818eaad937ad7454c2d56 *man/markovchainFit.Rd
+6cae16138ae968f59bf0bd0029218c4e *man/markovchainSequence.Rd
+ded13096d19feb6de1b0365d500be3f7 *man/plotMc.Rd
+47481719c3555a873b907aa9024ea89f *man/states.Rd
+749889a68233a7b66095fdab3e2e0527 *man/steadyStates.Rd
+3dea315fbcc7d052d12801f35ba834df *man/transitionProbability.Rd
