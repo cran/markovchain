@@ -1,0 +1,21 @@
+exportPattern("^[[:alpha:]]+")
+importFrom(graphics, plot)
+
+exportMethods(
+    "*",
+    "^",
+    "absorbingStates",
+    "coerce",
+    "dim",
+    "initialize",
+    "plotMc",
+    "print",
+    "show",
+    "states",
+    "steadyStates",
+    "t",
+    "transitionProbability" 
+)
+exportClasses(
+    "markovchain" 
+)
