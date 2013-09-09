@@ -1,0 +1,421 @@
+%\documentclass{jss}
+\documentclass[nojss]{jss}
+\usepackage[OT1]{fontenc}
+%\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+%\usepackage{cite}
+\usepackage{draftwatermark}
+\SetWatermarkText{Draft}
+\SetWatermarkScale{1.5}
+
+%\usepackage{myVignette}
+
+%\VignetteIndexEntry{An introduction to markovchain package}
+%\VignetteKeywords{vig1}
+%\VignettePackage{lifecontingencies}
+% need no \usepackage{Sweave.sty}
+
+%\SweaveOpts{prefix.string=Figures/fig}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Giorgio Alfredo Spedicato, Ph.D C.Stat ACAS}
+\title{The \pkg{markovchain} Package: A Package for Easily Handling Discrete
+Markov Chains in \proglang{R}}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Giorgio Alfredo Spedicato, Ph.D C.Stat ACAS} %% comma-separated
+\Plaintitle{The markovchaing Package: A Package for Easily Handling Discrete
+Markov Chains in R} %% without formatting
+\Shorttitle{The markovchain package} %% a short title (if necessary)
+%% an abstract and keywords
+\Abstract{\pkg{markovchain} aims to fill a gap within R packages providing S4
+classes and methods to easily handling discrete markov chains. The S4 class
+structure will be presented as well implemented classes and methods. Applied
+examples will follow} \Keywords{markov chain, transition probabilities}
+\Plainkeywords{markov chain, transition probabilities} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{13}
+%% \Issue{9}
+%% \Month{September}
+%% \Year{2004}
+%% \Submitdate{2004-09-29}
+%% \Acceptdate{2004-09-29}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Giorgio Alfredo Spedicato\\
+  StatisticalAdvisor\\
+  Via Firenze 11
+  20037 Italy\\
+  Telephone: +39/334/6634384\\
+  E-mail: \email{spedygiorgio@gmail.com}\\
+  URL: \url{www.statisticaladvisor.com}
+}
+
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+<<setup,echo=FALSE, results=hide>>=
+	options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+	set.seed(123)
+@
+
+\maketitle
+
+\section{Introduction}
+
+Markov chains represent a class of stochastic processes of great interest for the wide spectrum of practical applications. %inserire citazione.
+In particular, discrete markov chains permit to model the transition probabilities between possible discrete states by the aid of matrices.
+Various R packages deals with Markov chains processes and their applications: \pkg{msm} \citep{msmR} works with Multi-State Models for Panel Data, \pkg{mcmcR} \citep{mcmcR} is only one of the many package that implements Monte Carlo Markov Chain approach for estimating models' parameters, \pkg{hmm} fits hidden markov models taking into account covariates. R statistical environments seems to lack a simple R package that coherently defines S4 classes for discrete Markov chains and that allows the statistical analyst to perform probabilistic analysis and statistical infrence.  \pkg{markovchain} \citep{markovchainR} aims to offer greater flexibility in handling discrete time Markov chains. The paper is structured as it follows: Section~\ref{sec:mathematic} briefly revies mathematic and definitions on discrete Markov chains, Section~\ref{sec:examples} shows applied example of discrete Markov chains in various fields.
+
+
+\section{Markov chains mathematic revies}\label{sec:mathematic}
+
+A general overview of Discrete Markov chains can be found in various web sites. See for example \cite{wiki:markov} and \cite{chapter11}.
+
+
+\section{The structure of the package}\label{sec:structure}
+\subsection{Creating markovchain objects}
+
+The package \pkg{markovchain} contains classes and methods that handle 
+markov chain in a convenient manner.\\
+
+The package is loaded within the \proglang{R} command line as follows:
+
+<<load,keep.source=TRUE>>=
+library("markovchain")
+@
+
+
+
+The \code{markovchain} and  \code{markovchainList}  S4 classes \citep(chambers) is defined within the \pkg{markovchain} package as displayed:
+
+<<showClass, echo=FALSE, keep.source=TRUE>>=
+showClass("markovchain")
+showClass("markovchainList")
+@
+
+Any element of \code{markovchain} class is comprised by following slots:
+\begin{enumerate}
+  \item \code{states}: a character vector, listing the states for which transition probabilities are defined.
+  \item \code{byrow}: a logical element, indicating whether transition probabilities are shown by row or by column.
+  \item \code{transitionMatrix}: the probabilities of transition matrix.
+  \item \code{name}: optional character element to name the Markov chain
+\end{enumerate}
+
+
+\code{markovchain} objects can be created either in a long way, as the following code shows,
+
+<<mcInitLong, keep.source=TRUE>>=
+weatherStates<-c("sunny", "cloudy", "rain")
+byRow<-TRUE
+weatherMatrix<-matrix(data=c(0.70, 0.2,0.1,
+                       0.3,0.4, 0.3,
+                       0.2,0.45,0.35),byrow=byRow, nrow=3,
+                     dimnames=list(weatherStates, weatherStates))
+mcWeather<-new("markovchain",states=weatherStates, byrow=byRow, 
+               transitionMatrix=weatherMatrix, name="Weather")
+@
+
+or in a shorter way, displayed below.
+
+<<mcInitLong, keep.source=TRUE>>=
+mcWeather<-new("markovchain", states=c("sunny", "cloudy", "rain"), transitionMatrix=matrix(data=c(0.70, 0.2,0.1,
+                       0.3,0.4, 0.3,
+                       0.2,0.45,0.35),byrow=byRow, nrow=3), name="Weather")
+
+@
+
+When \code{new("markovchain")} is called alone a defaut Markov chain is created.
+
+<<defaultMc, keep.source=TRUE>>=
+defaultMc<-new("markovchain")
+@
+
+The quicker form of object creation is made possible thanks to the implemented \code{initialize} S4 method that assures:
+
+\begin{itemize}
+  \item the \code{transitionMatrix} to be a transition matrix, i.e., all entries to be probabilities and either all rows or all columns to sum up to one, according to the value of \code{byrow} slot.
+  \item the columns and rows nams of \code{transitionMatrix} to be defined and to coincide with \code{states} vector slot. 
+\end{itemize}
+
+\code{markovchain} objects can be collected in a list within \code{markovchainList} S4 objects as following example shows.
+
+<<intromcList, keep.source=TRUE>>=
+
+mcList<-new("markovchainList",markovchains=list(mcWeather, defaultMc), name="A list of Markov chains")
+@
+
+
+
+\subsection{Handling markovchain objects}
+
+\pkg{markovchain} contains two classes, \code{markovchain} and \code{markovchainList}. \code{markovchain} objects handle discrete Markov chains, whilst \code{markovchainList} objects consists in list of \code{markovchain} that can be useful to model non - homogeneous Markov chain processess.\\
+
+Following methods have been implemented within the package for \code{markovchain} and \code{markovchainLists} respectively:
+
+<<showClassesAndMethods, echo=FALSE, keep.source=TRUE>>=
+showMethods(class="markovchain")
+showMethods(class="markovchainList")
+@
+
+Table~\ref{tab:methodsToHandle} lists which of implemented methods handle and manipulate \code{markovchain} objects.
+
+
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+  Method & Purpose \\
+    \hline  \hline
+
+  * & Algebraic operators on the transition matrix.\\
+  \code{==} & Equality operator on the transition matrix.\\
+\code{dim} & Dimenion of the transition matrix.\\
+  \code{states} & Defined transition states.\\
+  \code{t} & Transposition operator (it switches byrow slot value and modifies the transition matrix coherently).\\
+  \code{as} & Operator con switch from \code{markovchain} objects to \code{data.frame} objects and vice - versa.\\
+  \hline
+\end{tabular}
+\caption{\pkg{markovchain} methods: matrix handling.}
+\label{tab:methodsToHandle}
+\end{table}  
+
+Operations on the markovchains objects can be easily performed.
+Using the previously defined matrix we can find what is the probability distribution of expected weather states two and  seven days after, given actual state to be cloudy. 
+
+<<operations,keep.source=TRUE>>=
+initialState<-c(0,1,0)
+after2Days<-initialState*(mcWeather*mcWeather)
+after7Days<-initialState*(mcWeather^7)
+after2Days
+after7Days
+@
+
+A similar answer could have been obtained if the probabilities were defined by 
+column. A column - defined probability matrix could be set up either creating a new matrix or transposing an existing \code{markovchain} object thanks to the \code{t} vector.
+
+<<operations2,keep.source=TRUE>>=
+initialState<-c(0,1,0)
+mcWeatherTransposed<-t(mcWeather)
+after2Days<-(mcWeatherTransposed*mcWeatherTransposed)*initialState
+after7Days<-(mcWeather^7)*initialState
+after2Days
+after7Days
+@
+
+Basing informational methods have been defined for \code{markovchain} objects to quickly get states and dimension.
+
+<<otherMethods, keep.source=TRUE>>=
+states(mcWeather)
+dim(mcWeather)
+@
+
+A direct access to transition probabilities is provided by \code{transitionProbability} method.
+
+<<transProb, keep.source=TRUE>>=
+transitionProbability(mcWeather, "cloudy","rain")
+@
+
+A transition matrix can be displayed using \code{print}, \code{show} methods (the latter being less laconic). Similarly, the underlying transition probability diagram can be plot by the use of \code{plotMc} method that was based on \pkg{igraph} package \citep{pkg:igraph} as Figure~\ref{fig:mcPlot} displays.
+
+<<printAndShow, keep.source=TRUE>>=
+print(mcWeather)
+show(mcWeather)
+@
+
+\begin{figure}
+\begin{center}
+<<label=mcPlot,fig=TRUE,echo=FALSE>>=
+plotMc(mcWeather)
+@
+\caption{Weather example Markov chain plot}
+\label{fig:mcPlot}
+\end{center}
+\end{figure}
+
+The \pkg{igraph} package \citep{pkg:igraph} is used for plotting. \code{...} additional parameters are passed to \code{graph.adjacency} function to control the graph layout.
+
+Exporting to \code{data.frame} is possible and similarly it is possible to import.
+
+<<exportImport, keep.source=TRUE>>=
+mcDf<-as(mcWeather, "data.frame")
+mcNew<-as(mcDf, "markovchain")
+@
+
+Similarly it is possible to export a \code{markovchain} class toward an adjacency matrix.
+
+\subsection{Statistics with markovchain objects}
+
+Table~\ref{tab:methodsToStats} shows methods appliable on \code{markovchain} objects to perform probabilistic analysis. 
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+  Method & Purpose \\
+    \hline  \hline
+  \code{absorbingStates} & it returns the absorbing states of the transition matrix, if any.\\
+  \code{steadyStates} & it returns the vector(s) of steady state(s) in matricial form.\\
+\hline
+\end{tabular}
+\caption{\pkg{markovchain} methods: statistical operations.}
+\label{tab:methodsToStats}
+\end{table}
+
+The steady state(s), also known as stationary distribution(s),  of the Markov chains are identified by the following algorithm:
+\begin{enumerate}
+  \item decompose the Markov Chain in eigenvalues and eigenvectors.
+  \item consider only eigenvectors corresponding to eigenvalues equal to one.
+  \item normalize such eigenvalues so the sum of their components to total one.
+\end{enumerate}
+
+The result is returned in matricial form.
+
+<<steadyStates, keep.source=TRUE>>=
+steadyStates(mcWeather)
+@
+
+It is possible a Markov chain to have more than one stationary distribuition, as the gambler ruin example shows.
+
+<<gamblerRuin, keep.source=TRUE>>=
+gamblerRuinMarkovChain<-function(moneyMax, prob=0.5) {
+  require(matlab)
+  matr<-zeros(moneyMax+1)
+  states<-as.character(seq(from=0, to=moneyMax, by=1))
+  rownames(matr)=states; colnames(matr)=states
+  matr[1,1]=1;matr[moneyMax+1,moneyMax+1]=1
+  for(i in 2:moneyMax)
+  {
+    matr[i,i-1]=1-prob;matr[i,i+1]=prob
+  }
+  out<-new("markovchain",  
+           transitionMatrix=matr, 
+           name=paste("Gambler ruin",moneyMax,"dim",sep=" ")
+           )
+  return(out)
+}
+
+mcGR4<-gamblerRuinMarkovChain(moneyMax=4, prob=0.5)
+steadyStates(mcGR4)
+@
+
+Any absorbing state is determined by the inspection of results returned by \code{steadyStates} method.
+
+<<absorbingStates, keep.source=TRUE>>=
+absorbingStates(mcGR4)
+absorbingStates(mcWeather)
+@
+
+Table~\ref{tab:packageFuns} lists functions (and their purpose) as implemented within the package that helps to fit and simulate discrete time Markov chains.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+  Function & Purpose \\
+    \hline  \hline
+  \code{markovchainFit} & function to return fitten markov chain for a given sequence.\\
+  \code{markovchainSequence} & function to obtain a sample of the stationary process underlying the markov chain.\\
+    \hline
+\end{tabular}
+\caption{\pkg{markovchain} statistical functions.}
+\label{tab:packageFuns}
+\end{table}  
+
+
+Simulating a random sequence from an underlying Markov chain is quite easy thanks to the function \code{markovchainSequence}.
+The following code generates a "year" of weather states according to \cite{mcWeather} underlying markovian stochastic process.
+
+<<simulatingAMarkovChain, keep.source=TRUE>>=
+weathersOfDays<-markovchainSequence(n=365,markovchain=mcWeather,t0="sunny")
+weathersOfDays[1:20]
+@
+
+Similarly, a \code{markovchain} object can be fit from given data
+
+<<fitMcbyMLE, keep.source=TRUE>>=
+mcFitted<-markovchainFit(data=weathersOfDays, method="mle")
+@
+
+
+\section{Applied examples}\label{sec:examples}
+
+\subsection{Actuarial examples}
+
+Markov chains are widely applied in the fields of actuarial science. Actuaries quantify the risk inherent in insurance contracts evaluating the premium of insurance contract to be sold (therefore covering future risk) and evaluating the actuarial reseves of existing portfolios (the liabilities in terms of benefits or claims payments due to policyholder arising from previously sold contracts).\\
+Key quantities of actuarial interest are: the expected present value of future benefits, $PVFB$, the (periodic) benefit premium, $P$, and the present value of future premium $PVFP$. A level benefit premium could be set equating at the beginning of the contract $PVFB=PVFP$. After the beginning of the contract the benefit reserve is the differenbe between $PVFB$ and $PVFP$.
+The first example shows the pricing and reserving of a (simple) health insurance contract. The second example analyze the evolution of a MTPL portfolio characterized by Bonus Malus experience rating feature.
+
+\subsubsection{Health insurance example}
+
+The example comes from \cite{deshmukh2012multiple}. The interest rate is 5\%, benefits are payable upon death (1000) and disability (500). Premiums are payable at the beginning of period only if policyholder is active. The contract term is three years 
+
+<<healthIns1, keep.source=TRUE>>=
+
+mcHI=new("markovchain", states=c("active", "disable", "withdrawn", "death"),
+         transitionMatrix=matrix(c(0.5,.25,.15,.1,
+                                   0.4,0.4,0.0,.2,
+                                   0,0,1,0,
+                                   0,0,0,1), byrow=TRUE, nrow=4))
+         
+
+benefitVector=as.matrix(c(0,0,500,1000))
+
+@
+
+The policyholders is active at $T_0$. Therefore the expected states at $T_1, \ldots T_3$ are calculated as shown.
+
+<<healthIns2, keep.source=TRUE>>=
+T0=t(as.matrix(c(1,0,0,0)))
+T1=T0*mcHI
+T2=T1*mcHI
+T3=T2*mcHI
+@
+
+Therefore the present value of future benefit at T0 is
+
+<<healthIns3, keep.source=TRUE>>=
+PVFB=T0%*%benefitVector*1.05^-0+T1%*%benefitVector*1.05^-1+T2%*%benefitVector*1.05^-2+T3%*%benefitVector*1.05^-3
+@
+
+and the yearly premium payable whether the insured is alive is 
+
+<<healthIns4, keep.source=TRUE>>=
+P=PVFB/(T0[1]*1.05^-0+T1[1]*1.05^-1+T2[1]*1.05^-2)
+@
+
+The reserve at the beginning of year two, in case of the insured being alive, is
+
+<<healthIns5, keep.source=TRUE>>=
+PVFB=(T2%*%benefitVector*1.05^-1+T3%*%benefitVector*1.05^-2)
+PVFP=P*(T1[1]*1.05^-0+T2[1]*1.05^-1)
+V=PVFB-PVFP
+V
+@
+
+
+\section{Aknowledgments}\label{sec:aknowledgements}
+
+
+
+\bibliography{markovchainBiblio}
+
+
+
+\end{document}

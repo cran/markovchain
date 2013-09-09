@@ -1,9 +1,12 @@
 exportPattern("^[[:alpha:]]+")
-importFrom(graphics, plot)
-
+import(igraph, Matrix,  methods)
+importFrom("graphics", plot)
+importFrom("matlab", zeros)
+importFrom("expm",'%^%')
 exportMethods(
     "*",
     "^",
+    "==",
     "absorbingStates",
     "coerce",
     "dim",
@@ -17,5 +20,6 @@ exportMethods(
     "transitionProbability" 
 )
 exportClasses(
-    "markovchain" 
+    "markovchain",
+     "markovchainList" 
 )

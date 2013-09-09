@@ -7,12 +7,15 @@ Function to fit a discrete Markov chain
 Given a sequence of states arising from a stationary state, it fits the underlying markov chain distribution using a frequentist approach.
 }
 \usage{
-markovchainFit(data, byrow = TRUE)
+markovchainFit(data, method="mle", byrow = TRUE)
 }
 
 \arguments{
   \item{data}{
 A character list.
+}
+\item{method}{
+Method used to estimate the markov chain. Currently, only "mle" (maximum likelihood) is implemented.
 }
   \item{byrow}{
 it tells whether the output markov chain should show the transition probabilities by row.

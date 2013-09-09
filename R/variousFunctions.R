@@ -17,26 +17,30 @@ markovchainSequence<-function(n,markovchain, t0=sample(markovchain@states,1),inc
 
 #functon to fit a Markov chain
 
-markovchainFit<-function(data,byrow=TRUE)
+.mcFitMle<-function(stringchar,byrow)
 {
-	states<-unique(data)
-	require(matlab)
-	initialMatr=zeros(length(states))
-	rownames(initialMatr)<-states
-	colnames(initialMatr)<-states
+  states<-unique(stringchar)
+  initialMatr=zeros(length(states))
+  rownames(initialMatr)<-states
+  colnames(initialMatr)<-states
+  for(i in 1:(length(stringchar)-1))
+  {
+    state1<-stringchar[i];rowIndex<-which(states==state1)
+    state2<-stringchar[i+1];colIndex<-which(states==state2)
+    initialMatr[rowIndex, colIndex]<-initialMatr[rowIndex, colIndex]+1
+  }
+  initialMatr<-initialMatr/rowSums(initialMatr)
+  outMc<-new("markovchain", transitionMatrix=initialMatr)
+  if(byrow==FALSE) outMc<-t(outMc)
+  out<-list(estimate=outMc)
+  return(out)
+}
+
+markovchainFit<-function(data,method="mle", byrow=TRUE)
+{
 	#frequency fit
-	for(i in 1:(length(data)-1))
-	{
-	 state1<-data[i];rowIndex<-which(states==state1)
-	 state2<-data[i+1];colIndex<-which(states==state2)
-	 initialMatr[rowIndex, colIndex]<-initialMatr[rowIndex, colIndex]+1
-	}
-	initialMatr<-initialMatr/rowSums(initialMatr)
-	outMc<-new("markovchain", transitionMatrix=initialMatr)
-	if(byrow==FALSE) outMc<-t(outMc)
-	out<-list(estimate=outMc)
-	return(out)
-	
+	if(method=="mle") out<-.mcFitMle(stringchar=data,byrow=byrow)
+  return(out)
 }
 
 #example

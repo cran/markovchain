@@ -1,18 +1,37 @@
 #define Markov Chain class
 
 setClass("markovchain", #classe lifetable
-         representation(states="character",byrow="logical",transitionMatrix="matrix"),
-         prototype(states=c("a","b"), byrow=TRUE, transitionMatrix=matrix(data=c(0,1,1,0),
+         representation(states="character",byrow="logical",
+                        transitionMatrix="matrix", name="character"),
+         prototype(states=c("a","b"), byrow=TRUE, 
+                   transitionMatrix=matrix(data=c(0,1,1,0),
                                            nrow=2,
                                            byrow=TRUE, 
-                                           dimnames=list(c("a","b"), c("a","b"))
-                                                              )
-         ))
+                                           dimnames=list(c("a","b"), c("a","b"))),
+                   name="A Markov chain"
+         )
+         )
 
+
+setClass("markovchainList",
+         representation(markovchains="list",
+                        name="character"))
+
+setValidity("markovchainList",
+            function(object){
+              check<-NULL
+              for(i in length(object@markovchains))
+              {
+                if(class(object@markovchains[[i]])!="markovchain") check<-"Error! All elements should be of class 'markovchain'"
+              }
+              if(is.null(check)) check<-TRUE
+              return(check)
+            }
+            )
 		 
 setMethod("initialize",
     signature(.Object = "markovchain"),
-    function (.Object, states, byrow, transitionMatrix,...) 
+    function (.Object, states, byrow, transitionMatrix,name,...) 
     {
 		if(missing(transitionMatrix)) transitionMatrix=matrix(data=c(0,1,1,0), #create a naive matrix
                                            nrow=2,
@@ -35,7 +54,8 @@ setMethod("initialize",
 		} else if(!setequal(rownames(transitionMatrix),colnames(transitionMatrix)))  colnames(transitionMatrix)=rownames(transitionMatrix) #fix when different
 		if(missing(states)) states=rownames(transitionMatrix) #assign
 		if(missing(byrow)) byrow=TRUE #set byrow as true by default
-		callNextMethod(.Object, states = states, byrow = byrow, transitionMatrix=transitionMatrix,...)
+    if(missing(name)) name="A Markov chain"
+		callNextMethod(.Object, states = states, byrow = byrow, transitionMatrix=transitionMatrix,name=name,...)
     }
 )
 		 
@@ -97,6 +117,10 @@ setValidity("markovchain",
   onesIndex<-which(round(eigenResults$values,3)==1) #takes the one eigenvalue
   #do the following: 1:get eigenvectors whose eigenvalues==1
 	#2: normalize
+  if(length(onesIndex)==0) {
+    warning("No eigenvalue = 1 found")
+    return(NULL)
+  }
   if(transpose==TRUE)
   {
 	  eigenTake<-as.matrix(t(eigenResults$vectors[,onesIndex])) 
@@ -120,6 +144,10 @@ setMethod("steadyStates","markovchain",
 			transposeYN=FALSE
 			if(object@byrow==TRUE) transposeYN=TRUE
             out<-.mcEigen(matr=object@transitionMatrix, transpose=transposeYN) #wrapper for .mcEigen
+            if(is.null(out)) {
+              warning("Warning! No steady state")
+              return(NULL)
+            }
 			if(transposeYN==TRUE) colnames(out)<-object@states else rownames(out)<-object@states
             #if(nrow(out)==1) out<-as.numeric(out)
             return(out)
@@ -137,6 +165,7 @@ setMethod("absorbingStates","markovchain",
 		  transposeYN=FALSE
 		  if(object@byrow==TRUE) transposeYN=TRUE
           steadyStates<-.mcEigen(matr, transpose=transposeYN) #checkk
+          if(is.null(steadyStates)) return(character(0))
           if(transposeYN==TRUE) maxCols<-apply(steadyStates, 2, "max") else maxCols<-apply(steadyStates, 1, "max")  
           index<-which(maxCols==1)
           if(length(index)>0) out<-object@states[index]
@@ -165,7 +194,7 @@ setMethod("transitionProbability","markovchain",
 .showInt<-function(object, verbose=TRUE)
 {
 	if(object@byrow==TRUE) direction="(by rows)" else direction="(by cols)"
-	if(verbose==TRUE) cat("A",dim(object),"- dimensional discrete Markov Chain with following states \n",states(object), "\n and following ", direction," transition probabilities \n")
+	if(verbose==TRUE) cat(object@name,"\n A ",dim(object),"- dimensional discrete Markov Chain with following states \n",states(object), "\n The transition matrix  ", direction," is defined as follows \n")
 	print(object@transitionMatrix)
 	cat("\n")
 }
@@ -185,20 +214,24 @@ setMethod("print","markovchain", #metodo print
           }
 )
 
+#function to get the absorbency matrix
 .getNet<-function(object)
 {
-  require(igraph)
-  net<-graph.adjacency(adjmatrix=object@transitionMatrix*10,
-                       weighted=TRUE,mode="directed")
+   if(object@byrow==FALSE) object<-t(object)
+ 
+  matr<-Matrix(data=object@transitionMatrix, sparse=TRUE)*100 #need to multiply by 100
+  net<-graph.adjacency(adjmatrix=matr, weighted=TRUE,
+                       mode="directed")
   return(net)
 }
 
 
 setGeneric("plotMc", function(object,...) standardGeneric("plotMc"))
-setMethod("plotMc","markovchain", #metodo print
+setMethod("plotMc","markovchain", #metodo plot
           function(object,...){
             netMc<-.getNet(object)
-            plot.igraph(x=netMc, ...)
+            edgeLabel=E(netMc)$weight/100
+            plot.igraph(x=netMc,edge.label=edgeLabel, ...)
           }
 )
 
@@ -238,13 +271,26 @@ setAs(from="markovchain", to="data.frame", def=.mc2Df)
 	return(out)
 }
 
-# .df2Mc<-function(df)
-# {
-	# statesNames=unique(df[,1])
-	# colProb<-.whichColProb(df)
-	
+.df2Mc<-function(from)
+ {
+	 statesNames<-unique(from[,1])
+	 colProb<-.whichColProb(from)
+	 prMatr<-zeros(length(statesNames))
+   rownames(prMatr)<-statesNames
+   colnames(prMatr)<-statesNames
+   for(i in 1:nrow(from))
+   {
+     idRow<-which(statesNames==from[i,1]) #assume first col from
+     idCol<-which(statesNames==from[i,2]) #assume second row to
+     prMatr[idRow,idCol]<-from[i,3]
+   }
+   out<-new("markovchain", transitionMatrix=prMatr)
+   return(out)
+ }
 
-# }
+
+setAs(from="data.frame", to="markovchain", def=.df2Mc)
+
 
 #aritmethics
 
@@ -268,9 +314,14 @@ setMethod("*", c("markovchain", "markovchain"),
 function(e1, e2) {
 	 if(!setequal(e1@states,e1@states)) warning("Warning! Different states")
 	 if(!setequal(dim(e1@transitionMatrix),dim(e2@transitionMatrix))) stop("Error! Different size")
-	 newStates<-e1@states
+   if(!(e1@byrow==e2@byrow)) stop("Error! Both transition matrix should be defined either by row or by column")
+  
+   newStates<-e1@states
 	 newTransMatr<-e1@transitionMatrix%*%e2@transitionMatrix
-	 out<-new("markovchain", states=newStates, transitionMatrix=newTransMatr)
+   byRow<-e1@byrow
+   mcName<-e1@name
+	 out<-new("markovchain", states=newStates, transitionMatrix=newTransMatr, 
+            byrow=byRow, name=mcName)
 	 return(out)
 }
 )
@@ -324,10 +375,20 @@ setMethod("*", c("markovchain","numeric"),
 # library(microbenchmark)
 
 
+setMethod("==", c("markovchain","markovchain"),
+          function(e1, e2) {
+            out<-FALSE
+            out<-identical(e1@transitionMatrix, e2@transitionMatrix)
+            return(out)
+          }
+)
+
+
 setMethod("^", c("markovchain", "numeric"),
 function(e1, e2) {
-	require(expm)
-	 out<-new("markovchain", states=e1@states, transitionMatrix=e1@transitionMatrix%^%e2)
+
+	 out<-new("markovchain", states=e1@states, byrow=e1@byrow,
+            transitionMatrix=e1@transitionMatrix%^%e2,name=paste(e1@name,"^",e2,sep=""))
 	 return(out)
 }
 )

@@ -8,7 +8,9 @@
 \alias{*,matrix,markovchain-method}
 \alias{*,numeric,markovchain-method}
 \alias{^,markovchain,numeric-method}
+\alias{==,markovchain,markovchain-method}
 \alias{absorbingStates,markovchain-method}
+\alias{coerce,data.frame,markovchain-method}
 \alias{coerce,markovchain,data.frame-method}
 \alias{dim,markovchain-method}
 \alias{initialize,markovchain-method}
@@ -19,7 +21,6 @@
 \alias{steadyStates,markovchain-method}
 \alias{t,markovchain-method}
 \alias{transitionProbability,markovchain-method}
-
 \title{Class \code{"markovchain"}}
 \description{
 The S4 class that describes \code{markovchain} objects.
@@ -32,6 +33,7 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{\code{states}:}{Name of the states. Must be the same of \code{colnames} and \code{rownames} of the transition matrix}
     \item{\code{byrow}:}{Binary flag.}
     \item{\code{transitionMatrix}:}{Square transition matrix}
+    \item{\code{name}:}{Optional character name of the Markov chain}
   }
 }
 \section{Methods}{
@@ -42,8 +44,10 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{*}{\code{signature(e1 = "matrix", e2 = "markovchain")}: matrix by markov chain}
     \item{*}{\code{signature(e1 = "numeric", e2 = "markovchain")}: numeric vector by \code{markovchain} multiplication   }
     \item{^}{\code{signature(e1 = "markovchain", e2 = "numeric")}: power of a \code{markovchain} object}
+    \item{==}{\code{signature(e1 = "markovchain", e2 = "markovchain")}: equality of two \code{markovchain} object}
     \item{absorbingStates}{\code{signature(object = "markovchain")}: method to get absorbing states }
-    \item{coerce}{\code{signature(from = "markovchain", to = "data.frame")}: coerce method}
+    \item{coerce}{\code{signature(from = "markovchain", to = "data.frame")}: coerce method from markovchain to \code{data.frame}}
+    \item{coerce}{\code{signature(from = "data.frame", to = "markovchain")}: coerce method from \code{data.frame} to \code{markovchain}}
     \item{dim}{\code{signature(x = "markovchain")}: method to get the size}
     \item{initialize}{\code{signature(.Object = "markovchain")}: initialize method }
     \item{plotMc}{\code{signature(object = "markovchain")}: plot method }
@@ -70,6 +74,14 @@ It is an S4 class.
 \code{\link{markovchainSequence}},\code{\link{markovchainFit}}
 }
 \examples{
+#show markov chain definition
 showClass("markovchain")
+#create a simple markov chains
+simpleMc<-new("markovchain", states=c("a","b"),
+transitionMatrix=matrix(c(0.4,0.6,.3,.7),nrow=2,byrow=TRUE))
+#power
+simpleMc^4
+#some methods
+steadyStates(simpleMc)
 }
 \keyword{classes}

@@ -1,0 +1,10 @@
+\BOOKMARK [1][-]{Section.0.Introduction.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{Section.1.Markov chains mathematic revies.1}{Markov chains mathematic revies}{}% 2
+\BOOKMARK [1][-]{Section.2.The structure of the package.1}{The structure of the package}{}% 3
+\BOOKMARK [2][-]{Subsection.3.0.Creating markovchain objects.2}{Creating markovchain objects}{Section.2.The structure of the package.1}% 4
+\BOOKMARK [2][-]{Subsection.3.1.Handling markovchain objects.2}{Handling markovchain objects}{Section.2.The structure of the package.1}% 5
+\BOOKMARK [2][-]{Subsection.3.2.Statistics with markovchain objects.2}{Statistics with markovchain objects}{Section.2.The structure of the package.1}% 6
+\BOOKMARK [1][-]{Section.3.Applied examples.1}{Applied examples}{}% 7
+\BOOKMARK [2][-]{Subsection.4.0.Actuarial examples.2}{Actuarial examples}{Section.3.Applied examples.1}% 8
+\BOOKMARK [3][-]{Subsubsection.4.1.0.Health insurance example.3}{Health insurance example}{Subsection.4.0.Actuarial examples.2}% 9
+\BOOKMARK [1][-]{Section.4.Aknowledgments.1}{Aknowledgments}{}% 10
