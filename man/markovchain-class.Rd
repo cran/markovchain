@@ -7,6 +7,7 @@
 \alias{*,markovchain,numeric-method}
 \alias{*,matrix,markovchain-method}
 \alias{*,numeric,markovchain-method}
+\alias{[,markovchain,ANY,ANY,ANY-method}
 \alias{^,markovchain,numeric-method}
 \alias{==,markovchain,markovchain-method}
 \alias{absorbingStates,markovchain-method}
@@ -43,6 +44,7 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{*}{\code{signature(e1 = "markovchain", e2 = "numeric")}: markovchain by numeric vector multiplication }
     \item{*}{\code{signature(e1 = "matrix", e2 = "markovchain")}: matrix by markov chain}
     \item{*}{\code{signature(e1 = "numeric", e2 = "markovchain")}: numeric vector by \code{markovchain} multiplication   }
+    \item{[}{\code{signature(x = "markovchain", i = "ANY", j = "ANY", drop = "ANY")}: ... }
     \item{^}{\code{signature(e1 = "markovchain", e2 = "numeric")}: power of a \code{markovchain} object}
     \item{==}{\code{signature(e1 = "markovchain", e2 = "markovchain")}: equality of two \code{markovchain} object}
     \item{absorbingStates}{\code{signature(object = "markovchain")}: method to get absorbing states }
@@ -83,5 +85,7 @@ transitionMatrix=matrix(c(0.4,0.6,.3,.7),nrow=2,byrow=TRUE))
 simpleMc^4
 #some methods
 steadyStates(simpleMc)
+simpleMc[2,1]
+t(simpleMc)
 }
 \keyword{classes}

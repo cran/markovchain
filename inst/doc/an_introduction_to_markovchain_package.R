@@ -1,4 +1,5 @@
 ### R code from vignette source 'an_introduction_to_markovchain_package.Rnw'
+### Encoding: ISO8859-1
 
 ###################################################
 ### code chunk number 1: setup
@@ -94,6 +95,7 @@ dim(mcWeather)
 ### code chunk number 12: transProb
 ###################################################
 transitionProbability(mcWeather, "cloudy","rain")
+mcWeather[2,3]
 
 
 ###################################################
@@ -117,13 +119,34 @@ mcNew<-as(mcDf, "markovchain")
 
 
 ###################################################
-### code chunk number 16: steadyStates
+### code chunk number 16: cchcMcList
+###################################################
+stateNames=c("H","I","D")
+Q0<-new("markovchain", states=stateNames, 
+        transitionMatrix=matrix(c(0.7, 0.2, 0.1,0.1, 0.6, 0.3,0, 0, 1),byrow=TRUE, nrow=3), name="state t0")
+Q1<-new("markovchain", states=stateNames, 
+        transitionMatrix=matrix(c(0.5, 0.3, 0.2,0, 0.4, 0.6,0, 0, 1),byrow=TRUE, nrow=3), name="state t1")
+Q2<-new("markovchain", states=stateNames, 
+        transitionMatrix=matrix(c(0.3, 0.2, 0.5,0, 0.2, 0.8,0, 0, 1),byrow=TRUE,nrow=3), name="state t2")
+Q3<-new("markovchain", states=stateNames, transitionMatrix=matrix(c(0, 0, 1,0, 0, 1,0, 0, 1),byrow=TRUE, nrow=3), name="state t3")
+mcCCRC<-new("markovchainList",markovchains=list(Q0,Q1,Q2,Q3), name="Continuous Care Health Community")
+
+
+###################################################
+### code chunk number 17: cchcMcList2
+###################################################
+mcCCRC[[1]]
+dim(mcCCRC)
+
+
+###################################################
+### code chunk number 18: steadyStates
 ###################################################
 steadyStates(mcWeather)
 
 
 ###################################################
-### code chunk number 17: gamblerRuin
+### code chunk number 19: gamblerRuin
 ###################################################
 gamblerRuinMarkovChain<-function(moneyMax, prob=0.5) {
   require(matlab)
@@ -147,27 +170,43 @@ steadyStates(mcGR4)
 
 
 ###################################################
-### code chunk number 18: absorbingStates
+### code chunk number 20: absorbingStates
 ###################################################
 absorbingStates(mcGR4)
 absorbingStates(mcWeather)
 
 
 ###################################################
-### code chunk number 19: simulatingAMarkovChain
+### code chunk number 21: simulatingAMarkovChain
 ###################################################
-weathersOfDays<-markovchainSequence(n=365,markovchain=mcWeather,t0="sunny")
-weathersOfDays[1:20]
+weathersOfDays<-rmarkovchain(n=365,object=mcWeather,t0="sunny")
+weathersOfDays[1:30]
 
 
 ###################################################
-### code chunk number 20: fitMcbyMLE
+### code chunk number 22: simulatingAListOfMarkovChain
 ###################################################
-mcFitted<-markovchainFit(data=weathersOfDays, method="mle")
+patientStates<-rmarkovchain(n=5, object=mcCCRC,t0="H",include.t0=TRUE)
+patientStates[1:10,]
 
 
 ###################################################
-### code chunk number 21: healthIns1
+### code chunk number 23: fitMcbyMLE
+###################################################
+weatherFittedMLE<-markovchainFit(data=weathersOfDays, method="mle")
+weatherFittedMLE$estimate
+
+
+###################################################
+### code chunk number 24: fitMcbyBootStrap
+###################################################
+weatherFittedBOOT<-markovchainFit(data=weathersOfDays, method="bootstrap",nboot=50)
+weatherFittedBOOT$estimate
+weatherFittedBOOT$standardError
+
+
+###################################################
+### code chunk number 25: healthIns1
 ###################################################
 
 mcHI=new("markovchain", states=c("active", "disable", "withdrawn", "death"),
@@ -182,7 +221,7 @@ benefitVector=as.matrix(c(0,0,500,1000))
 
 
 ###################################################
-### code chunk number 22: healthIns2
+### code chunk number 26: healthIns2
 ###################################################
 T0=t(as.matrix(c(1,0,0,0)))
 T1=T0*mcHI
@@ -191,19 +230,19 @@ T3=T2*mcHI
 
 
 ###################################################
-### code chunk number 23: healthIns3
+### code chunk number 27: healthIns3
 ###################################################
 PVFB=T0%*%benefitVector*1.05^-0+T1%*%benefitVector*1.05^-1+T2%*%benefitVector*1.05^-2+T3%*%benefitVector*1.05^-3
 
 
 ###################################################
-### code chunk number 24: healthIns4
+### code chunk number 28: healthIns4
 ###################################################
 P=PVFB/(T0[1]*1.05^-0+T1[1]*1.05^-1+T2[1]*1.05^-2)
 
 
 ###################################################
-### code chunk number 25: healthIns5
+### code chunk number 29: healthIns5
 ###################################################
 PVFB=(T2%*%benefitVector*1.05^-1+T3%*%benefitVector*1.05^-2)
 PVFP=P*(T1[1]*1.05^-0+T2[1]*1.05^-1)
