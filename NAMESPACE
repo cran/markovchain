@@ -17,6 +17,7 @@ exportMethods(
     "states",
     "steadyStates",
     "t",
+	"[",
     "transitionProbability" 
 )
 exportClasses(

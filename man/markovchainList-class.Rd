@@ -2,6 +2,10 @@
 \Rdversion{1.1}
 \docType{class}
 \alias{markovchainList-class}
+\alias{[[,markovchainList-method}
+\alias{dim,markovchainList-method}
+\alias{print,markovchainList-method}
+\alias{show,markovchainList-method}
 
 \title{Class \code{"markovchainList"}}
 \description{
@@ -13,12 +17,21 @@ Each item in the list is a \code{markovchain} object.
 }
 \section{Slots}{
   \describe{
-    \item{\code{markovchains}:}{Object of class \code{"list"}: a list of markovchains}
-    \item{\code{name}:}{Object of class \code{"character"}: optional name of the class }
+    \item{\code{markovchains}:}{Object of class \code{"list"}: a 
+    list of markovchains}
+    \item{\code{name}:}{Object of class \code{"character"}: optional 
+    name of the class }
   }
 }
 \section{Methods}{
-No methods defined with class "markovchainList" in the signature.
+  \describe{
+    \item{[[}{\code{signature(x = "markovchainList")}: extract the
+    i-th \code{markovchain} }
+    \item{dim}{\code{signature(x = "markovchainList")}: number 
+    of \code{markovchain} underlying the matrix }
+    \item{print}{\code{signature(x = "markovchainList")}: prints the list of markovchains }
+    \item{show}{\code{signature(object = "markovchainList")}: same as print }
+   }
 }
 \references{
 Sheldon Ross
@@ -34,5 +47,18 @@ It can help to deal with non - homogeneous markov chains.
 }
 \examples{
 showClass("markovchainList")
+#define a markovchainList
+statesNames=c("a","b")
+ mcA<-new("markovchain", transitionMatrix=matrix(c(0.7,0.3,0.1,0.9),
+ byrow=TRUE, nrow=2, dimnames=list(statesNames,statesNames)))
+mcB<-new("markovchain", states=c("a","b","c"), 
+transitionMatrix=matrix(c(0.2,0.5,0.3,0,1,0,0.1,0.8,0.1),
+nrow=3, byrow=TRUE))
+mcC<-new("markovchain", states=c("a","b","c","d"), 
+  	transitionMatrix=matrix(c(0.25,0.75,0,0,0.4,0.6,
+    0,0,0,0,0.1,0.9,0,0,0.7,0.3), nrow=4, byrow=TRUE)
+)
+mcList<-new("markovchainList",markovchains=list(mcA, mcB, mcC))
+
 }
 \keyword{classes}

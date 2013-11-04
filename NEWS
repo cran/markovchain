@@ -1,0 +1,5 @@
+04-11-2013
+Version 0.3
+Added various method to easily handle markovchain and markovchainList objects
+Implemented rmarkovchain and bootstrap fit
+Improved vignettes

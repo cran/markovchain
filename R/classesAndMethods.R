@@ -85,7 +85,7 @@ setMethod("states","markovchain",
           }
 )
 
-#generic function to get the dim of a markovchain
+#generic function to get the dim of a markovchain and markovchainList
 
 setMethod("dim","markovchain", 
 		function(x) {
@@ -93,6 +93,18 @@ setMethod("dim","markovchain",
 			return(out)
 		}
 )
+
+
+
+setMethod("dim","markovchainList", 
+          function(x) {
+            out<-length(x@markovchains)
+            return(out)
+          }
+)
+
+
+#function to set the validity of a markovchain object
 
 setValidity("markovchain",
             function(object) {
@@ -206,6 +218,18 @@ setMethod("show","markovchain", #metodo show
           .showInt(object)
           }
 )
+
+setMethod("show", "markovchainList",
+          function(object){
+          for(i in 1:length(object@markovchains)) 
+          {
+            cat("Markovchain ",i,"\n")
+            show(object@markovchains[[i]])
+          }
+          }
+)
+
+setMethod("print","markovchainList",function(x) show(x))
 
 setMethod("print","markovchain", #metodo print
           function(x){
@@ -392,3 +416,20 @@ function(e1, e2) {
 	 return(out)
 }
 )
+
+
+#accesso diretto agli elementi della matrice/lista
+
+setMethod("[",
+          signature(x = "markovchain", i = "ANY", j = "ANY"),
+          function(x, i, j) {
+            out<-x@transitionMatrix[i,j]
+            return(out)
+          })
+
+setMethod("[[",
+          signature(x = "markovchainList", i = "ANY"),
+          function(x, i) {
+            out<-x@markovchains[[i]]
+            return(out)
+          })

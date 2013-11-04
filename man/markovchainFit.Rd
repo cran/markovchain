@@ -7,7 +7,7 @@ Function to fit a discrete Markov chain
 Given a sequence of states arising from a stationary state, it fits the underlying markov chain distribution using a frequentist approach.
 }
 \usage{
-markovchainFit(data, method="mle", byrow = TRUE)
+markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10)
 }
 
 \arguments{
@@ -15,10 +15,13 @@ markovchainFit(data, method="mle", byrow = TRUE)
 A character list.
 }
 \item{method}{
-Method used to estimate the markov chain. Currently, only "mle" (maximum likelihood) is implemented.
+Method used to estimate the markov chain. Either "mle" or "bootstrap"
 }
   \item{byrow}{
 it tells whether the output markov chain should show the transition probabilities by row.
+}
+  \item{nboot}{
+Number of bootstrap replicates in case "bootstrap" is used.
 }
 }
 \value{
@@ -42,6 +45,7 @@ be added in the future.
 \examples{
 sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", 
 "b", "b", "b", "a")
-mcFit<-markovchainFit(data=sequence)
+mcFitMLE<-markovchainFit(data=sequence)
+mcFitBSP<-markovchainFit(data=sequence,method="bootstrap",nboot=5)
 }
 
