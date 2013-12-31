@@ -85,6 +85,31 @@ setMethod("states","markovchain",
           }
 )
 
+#generic summary function for markovchain
+
+#setMethod("summary","markovchain",
+#		function(object){
+#			temp<-.commclassesKernel(object@transitionMatrix)
+#			classList<-list()
+#			for(i in 1:dim(object))
+#			{
+#				#extract names
+#				matrLine<-temp$C[i,]
+#				index<-names(which(matrLine==TRUE))
+#				
+#				if(i>1)
+#				{
+#					for(j in 1:i)
+#					{
+#						
+#					}
+#				}
+#			}
+#		}
+#)
+
+
+
 #generic function to get the dim of a markovchain and markovchainList
 
 setMethod("dim","markovchain", 
@@ -185,6 +210,18 @@ setMethod("absorbingStates","markovchain",
           }
 )
 
+#generic function to extract transient states
+setGeneric("transientStates", function(object) standardGeneric("transientStates"))
+setMethod("transientStates","markovchain", 
+		function(object) {
+			out<-character()
+			matr<-object@transitionMatrix #extract the byrow transition matrix
+			temp<-.commclassesKernel(matr)
+			index<-which(temp$v==FALSE)
+			if(length(index)>0) out<-names(temp$v[index])
+			return(out)
+		}
+)
 
 #generic function to extract transition probability
 setGeneric("transitionProbability", function(object, t0, t1) standardGeneric("transitionProbability"))
@@ -221,6 +258,7 @@ setMethod("show","markovchain", #metodo show
 
 setMethod("show", "markovchainList",
           function(object){
+		  cat(object@name, " list of Markov chain(s)","\n")
           for(i in 1:length(object@markovchains)) 
           {
             cat("Markovchain ",i,"\n")
@@ -314,6 +352,25 @@ setAs(from="markovchain", to="data.frame", def=.mc2Df)
 
 
 setAs(from="data.frame", to="markovchain", def=.df2Mc)
+
+
+#converting from table
+
+.table2Mc<-function(from)
+{
+	#checks
+	if(dim(from)[1]!=dim(from)[2]) stop("Error! Table is not squared")
+	if(!setequal(rownames(from),colnames(from))) stop("Error! Rows not equal to coulumns")
+	temp<-as.matrix(from)
+	fromMatr<-temp[,order(rownames(temp))] #makes the same sequence of col / row
+	outMatr<-fromMatr/rowSums(fromMatr)
+	out<-new("markovchain",states=rownames(temp), transitionMatrix=outMatr, 
+            byrow=TRUE)
+	return(out)
+}
+
+setAs(from="table", to="markovchain", def=.table2Mc)
+
 
 
 #aritmethics
@@ -433,3 +490,82 @@ setMethod("[[",
             out<-x@markovchains[[i]]
             return(out)
           })
+
+setGeneric("conditionalDistribution", function(object,state) standardGeneric("conditionalDistribution"))
+setMethod("conditionalDistribution","markovchain", #metodo plot
+          function(object,state){
+			stateNames<-states(object) #get the names
+			out<-numeric(length(stateNames)) #allocater oiutvect
+			index2Take<-which(stateNames==state) #states are assumed to be sorted
+			if(object@byrow==TRUE) #returns the probability vector depending by sorting
+			{
+				out<-object@transitionMatrix[index2Take,]
+			} else out<-object@transitionMatrix[,index2Take]
+				names(out)=stateNames
+				return(out) 
+          }
+)
+		  
+
+
+#geth the mode of a probability vector
+.getMode<-function(probVector,ties="random")
+{
+  maxIndex<-which(probVector==max(probVector))
+  temp<-probVector[maxIndex]
+  if((ties=="random")&(length(temp)>1)) out<-sample(temp,1) else out<-temp
+  return(names(out))
+}
+
+#predict method for markovchain
+
+setMethod("predict","markovchain", 
+          function(object,newdata,n.ahead=1) {
+            lastState<-newdata[length(newdata)] #take the last element of the sequence
+            out<-character()
+            for(i in 1:n.ahead)
+            {
+             
+              newState<-.getMode(probVector=conditionalDistribution(object,lastState),
+					  ties="random")
+              out<-c(out,newState)
+              lastState<-newState
+            }
+            return(out)
+          }
+)
+
+setMethod("predict","markovchainList",
+		#object a markovchainList, newdata=the actual data, n.ahead=how much ahead, continue=veryfi if thake last
+		function(object,newdata,n.ahead=1,continue=FALSE) {
+			out<-character() #alloca output
+			actualPos<-length(newdata) #determina posizione catena 
+			lastState<-newdata[actualPos] #prende ultima realizzazione
+			for(i in 1:n.ahead) #cicla da 1 a n avanti
+			{
+				newPos<-actualPos+i-1 #ncrementa la posizione, ma togli 1
+			
+				if(newPos<=dim(object)) #se siamo dentro la lungghezza della caten ann omogenea
+				{
+					newState<-predict(object=object[[newPos]],newdata = lastState,n.ahead=1)
+					out<-c(out,newState)
+					lastState<-newState
+				} else {
+					if(continue==TRUE) #se permesso contnuare a ultimo stato
+					{
+						newState<-predict(object=object[[dim(object)]],newdata = lastState,n.ahead=1)
+						out<-c(out,newState)
+						lastState<-newState
+					} else break;
+				} #chiude else
+			
+			} #chiude for
+			return(out)
+		} #chiude function
+)
+
+
+
+# sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
+# mcFit<-markovchainFit(data=sequence)
+# predict(object=mcFit$estimate,newdata="a",n.ahead=2)

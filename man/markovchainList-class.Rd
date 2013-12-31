@@ -4,6 +4,7 @@
 \alias{markovchainList-class}
 \alias{[[,markovchainList-method}
 \alias{dim,markovchainList-method}
+\alias{predict,markovchainList-method}
 \alias{print,markovchainList-method}
 \alias{show,markovchainList-method}
 
@@ -29,6 +30,8 @@ Each item in the list is a \code{markovchain} object.
     i-th \code{markovchain} }
     \item{dim}{\code{signature(x = "markovchainList")}: number 
     of \code{markovchain} underlying the matrix }
+	  \item{predict}{\code{signature(object = "markovchainList")}: predict 
+	  from a \code{markovchainList} }
     \item{print}{\code{signature(x = "markovchainList")}: prints the list of markovchains }
     \item{show}{\code{signature(object = "markovchainList")}: same as print }
    }

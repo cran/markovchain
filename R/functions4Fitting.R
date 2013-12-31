@@ -71,10 +71,11 @@ rmarkovchain<-function(n,object,...)
 
 #core function to get sequence matrix
 
-.createSequenceMatrix<-function(stringchar, toRowProbs=FALSE)
+createSequenceMatrix<-function(stringchar, toRowProbs=FALSE,sanitize=TRUE)
 {
   elements<-sort(unique(stringchar))
-  freqMatrix<-zeros(length(elements))
+  sizeMatr<-length(elements)
+  freqMatrix<-zeros(sizeMatr)
   rownames(freqMatrix)<-elements
   colnames(freqMatrix)<-elements
   for(i in 1:(length(stringchar)-1))
@@ -82,6 +83,17 @@ rmarkovchain<-function(n,object,...)
     posFrom<-which(rownames(freqMatrix)==stringchar[i])
     posTo<-which(rownames(freqMatrix)==stringchar[i+1])
     freqMatrix[posFrom,posTo]=freqMatrix[posFrom,posTo]+1
+  }
+  #sanitizing if any row in the matrix sums to zero by posing the corresponding diagonal equal to 1/dim
+  if(sanitize==TRUE)
+  {
+	  if(any(rowSums(freqMatrix)==0))
+	  {
+		  indexesToBeSanitized<-which(rowSums(freqMatrix)==0)
+		  for(i in indexesToBeSanitized) {
+			  for(j in 1:sizeMatr) freqMatrix[i,j]<-1/sizeMatr
+		  }
+	  }
   }
   if(toRowProbs==TRUE)
   {
@@ -94,11 +106,26 @@ rmarkovchain<-function(n,object,...)
 
 .mcFitMle<-function(stringchar,byrow)
 {
-  initialMatr<-.createSequenceMatrix(stringchar=stringchar,toRowProbs=TRUE)
+  initialMatr<-createSequenceMatrix(stringchar=stringchar,toRowProbs=TRUE)
   outMc<-new("markovchain", transitionMatrix=initialMatr,name="MLE Fit")
   if(byrow==FALSE) outMc<-t(outMc)
   out<-list(estimate=outMc)
   return(out)
+}
+
+.mcFitLaplacianSmooth<-function(stringchar,byrow,laplacian=0.01)
+{
+	origNum<-createSequenceMatrix(stringchar=stringchar,toRowProbs=FALSE)
+	sumOfRow<-rowSums(origNum)
+	origDen<-matrix(rep(sumOfRow,length(sumOfRow)),byrow = FALSE,ncol=length(sumOfRow))
+	newNum<-origNum+laplacian
+	newSumOfRow<-rowSums(newNum)
+	newDen<-matrix(rep(newSumOfRow,length(newSumOfRow)),byrow = FALSE,ncol=length(newSumOfRow))
+	transMatr<-newNum/newDen
+	outMc<-new("markovchain", transitionMatrix=transMatr,name="Laplacian Smooth Fit")
+	if(byrow==FALSE) outMc<-t(outMc)
+	out<-list(estimate=outMc)
+	return(out)
 }
 
 
@@ -111,7 +138,7 @@ rmarkovchain<-function(n,object,...)
 #given a sting of characters, returns the associate one step transition matrix
 .bootstrapCharacterSequences<-function(stringchar, n, size=length(stringchar))
 {
-  contingencyMatrix<-.createSequenceMatrix(stringchar=stringchar)
+  contingencyMatrix<-createSequenceMatrix(stringchar=stringchar)
   samples<-list()
   itemset<-rownames(contingencyMatrix)
   for(i in 1:n) #cicle to fill the samples
@@ -162,7 +189,7 @@ out<-list(estMu=matrMean, estSigma=matrSd)
   #create the list of bootstrap sequence sample
   theList<-.bootstrapCharacterSequences(stringchar=data, n=nboot)
   #convert the list in a probability matrix
-  pmsBootStrapped<-lapply(X=theList, FUN=.createSequenceMatrix, toRowProbs=TRUE)
+  pmsBootStrapped<-lapply(X=theList, FUN=createSequenceMatrix, toRowProbs=TRUE,sanitize=TRUE)
   estimateList<-.fromBoot2Estimate(listMatr=pmsBootStrapped)
   #from raw to estimate
   temp<-estimateList$estMu
@@ -174,14 +201,18 @@ out<-list(estMu=matrMean, estSigma=matrSd)
 
 #fit
 
-markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10)
+markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10,laplacian=0, name)
 {
   #MLE FIT
   if(method=="mle") out<-.mcFitMle(stringchar=data,byrow=byrow)
   if(method=="bootstrap") out<-.mcFitBootStrap(data=data,byrow=byrow,nboot=nboot)
+  if(method=="laplace") out<-.mcFitLaplacianSmooth(stringchar=data,byrow=byrow,laplacian=laplacian)
+  if(!missing(name)) out$estimate@name<-name
   return(out)
 }
 
 
+#example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4)
+#ciao<-markovchainFit(data=example4Fit,method="bootstrap")
 
 

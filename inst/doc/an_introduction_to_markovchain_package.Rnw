@@ -25,8 +25,8 @@
 %% almost as usual
 
 
-\author{Giorgio Alfredo Spedicato, PhD CStat ACAS \And 
-        Mirko Signorelli, MSc}
+\author{Giorgio Alfredo Spedicato, Ph.D C.Stat ACAS \And \\
+        Mirko Signorelli, M.Sc. Statistics and economics}
 
 \title{The \pkg{markovchain} Package: A Package for Easily Handling Discrete
 Markov Chains in \proglang{R}}
@@ -38,8 +38,9 @@ Markov Chains in R} %% without formatting
 \Shorttitle{The markovchain package} %% a short title (if necessary)
 %% an abstract and keywords
 \Abstract{\pkg{markovchain} aims to fill a gap within R packages providing S4
-classes and methods to easily handling discrete markov chains. The S4 class
-structure will be presented as well implemented classes and methods. Applied
+classes and methods to easily handling discrete markov chains, both homogeneous
+and inhomogeneous.
+The S4 class structure will be presented as well implemented classes and methods. Applied
 examples will follow} \Keywords{markov chain, transition probabilities}
 \Plainkeywords{markov chain, transition probabilities} %% without formatting
 %% at least one keyword must be supplied
@@ -62,12 +63,11 @@ examples will follow} \Keywords{markov chain, transition probabilities}
   20037 Italy\\
   Telephone: +39/334/6634384\\
   E-mail: \email{spedygiorgio@gmail.com}\\
-  URL: \url{www.statisticaladvisor.com}
+  URL: \url{www.statisticaladvisor.com}   \\
+  Mirko Signorelli\\
+  E-mail:\email{m.signorelli6@campus.unimib.it}
 }
 
-\Address{Mirko Signorelli\\
-\email{signorellimirko@hotmail.it}
-}
 
 
 %% for those who use Sweave please include the following line (with % symbols):
@@ -79,7 +79,8 @@ examples will follow} \Keywords{markov chain, transition probabilities}
 %\SweaveOpts{concordance=TRUE}
 
 <<setup,echo=FALSE, results=hide>>=
-	options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+	options(prompt = "R> ", continue = "+  ", 
+			width = 70, useFancyQuotes = FALSE)
 	set.seed(123)
 @
 
@@ -88,136 +89,177 @@ examples will follow} \Keywords{markov chain, transition probabilities}
 \section{Introduction}
 
 Markov chains represent a class of stochastic processes of great interest for the wide spectrum of practical applications. %inserire citazione.
-In particular, discrete markov chains permit to model the transition probabilities between possible discrete states by the aid of matrices.
-Various R packages deals with Markov chains processes and their applications: \pkg{msm} \citep{msmR} works with Multi-State Models for Panel Data, \pkg{mcmcR} \citep{mcmcR} is only one of the many package that implements Monte Carlo Markov Chain approach for estimating models' parameters, \pkg{hmm} fits hidden markov models taking into account covariates. R statistical environments seems to lack a simple R package that coherently defines S4 classes for discrete Markov chains and that allows the statistical analyst to perform probabilistic analysis and statistical infrence.  \pkg{markovchain} \citep{markovchainR} aims to offer greater flexibility in handling discrete time Markov chains. The paper is structured as it follows: Section~\ref{sec:mathematic} briefly revies mathematic and definitions on discrete Markov chains, Section~\ref{sec:examples} shows applied example of discrete Markov chains in various fields.
+In particular, discrete Markov chains permit to model the transition probabilities between discrete states by the aid of matrices.
+Various R packages deals with Markov chains processes and their applications:
+\pkg{msm} \citep{msmR} handle Multi-State Models for Panel Data, \pkg{mcmcR}
+\citep{mcmcR} is only one of the many package 
+that implements Monte Carlo Markov Chain approach for 
+estimating models' parameters, \pkg{hmm} fits hidden markov models taking 
+into account covariates. R statistical environment \citep{rSoftware} seems to lack a simple
+R package that coherently defines S4 classes for discrete Markov chains and 
+that allows to perform probabilistic analysis, statistical inferences and
+applications. \pkg{markovchain} \citep{markovchainR} aims to offer greater
+flexibility in handling discrete time Markov chains. The paper is structured as follows: 
+Section~\ref{sec:mathematic} briefly revies mathematic and 
+definitions on discrete Markov chains, Section~\ref{sec:examples} shows 
+applied example of discrete Markov chains in various fields.
 
 
 \section{Markov chains mathematic revies}\label{sec:mathematic}
 
 \subsection*{Definitions}
 
-A discrete-time Markow chain is a sequence of random variables $X_{1,}X_{2},X_{3},...$
-with the property of memorylessness (or Markov property), so that
-the next state of $X_{n+1}$ depends on the current state of $X_{n}$
-only and doesn't depend from the events that preceded it:
-\[
+A discrete-time Markow chain is a sequence of random variables $X_{1,}X_{2},X_{3},\ldots$
+characterized by memorylessness property (also known as Markov property, see
+Equation~\ref{eq:markovProp}), that is that the next state of $X_{n+1}$ depends only by the
+current state of $X_{n}$ and not by the events that preceded it.
+
+\begin{equation}
 Pr\left(X_{n+1}=x_{n+1}\left|X_{1}=x_{1},X_{2}=x_{2,}...,X_{n}=x_{n}\right.\right)=Pr\left(X_{n+1}=x_{n+1}\left|X_{n}=x_{n}\right.\right).
-\]
+\label{eq:markovProp}
+\end{equation}
 
 
-The set $S=\left\{ s_{1},s_{2},...,s_{r}\right\} $ of possible states
-of $X_{j}$ is called state space of the chain. In discrete-time Markov
-chain, $S$ is finite or countable. 
+The set of possible states $S=\left\{ s_{1},s_{2},...,s_{r}\right\}$ of $X_{j}$
+is named the state space of the chain. In discrete-time Markov chain, $S$ is
+finite or countable.
 
-A Markow chain is stationary (or time-homogeneous) if $Pr\left(X_{n+1}=x\left|X_{n}=y\right.\right)=Pr\left(X_{n}=x\left|X_{n-1}=y\right.\right)$, in other words, if the underlying transition probabilities do not change as time moves on.
+A Markow chain is time-homogeneous the property shown in Equation~\ref{eq:mcHom}
+holds, that implies no change in the underlying transition probabilities as time
+goes on.
+\begin{equation}
+Pr\left(X_{n+1}=x\left|X_{n}=y\right.\right)=Pr\left(X_{n}=x\left|X_{n-1}=y\right.\right),
+\label{eq:mcHom}
+\end{equation}
+.
 
 The chain moves successively from one state to another (this change
-is called transition or step) and the probability $p_{ij}$ to move
-from state $s_{i}$ to state $s_{j}$ is called transition probability:
-\[
+is named either 'transition' or 'step') and the probability $p_{ij}$ to move
+from state $s_{i}$ to state $s_{j}$ shown in Equation~\ref{eq:trProp} is called
+transition probability.
+
+\begin{equation}
 p_{ij}=Pr\left(X_{1}=s_{j}\left|X_{0}=s_{i}\right.\right).
-\]
+\label{eq:trProp}
+\end{equation}
 
 
 The probability of going from state $i$ to $j$ in $n$ steps is
 $p_{ij}^{(n)}=Pr\left(X_{n}=s_{j}\left|X_{0}=s_{i}\right.\right)$.
 
 If the Markov chain is stationary $p_{ij}=Pr\left(X_{k+1}=s_{j}\left|X_{k}=s_{i}\right.\right)$
-and $p_{ij}^{(n)}=Pr\left(X_{n+k}=s_{j}\left|X_{k}=s_{i}\right.\right)$,
+and \\ $p_{ij}^{(n)}=Pr\left(X_{n+k}=s_{j}\left|X_{k}=s_{i}\right.\right)$,
 where $k>0$.
 
 The probability distributions of transitions from one state to another
-can be represented into a transition matrix $P$, in which the element
-of position $(i,j)$ is the probability $p_{ij}$; for instance, if
-$r=3$ the transition matrix $P$ is
-\[
+can be represented into a transition matrix $P$, where each element
+of position $(i,j)$ represents the probability $p_{ij}$. For example, if
+$r=3$ the transition matrix $P$ is shown in Equation~\ref{eq:trPropEx}
+
+\begin{equation}
 P=\left[\begin{array}{ccc}
 p_{11} & p_{12} & p_{13}\\
 p_{21} & p_{22} & p_{23}\\
 p_{31} & p_{32} & p_{33}
 \end{array}\right].
-\]
+\label{eq:trPropEx}
+\end{equation}
 
 
 The distribution over the states can be written as a stocastic row
 vector $x$: if the current state of $x$ is $s_{2}$, $x=\left(0\,1\,0\right)$.
-As a consequence, the relation between $x^{(n+1)}$ and $x^{(n)}$
-is $x^{(n+1)}=x^{(n)}P$ and, recursively, $x^{(n+2)}=x^{(n)}P^{2}$,
-$x^{(n+k)}=x^{(n)}P^{k},\, k>0$.
+As a consequence, the relation between $x^{(1)}$ and $x^{(0)}$
+is $x^{(1)}=x^{(0)}P$ and, recursively, $x^{(2)}=x^{(0)}P^{2}$,
+$x^{(n)}=x^{(0)}P^{n},\, n>0$.
 
 
-\subsection*{Example}
+\subsection*{A short example}
 
 Consider the following numerical example. Suppose we have a Markov
 chain with a set of 3 possible states $s_{1}$, $s_{2}$ and $s_{3}$.
-Let the transition matrix be
+Let the transition matrix be defined in Equation~\ref{eq:trPropExEx1}
 
-\[
+\begin{equation}
 P=\left[\begin{array}{ccc}
 0.5 & 0.2 & 0.3\\
 0.15 & 0.45 & 0.4\\
 0.25 & 0.35 & 0.4
 \end{array}\right].
-\]
+\label{eq:trPropExEx1}
+\end{equation}
 
 
-$p_{11}=0.5$ means that the probability that $X_{n+1}=s_{1}$ given
-that we observed $X_{n}=s_{1}$ is 0.5, and so on. If in the current
-state we have $X_{n}=s_{2}$, then
+In $P$, $p_{11}=0.5$ is the probability that $X_{1}=s_{1}$ given
+that we observed $X_{0}=s_{1}$ is 0.5, and so on. If the current
+state is $X_{0}=s_{2}$, then Equation~\ref{eq:trPropExEx2} and
+Equation~\ref{eq:trPropExEx3} hold.
 
-\[
-x^{(n+1)}=\left(0\,1\,0\right)\left[\begin{array}{ccc}
+\begin{equation}
+x^{(1)}=\left(0\,1\,0\right)\left[\begin{array}{ccc}
 0.5 & 0.2 & 0.3\\
 0.15 & 0.45 & 0.4\\
 0.25 & 0.35 & 0.4
 \end{array}\right]=\left(0.15\,0.45\,0.4\right),
-\]
+\label{eq:trPropExEx2}
+\end{equation}
 
 
-\[
-x^{(n+2)}=x^{(n+1)}P=\left(0.15\,0.45\,0.4\right)\left[\begin{array}{ccc}
+\begin{equation}
+x^{(2)}=x^{(n+1)}P=\left(0.15\,0.45\,0.4\right)\left[\begin{array}{ccc}
 0.5 & 0.2 & 0.3\\
 0.15 & 0.45 & 0.4\\
 0.25 & 0.35 & 0.4
 \end{array}\right]=\left(0.2425\,0.3725\,0.385\right)
-\]
+\label{eq:trPropExEx3}
+\end{equation}
 
 
-and so on. The last result means that $Pr\left(X_{n+2}=s_{1}\left|X_{n}=s_{2}\right.\right)=0.2425$,
-$Pr\left(X_{n+2}=s_{2}\left|X_{n}=s_{2}\right.\right)=0.3725$ and
-$Pr\left(X_{n+2}=s_{3}\left|X_{n}=s_{2}\right.\right)=0.385$.
+and so on. The last result means that $Pr\left(X_{2}=s_{1}\left|X_{0}=s_{2}\right.\right)=0.2425$,
+$Pr\left(X_{2}=s_{2}\left|X_{0}=s_{2}\right.\right)=0.3725$ and
+$Pr\left(X_{2}=s_{3}\left|X_{0}=s_{2}\right.\right)=0.385$.
 
 
-\subsection*{Properties}
+\subsection*{Properties and classification of states}
 
 A state $s_{j}$ is said to be accessible from a state $s_{i}$ (written
 $s_{i}\rightarrow s_{j}$) if a system started in state $s_{i}$ has
 a positive probability of transitioning into state $s_{j}$ at a certain
 point. If both $s_{i}\rightarrow s_{j}$ and $s_{j}\rightarrow s_{i}$
 the states $s_{i}$ and $s_{j}$ are said to communicate.
+A group of one or more communicating states generates a communicating class. A
+Markov chain is composed by one or more communicating classes. A communicating class is 
+said to be closed if no states outside of the class can
+be reached from any state inside it.\\
+A state $s_{i}$ is said to be transient if, given that we start in
+state $s_{i}$, there is a positive probability that we will never
+return to $s_{i}$; instead, when $p_{ii}=1$, $s_{i}$ is defined an "absorbing
+state", i.e. a closed communicating class composed by only one state.
+The Markov chain is absorbing if there is at least one recurrent state; otherwise, the chain is said to be ergodic (or irreducible)
+and it is possible to get to any state from any state.\\
+
 
 A state $s_{i}$ has a period $k$ if any return to state $s_{i}$
 must occur in multiplies of $k$ steps, that is $k=gcd\left\{ n:Pr\left(X_{n}=s_{i}\left|X_{0}=s_{i}\right.\right)>0\right\} ,$where
 'gcd' is the greatest common divisor. If $k=1$ the state is said
-to be aperiodic, if $k>1$ the state is periodic with period $k$.
+to be aperiodic, if $k>1$ the state is periodic with period $k$.\\
 
-A state $s_{i}$ is said to be transient if, given that we start in
-state $s_{i}$, there is a positive probability that we will never
-return to $s_{i}$; otherwise, $s_{i}$ is recurrent (or persistent
-or absorbing). A Markov chain is absorbing if there is at least one
-recurrent state; otherwise, the chain is said to be ergodic (or irreducible)
-if it is possible to get to any state from any state.
+Given a time homogeneous Markov chain with transition matrix \emph{P},
+a stationary vector \emph{v} is a vector satisfying $0\leq v_{j}\leq1\,\forall j$,
+$\sum_{j\in S}v_{j}=1$ and $v_{j}=\sum_{i\in S}v_{i}p_{ij}$.
 
 A Markov chain is said to be regular if some power of the transition
-matrix has positive elements only; note that regular chains form a
-subset of ergodic chains.
+matrix has positive elements only. Regular Markov chains form a
+subset of ergodic chains.\\
 
 An interesting property of regular Markov chains is that, if $P$
 is the $k\times k$ transition matrix and $z=\left(z_{1},...,z_{k}\right)$
-is the eigenvector of $P$ having $\sum_{i=1}^{k}z_{i}=1$,
-\[
-\underset{n\rightarrow\infty}{lim}P^{n}=Z,
-\]
+is the eigenvector of $P$ having $\sum_{i=1}^{k}z_{i}=1$ then
+Equation~\ref{eq:limMc} holds.
+
+\begin{equation}
+  \underset{n\rightarrow\infty}{lim}P^{n}=Z,
+  \label{eq:limMc}
+\end{equation}
 
 
 where $Z$ is the matrix having all rows equal to $z$.
@@ -241,21 +283,33 @@ library("markovchain")
 
 
 
-The \code{markovchain} and  \code{markovchainList}  S4 classes \citep(chambers) is defined within the \pkg{markovchain} package as displayed:
+The \code{markovchain} and  \code{markovchainList}  S4 classes \citep{chambers}
+is defined within the \pkg{markovchain} package as displayed:
 
 <<showClass, echo=FALSE, keep.source=TRUE>>=
 showClass("markovchain")
 showClass("markovchainList")
 @
 
+The first class has been designed to handle homogeneous Markov chain processes,
+whilst the latter (that is itself a list of \code{markovchain} objects) has been
+designed to handle non-homogeneous Markov chains processes.
+
 Any element of \code{markovchain} class is comprised by following slots:
 \begin{enumerate}
   \item \code{states}: a character vector, listing the states for which transition probabilities are defined.
   \item \code{byrow}: a logical element, indicating whether transition probabilities are shown by row or by column.
   \item \code{transitionMatrix}: the probabilities of transition matrix.
-  \item \code{name}: optional character element to name the Markov chain
+  \item \code{name}: optional character element to name the Markov chain.
 \end{enumerate}
 
+\code{markovchainList} objects are defined by following slots:
+\begin{enumerate}
+  
+  \item \code{markovchains}: a list of \code{markovchain} objects.
+  \item \code{name}: optional optional character element to name the Markov
+  chain.
+\end{enumerate}
 
 \code{markovchain} objects can be created either in a long way, as the following code shows,
 
@@ -295,7 +349,6 @@ The quicker form of object creation is made possible thanks to the implemented \
 \code{markovchain} objects can be collected in a list within \code{markovchainList} S4 objects as following example shows.
 
 <<intromcList, keep.source=TRUE>>=
-
 mcList<-new("markovchainList",markovchains=list(mcWeather, defaultMc), name="A list of Markov chains")
 @
 
@@ -305,14 +358,9 @@ mcList<-new("markovchainList",markovchains=list(mcWeather, defaultMc), name="A l
 
 \pkg{markovchain} contains two classes, \code{markovchain} and \code{markovchainList}. \code{markovchain} objects handle discrete Markov chains, whilst \code{markovchainList} objects consists in list of \code{markovchain} that can be useful to model non - homogeneous Markov chain processess.\\
 
-Following methods have been implemented within the package for \code{markovchain} and \code{markovchainLists} respectively:
 
-<<showClassesAndMethods, echo=FALSE, keep.source=TRUE>>=
-showMethods(class="markovchain")
-showMethods(class="markovchainList")
-@
-
-Table~\ref{tab:methodsToHandleMc} lists which of implemented methods handle and manipulate \code{markovchain} objects.
+Table~\ref{tab:methodsToHandleMc} lists which of implemented methods handle and 
+manipulate \code{markovchain} objects.
 
 \begin{table}[h]
   \centering
@@ -320,7 +368,6 @@ Table~\ref{tab:methodsToHandleMc} lists which of implemented methods handle and 
     \hline
   Method & Purpose \\
     \hline  \hline
-
   \code{*} & Algebraic operators on the transition matrix.\\
   \code{[} & Direct access to transition matrix elements.\\
   \code{==} & Equality operator on the transition matrix.\\
@@ -333,6 +380,7 @@ Table~\ref{tab:methodsToHandleMc} lists which of implemented methods handle and 
 \caption{\pkg{markovchain} methods: matrix handling.}
 \label{tab:methodsToHandleMc}
 \end{table}  
+
 
 Operations on the markovchains objects can be easily performed.
 Using the previously defined matrix we can find what is the probability distribution of expected weather states two and  seven days after, given actual state to be cloudy. 
@@ -380,7 +428,7 @@ show(mcWeather)
 
 \begin{figure}
 \begin{center}
-<<label=mcPlot,fig=TRUE,echo=FALSE>>=
+<<mcPlot,fig=TRUE,echo=FALSE>>=
 plotMc(mcWeather)
 @
 \caption{Weather example Markov chain plot}
@@ -399,7 +447,11 @@ mcNew<-as(mcDf, "markovchain")
 
 Similarly it is possible to export a \code{markovchain} class toward an adjacency matrix.\\
 
-Non-homogeneous markov chains can be created with the aid of \code{markovchainList} object. The example that follows arises from Health Insurance, where the costs associated to patients in a Continuous Care Health Community (CCHC) are modelled by a non-homogeneous Markov Chain, since the transition probabilities can change by year.
+Non-homogeneous markov chains can be created with the aid of \code{markovchainList} object. 
+The example that follows arises from Health Insurance, where the costs associated to patients in a Continuous Care Health Community (CCHC) are modelled by a non-homogeneous Markov Chain, since the 
+transition probabilities can change by year. Methods explicitely written for
+\code{markovchainList} objects are: \code{print}, \code{show},  \code{dim} and
+\code{[}.
 
 <<cchcMcList, echo=FALSE, keep.source=TRUE>>=
 stateNames=c("H","I","D")
@@ -411,16 +463,37 @@ Q2<-new("markovchain", states=stateNames,
         transitionMatrix=matrix(c(0.3, 0.2, 0.5,0, 0.2, 0.8,0, 0, 1),byrow=TRUE,nrow=3), name="state t2")
 Q3<-new("markovchain", states=stateNames, transitionMatrix=matrix(c(0, 0, 1,0, 0, 1,0, 0, 1),byrow=TRUE, nrow=3), name="state t3")
 mcCCRC<-new("markovchainList",markovchains=list(Q0,Q1,Q2,Q3), name="Continuous Care Health Community")
+print(mcCCRC)
 @
 
-It is possible to perform direct access to \code{markovchainList} elements as well as determining the number of underlying \code{markovchain} objects contained therin in advance.
+It is possible to perform direct access to \code{markovchainList} elements as well as 
+determining the number of underlying \code{markovchain} objects contained therin in advance.
 
 <<cchcMcList2, keep.source=TRUE>>=
 mcCCRC[[1]]
 dim(mcCCRC)
 @
 
-\subsection{Statistics with markovchain objects}
+Finally, the \code{markovchain} package contains some data sets found in
+literature on which discrete Markov chain models have been applied.
+Table~\ref{tab:datasets} lists data set bundled within the current release of
+the package.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{lll}
+    \hline
+  Dataset & Description \\
+    \hline  \hline
+    \code{preproglucacon} & Preproglucacon gene DNA basis, \cite{averyHenderson}.\\
+  \code{rain} & Alofi Island rains, \cite{averyHenderson}.\\
+\hline
+\end{tabular}
+\caption{\pkg{markovchain} datasets.}
+\label{tab:datasets}
+\end{table}
+
+\section{Statistics with markovchain objects}
 \subsubsection{Probabilistic analysis}
 
 Table~\ref{tab:methodsToStats} shows methods appliable on \code{markovchain} objects to perform probabilistic analysis. 
@@ -431,6 +504,8 @@ Table~\ref{tab:methodsToStats} shows methods appliable on \code{markovchain} obj
     \hline
   Method & Purpose \\
     \hline  \hline
+    \code{conditionalDistribution} & it returns the conditional distribution
+    of the subsequent state $s_{j}$, given actual state $s_{i}$.\\
   \code{absorbingStates} & it returns the absorbing states of the transition matrix, if any.\\
   \code{steadyStates} & it returns the vector(s) of steady state(s) in matricial form.\\
 \hline
@@ -439,9 +514,17 @@ Table~\ref{tab:methodsToStats} shows methods appliable on \code{markovchain} obj
 \label{tab:methodsToStats}
 \end{table}
 
-The steady state(s), also known as stationary distribution(s),  of the Markov chains are identified by the following algorithm:
+The conditional distribution of the weather states, given current day's weather
+is sunny, is given by following code.
+
+<<conditionalDistr, keep.source=TRUE>>=
+conditionalDistribution(mcWeather, "sunny")
+@
+
+The steady state(s), also known as stationary distribution(s),  of the Markov
+chains are identified by following steps:
 \begin{enumerate}
-  \item decompose the Markov Chain in eigenvalues and eigenvectors.
+  \item decompose the Markov chain in eigenvalues and eigenvectors.
   \item consider only eigenvectors corresponding to eigenvalues equal to one.
   \item normalize such eigenvalues so the sum of their components to total one.
 \end{enumerate}
@@ -485,9 +568,11 @@ absorbingStates(mcWeather)
 
 
 
-\subsubsection{Statistical analysis}
+\section{Statistical analysis}
 
-Table~\ref{tab:packageFuns} lists functions (and their purpose) as implemented within the package that helps to fit and simulate discrete time Markov chains.
+Table~\ref{tab:funs4Stats} lists functions and methods as implemented within
+the package that helps to fit, simulate and predict Markov chains in the
+discrete time.
 
 \begin{table}[h]
   \centering
@@ -497,12 +582,15 @@ Table~\ref{tab:packageFuns} lists functions (and their purpose) as implemented w
     \hline  \hline
   \code{markovchainFit} & function to return fitten markov chain for a given sequence.\\
    \code{rmarkovchain} & function to sample from \code{markovchain} or \code{markovchainList} objects.\\
+   \code{predict} & method to predict from \code{markovchain} or
+   \code{markovchainList} objects\\
     \hline
 \end{tabular}
 \caption{\pkg{markovchain} statistical functions.}
-\label{tab:packageFuns}
+\label{tab:funs4Stats}
 \end{table}  
 
+\subsection{Simulation}
 
 Simulating a random sequence from an underlying Markov chain is quite easy thanks to the function \code{rmarkovchain}.
 The following code generates a "year" of weather states according to \cite{mcWeather} underlying markovian stochastic process.
@@ -512,35 +600,132 @@ weathersOfDays<-rmarkovchain(n=365,object=mcWeather,t0="sunny")
 weathersOfDays[1:30]
 @
 
-Similarly, it is possible to simulate one o more sequence from a non-homogeneous markov chain, as the following code (applied on CCHC example) displays.
+Similarly, it is possible to simulate one o more sequence from a non-homogeneous Markov chain, 
+as the following code (applied on CCHC example) exemplifies.
 
 <<simulatingAListOfMarkovChain, keep.source=TRUE>>=
 patientStates<-rmarkovchain(n=5, object=mcCCRC,t0="H",include.t0=TRUE)
 patientStates[1:10,]
 @
 
-Similarly, a \code{markovchain} object can be fit from given data.
-The most straightforward approach is maximum likelihood.
+\subsection{Estimation}
+
+
+A time homogeneous Markov chain can be fit can be fit
+from given data. Three methods have been implemented within current version of
+\pkg{markovchain} package: maximum likelihood, maximum likelihood with Laplace
+smoothing, Bootstrap approach.\\
+
+Equation~\ref{eq:MLE} shows the maximum likelihood estimate (MLE) of the
+$p_{ij}$ entry, where the $n_{ij}$ element consists in the number sequences $\left( X_{t}=i, X_{t+1}=j\right)$
+found in the sample
+
+\begin{equation}
+{\hat p^{MLE}}_{ij} = \frac{{{n_{ij}}}}{{\sum\limits_{u = 1}^k {{n_{iu}}} }}
+\label{eq:MLE}
+\end{equation}
+
+
 
 <<fitMcbyMLE, keep.source=TRUE>>=
-weatherFittedMLE<-markovchainFit(data=weathersOfDays, method="mle")
+weatherFittedMLE<-markovchainFit(data=weathersOfDays, method="mle",name="Weather MLE")
 weatherFittedMLE$estimate
 @
 
-Nevertheless a bootstrap version of maximum likehihood has been developed in order to assess the variability of estimate.
+The Laplace smoothing approach is a variation of the MLE one where the $n_{ij}$
+is substituted by $n_{ij}+\alpha$ as Equation~\ref{eq:LAPLACE} shows, being
+$\alpha$ a positive stabilizing parameter judgmentally selected.
+
+\begin{equation}
+{\hat p^{LS}}_{ij} = \frac{{{n_{ij}} + \alpha }}{{\sum\limits_{u = 1}^k {\left( {{n_{iu}} + \alpha } \right)} }}
+\label{eq:LAPLACE}
+\end{equation}
+
+
+
+<<fitMcbyLAPLACE, keep.source=TRUE>>=
+weatherFittedLAPLACE<-markovchainFit(data=weathersOfDays, method="laplace",laplacian=0.01,name="Weather LAPLACE")
+weatherFittedLAPLACE$estimate
+@
+
+
+Both MLE and Laplace approach are based on the \code{createSequenceMatrix}
+functions that converts a data (character) sequence into a contingency table
+showing the $\left( X_{t}=i, X_{t+1}=j\right)$ distribution within the sample,
+as code below shows. 
+
+<<fitSequenceMatrix, keep.source=TRUE>>=
+createSequenceMatrix(stringchar = weathersOfDays)
+@
+
+
+An issue occurs when the sample cointain only one
+realization of a state (say $X_{\beta}$) that is located at the end of the data sequence (thanks
+Michael Cole to having signaled it), since it yields to a row of zero (no sample to estimate the conditional
+distribution of the transition). In this case the estimated transition matrix is
+"sanitized" assuming $p_{\beta,j}=1/k$ being $k$ the possible states.
+
+A bootstrap estimation approach has been developed within the package in order
+to provide an indication of the variability of ${\hat p}_{ij}$ estimates. The
+bootstrap approach implemented within the \pkg{markovchain} package follows
+these steps:
+
+\begin{enumerate}
+  \item bootstrap the data sequences following the conditional
+  distributions of states estimated from the original one. The default bootstrap
+  samples is 10, as specified in \code{nboot} parameter of \code{markovchainFit}
+  function.
+  \item apply MLE estimation on bootstrapped data sequences that are saved in
+  \code{bootStrapSamples} slot of the returned list.
+  \item the ${p^{BOOTSTRAP}}_{ij}$ is the average of all ${p^{MLE}}_{ij}$ across
+  the \code{bootStrapSamples} list, row normalized. A \code{standardError}
+ of $\hat{{p^{MLE}}_{ij}}$ estimate is provided as well.
+\end{enumerate}
+
 
 <<fitMcbyBootStrap, keep.source=TRUE>>=
-weatherFittedBOOT<-markovchainFit(data=weathersOfDays, method="bootstrap",nboot=50)
+weatherFittedBOOT<-markovchainFit(data=weathersOfDays, method="bootstrap",nboot=100)
 weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 @
 
-%qui presenteremmo le tuo funzioni Matlab -> R dopo che le hai doverosamente sistemate
+\subsection{Prediction}
 
+
+n-step predictions can be obtained using the predict methods explicitely written
+for \code{markovchain} and \code{markovchainList} objects. The prediction is
+the mode of the conditional distribution of $X_{t+1}$ given $X_{t}=s$, where $s$
+is the last realization of the Markov chains (homogeneous or non-homogeneous).\\
+
+\subsubsection{Predicting from a markovchain object}
+
+3-days forward predictions from \code{markovchain} object can be generated as it
+follows, assuming last two days were respectively "cloudy" and "sunny".
+
+<<markovchainPredict, keep.source=TRUE>>=
+predict(object=weatherFittedMLE$estimate,newdata=c("cloudy","sunny"),n.ahead=3)
+@
+
+\subsubsection{Predicting from a markovchainList object}
+
+Given an initial two year (H)ealty status, the 5-year ahead prediction of any
+CCRC guest is
+
+<<markovchainListPredict, keep.source=TRUE>>=
+predict(mcCCRC,newdata=c("H","H"),n.ahead=5)
+@
+
+The prediction has been stopped at time sequence since the underlying
+non-homogeneous Markov chain has a length of four. In order to continue five
+years ahead, a small change to the code has to be set.
+
+
+<<markovchainListPredict2, keep.source=TRUE>>=
+predict(mcCCRC,newdata=c("H","H"),n.ahead=5, continue=TRUE)
+@
 
 \section{Applied examples}\label{sec:examples}
 
-%Qui lo facciamo io e te
 
 \subsection{Actuarial examples}
 
@@ -577,7 +762,8 @@ T3=T2*mcHI
 Therefore the present value of future benefit at T0 is
 
 <<healthIns3, keep.source=TRUE>>=
-PVFB=T0%*%benefitVector*1.05^-0+T1%*%benefitVector*1.05^-1+T2%*%benefitVector*1.05^-2+T3%*%benefitVector*1.05^-3
+PVFB=T0%*%benefitVector*1.05^-0+T1%*%benefitVector*1.05^-1+
+		T2%*%benefitVector*1.05^-2+T3%*%benefitVector*1.05^-3
 @
 
 and the yearly premium payable whether the insured is alive is 
@@ -595,9 +781,170 @@ V=PVFB-PVFP
 V
 @
 
+\subsection{Weather forecasting}
+
+A traditional application of Markov chains lies in weather forecasting. Markov
+chains provide a simple model to predict the nexth day's weather given the
+current meteorological condition. Two example will be shown: the "Land of Oz"\\
+The first application herewith shown is the "Land of Oz" in
+Section~\ref{sec:wfLandOfOz}, taken from \cite{landOfOz} and
+"Alofi Island Rainfall" in Section~\ref{sec:wfAlofi}, taken from \cite{averyHenderson}.
+
+\subsubsection{Land of Oz}\label{sec:wfLandOfOz}
+
+According to the example, the Land of Oz is 
+acknowledged not to have ideal weather conditions at all: 
+the weather is snowy or rainy very often and, once more, there are never two
+nice days in a row. Consider three weather states: rainy, nice and snowy. Let the transition matrix be
+
+<<weatPred1, keep.source=TRUE>>=
+
+mcWP=new("markovchain", states=c("rainy", "nice", "snowy"),
+         transitionMatrix=matrix(c(0.5, 0.25, 0.25,
+                                   0.5, 0, 0.5,
+                                   0.25,0.25,0.5), byrow=TRUE, nrow=3))
+@
+
+Given that today it's a nice day, the corresponding stochastic row vector is
+$w_{0}=(0\,1\,0)$ and the forecast after 1, 2 and 3 days are
+
+<<weatPred2, keep.source=TRUE>>=
+W0=t(as.matrix(c(0,1,0)))
+W1=W0*mcWP
+W1
+
+W2=W0*(mcWP^2)
+W2
+
+W3=W0*(mcWP^3)
+W3
+@
+
+As can be seen from $w_{1}$, in the Land of Oz if today is a nice day tomorrow it will rain or snow. One week later, furtherly, the prediction is
+
+<<weatPred3, keep.source=TRUE>>=
+W7=W0*(mcWP^7)
+W7
+@
+
+The steady state of the chain can be computed as
+
+<<weatPred4, keep.source=TRUE>>=
+q=steadyStates(mcWP)
+q
+@
+
+Note that from the seventh day on, the predicted probabilities are substantially equals to the steady 
+state of the chain and don't depend from the starting point. In fact, if we start from a rainy or a snowy day we equally get
+
+
+<<weatPred5, keep.source=TRUE>>=
+R0=t(as.matrix(c(1,0,0)))
+R7=W0*(mcWP^7)
+R7
+
+S0=t(as.matrix(c(0,0,1)))
+R7=W0*(mcWP^7)
+R7
+@
+
+\subsubsection{Alofi Island Rainfall}\label{sec:wfAlofi}
+
+The example is taken from \cite{averyHenderson}. Alofi Island daily rainfall
+data were recorded from January 1st, 1987 until December 31st, 1989 and
+classified into three states: "0", no rain, "1-5", from non zero until 5 mm,
+"6+" over than 5mm. Corresponding dataset is provided within the
+\pkg{markovchain} package.
+
+<<Alofi1,keep.source=TRUE>>=
+data(rain, package="markovchain")
+table(rain$rain)
+@
+
+The underlying transition matrix is estimated as it follows
+
+<<Alofi2, keep.source=TRUE>>=
+mcAlofi<-markovchainFit(data=rain$rain, name="Alofi MC")$estimate
+mcAlofi
+@
+
+from which the long term daily rainfall distribution can be obtained
+
+<<Alofi3, keep.source=TRUE>>=
+steadyStates(mcAlofi)
+@
+
+
+\subsection{Genetics and Medicine}\label{sec:MedicineAndGenetics}
+
+This section contains two examples: the first shows the use of Markov chain
+models in genetics (Section~\ref{sec:genetics}), the second shows an application
+of Markov chains in modelling diseases dynamics (Section~\ref{sec:medicine})
+
+
+\subsubsection{Genetics}\label{sec:genetics}
+
+\cite{averyHenderson} discusses the use of Markov chains in model Preprogucacon
+gene protein bases sequence. \code{preproglucacon} dataset in \pkg{markovchain}
+contains the dataset shown in the package.
+
+<<preproglucacon1, keep.source=TRUE>>=
+data(preproglucacon, package="markovchain")
+@
+
+Therefore it is possible to model the transition probabilities between bases
+
+<<preproglucacon2, keep.source=TRUE>>=
+mcProtein<-markovchainFit(preproglucacon$preproglucacon, name="Preproglucacon MC")$estimate
+@
+
+\subsubsection{Medicine}\label{sec:medicine}
+
+Discrete-time Markov chains are also employed to study the progression of chronic diseases.
+The following example is taken from \cite{craigSendi}, in which the estimation
+of the monthly transition matrix is obtained in order to describe the monthly progression of CD4-cell 
+counts of HIV infected subjects starting from six month follow-up data.\\
+Code below shows the original data taken from the \cite{craigSendi} paper, from
+which the computation of the maximum likelihood estimate of the six month
+transition matrix $M_{6}$ is performed:
+
+<<epid1, keep.source=TRUE>>=
+craigSendiMatr<-matrix(c(682,33,25,
+              154,64,47,
+              19,19,43), byrow=T,nrow=3)
+hivStates<-c("0-49", "50-74", "75-UP")
+rownames(craigSendiMatr)<-hivStates
+colnames(craigSendiMatr)<-hivStates
+craigSendiTable<-as.table(craigSendiMatr)
+mcM6<-as(craigSendiTable,"markovchain")
+mcM6@name="Zero-Six month CD4 cells transition"
+mcM6
+@
+
+As shown in the paper, the second passage consists in the decomposition of
+$M_{6}=V*D*V^-1$ and to obtain $M_{1}$ as $M_{1}=V*D^{1/6}*V^-1$ 
+
+<<epid2, keep.source=TRUE>>=
+autov=eigen(mcM6@transitionMatrix)
+D=diag(autov$values)
+@
+
+
+
+<<epid3, keep.source=TRUE>>=
+P=autov$vectors 
+P%*%D%*%solve(P)
+d=D^(1/6)
+M=P%*%d%*%solve(P)
+mcM1<-new("markovchain",transitionMatrix=M,states=hivStates)
+@
+
+
 
 \section{Aknowledgments}\label{sec:aknowledgements}
 
+I wish to thank Michael Cole and Tobi Gutman for their suggestions and bug
+checkings.
 
 
 \bibliography{markovchainBiblio}
