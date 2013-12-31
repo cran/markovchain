@@ -1,5 +1,11 @@
+31-12-2013
+Version 0.0.5
+Improved vignettes
+Add predict methods
+Add methods for transitory states
+
 04-11-2013
-Version 0.3
+Version 0.0.3
 Added various method to easily handle markovchain and markovchainList objects
 Implemented rmarkovchain and bootstrap fit
 Improved vignettes

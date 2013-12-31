@@ -11,15 +11,19 @@
 \alias{^,markovchain,numeric-method}
 \alias{==,markovchain,markovchain-method}
 \alias{absorbingStates,markovchain-method}
+\alias{conditionalDistribution,markovchain-method}
 \alias{coerce,data.frame,markovchain-method}
 \alias{coerce,markovchain,data.frame-method}
+\alias{coerce,table,markovchain-method}
 \alias{dim,markovchain-method}
 \alias{initialize,markovchain-method}
 \alias{plotMc,markovchain-method}
+\alias{predict,markovchain-method}
 \alias{print,markovchain-method}
 \alias{show,markovchain-method}
 \alias{states,markovchain-method}
 \alias{steadyStates,markovchain-method}
+\alias{transientStates,markovchain-method}
 \alias{t,markovchain-method}
 \alias{transitionProbability,markovchain-method}
 \title{Class \code{"markovchain"}}
@@ -49,14 +53,18 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{==}{\code{signature(e1 = "markovchain", e2 = "markovchain")}: equality of two \code{markovchain} object}
     \item{absorbingStates}{\code{signature(object = "markovchain")}: method to get absorbing states }
     \item{coerce}{\code{signature(from = "markovchain", to = "data.frame")}: coerce method from markovchain to \code{data.frame}}
+    \item{conditionalDistribution}{\code{signature(object = "markovchain")}: returns the conditional probability of subsequent states given a state}
     \item{coerce}{\code{signature(from = "data.frame", to = "markovchain")}: coerce method from \code{data.frame} to \code{markovchain}}
+    \item{coerce}{\code{signature(from = "table", to = "markovchain")}: coerce method from \code{table} to \code{markovchain} }
     \item{dim}{\code{signature(x = "markovchain")}: method to get the size}
     \item{initialize}{\code{signature(.Object = "markovchain")}: initialize method }
     \item{plotMc}{\code{signature(object = "markovchain")}: plot method }
+	\item{predict}{\code{signature(object = "markovchain")}: predict method }
     \item{print}{\code{signature(x = "markovchain")}: print method. }
     \item{show}{\code{signature(object = "markovchain")}: show method. }
     \item{states}{\code{signature(object = "markovchain")}: states method. }
     \item{steadyStates}{\code{signature(object = "markovchain")}: method to get the steady vector. }
+	\item{transientStates}{\code{signature(object = "markovchain")}: method to get the transient states. }
     \item{t}{\code{signature(x = "markovchain")}: transpose matrix }
     \item{transitionProbability}{\code{signature(object = "markovchain")}: transition probability }
 	 }
@@ -64,9 +72,7 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
 \references{
 Introduction to Probability Models, Sheldon Ross
 }
-\author{
-Giorgio Spedicato
-}
+\author{Giorgio Spedicato}
 \note{
 It is an S4 class.
 }
@@ -87,5 +93,11 @@ simpleMc^4
 steadyStates(simpleMc)
 simpleMc[2,1]
 t(simpleMc)
+#conditional distributions
+conditionalDistribution(simpleMc, "b")
+#example for predict method
+sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
+mcFit<-markovchainFit(data=sequence)
+predict(mcFit$estimate, newdata="b",n.ahead=3)
 }
 \keyword{classes}

@@ -1,23 +1,18 @@
-\name{absorbingStates}
-\alias{absorbingStates}
-\alias{transientStates}
-\title{
-Function to get the absorbing and transient states of a Markov chain
-}
+\name{conditionalDistribution}
+\alias{conditionalDistribution}
+\title{\code{conditionalDistribution} of a Markov Chain}
 \description{
-These functions returns absorbing and transient states of the \code{markovchain} object.
+It extracts the conditional distribution of the subsequent state, given current state.
 }
 \usage{
-absorbingStates(object)
-transientStates(object)
+conditionalDistribution(object,state)
 }
 \arguments{
   \item{object}{A \code{markovchain} object.}
+  \item{state}{Subsequent state.}
 }
-\value{A matrix}
-\references{
-	Sheldon Ross, Probability Models
-}
+\value{A named probability vector}
+\references{Sheldon Ross, Probability Models}
 \author{
 Giorgio Spedicato
 }
@@ -25,13 +20,14 @@ Giorgio Spedicato
 \code{\linkS4class{markovchain}}
 }
 \examples{
+#define a markov chain
 statesNames=c("a","b","c")
 markovB<-new("markovchain", states=statesNames, transitionMatrix=
           matrix(c(0.2,0.5,0.3,
                    0,1,0,
                    0.1,0.8,0.1),nrow=3, byrow=TRUE, dimnames=list(statesNames,statesNames)
                  ))
-absorbingStates(markovB)
-transientStates(markovB)
+conditionalDistribution(markovB,"b")
 }
+
 
