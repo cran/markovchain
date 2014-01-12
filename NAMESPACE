@@ -1,8 +1,14 @@
 exportPattern("^[[:alpha:]]+")
 import(igraph, Matrix,  methods)
-importFrom("graphics", plot)
-importFrom("matlab", zeros, find, size, ones)
+#importFrom("graphics", plot)
+importFrom("stats4",  plot, summary)
+importFrom("matlab", zeros)
+importFrom("matlab", find)
+importFrom("matlab", eye)
+importFrom("matlab", size)
+importFrom("matlab", ones)
 importFrom("expm",'%^%')
+
 exportMethods(
     "*",
     "^",
@@ -13,14 +19,18 @@ exportMethods(
     "dim",
     "initialize",
     "plotMc",
+    "plot",
     "print",
+	"summary",
     "show",
     "states",
     "steadyStates",
+    "canonicForm",
     "t",
 	"[",
     "transitionProbability",
-    "conditionalDistribution"
+    "conditionalDistribution",
+	"canonicForm"
 )
 exportClasses(
     "markovchain",

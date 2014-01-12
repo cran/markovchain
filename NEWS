@@ -1,5 +1,5 @@
-31-12-2013
-Version 0.0.5
-Improved vignettes
-Add predict methods
-Add methods for transitory states
+12-01-2014
+Version 0.0.7
+Deeply improved vignettes
+Added predict and summary methods
+Added function to perform probabilistic analysis

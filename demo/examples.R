@@ -1,6 +1,7 @@
 #up and down markov chains
 
-mcUpDown<-new("markovchain", states=c("up","down"), transitionMatrix=matrix(c(0,1,1,0),nrow=2, byrow=TRUE),name="UpDown")
+mcUpDown<-new("markovchain", states=c("up","down"), 
+transitionMatrix=matrix(c(0,1,1,0),nrow=2, byrow=TRUE),name="UpDown")
 
 #gamblers ruin
 

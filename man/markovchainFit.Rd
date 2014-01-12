@@ -18,7 +18,7 @@ createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 A character list.
 }
 \item{method}{
-Method used to estimate the markov chain. Either "mle" or "bootstrap" or "laplacian"
+Method used to estimate the markov chain. Either "mle" or "bootstrap" or "laplace"
 }
   \item{byrow}{
 it tells whether the output markov chain should show the transition probabilities by row.
@@ -27,7 +27,7 @@ it tells whether the output markov chain should show the transition probabilitie
 Number of bootstrap replicates in case "bootstrap" is used.
 }
   \item{laplacian}{
-Laplacian smoothing parameter, default zero.
+Laplacian smoothing parameter, default zero. It is only used when "laplace" method is chosen.
 }
   \item{name}{
 Optional character for name slot.

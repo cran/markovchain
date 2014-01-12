@@ -1,8 +1,9 @@
 \name{absorbingStates}
 \alias{absorbingStates}
 \alias{transientStates}
+\alias{canonicForm}
 \title{
-Function to get the absorbing and transient states of a Markov chain
+Function to get the absorbing, transient states of a Markov chain and to put the matrix in canonic form
 }
 \description{
 These functions returns absorbing and transient states of the \code{markovchain} object.
@@ -10,13 +11,14 @@ These functions returns absorbing and transient states of the \code{markovchain}
 \usage{
 absorbingStates(object)
 transientStates(object)
+canonicForm(object)
 }
 \arguments{
   \item{object}{A \code{markovchain} object.}
 }
 \value{A matrix}
 \references{
-	Sheldon Ross, Probability Models
+Feres, Matlab listing for markov chain.
 }
 \author{
 Giorgio Spedicato
@@ -33,5 +35,7 @@ markovB<-new("markovchain", states=statesNames, transitionMatrix=
                  ))
 absorbingStates(markovB)
 transientStates(markovB)
+canonicForm(markovB)
+
 }
 
