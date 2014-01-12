@@ -1,6 +1,6 @@
 #define Markov Chain class
 
-setClass("markovchain", #classe lifetable
+setClass("markovchain", #classe 
          representation(states="character",byrow="logical",
                         transitionMatrix="matrix", name="character"),
          prototype(states=c("a","b"), byrow=TRUE, 
@@ -8,7 +8,7 @@ setClass("markovchain", #classe lifetable
                                            nrow=2,
                                            byrow=TRUE, 
                                            dimnames=list(c("a","b"), c("a","b"))),
-                   name="A Markov chain"
+                   name="Unnamed Markov chain"
          )
          )
 
@@ -54,7 +54,7 @@ setMethod("initialize",
 		} else if(!setequal(rownames(transitionMatrix),colnames(transitionMatrix)))  colnames(transitionMatrix)=rownames(transitionMatrix) #fix when different
 		if(missing(states)) states=rownames(transitionMatrix) #assign
 		if(missing(byrow)) byrow=TRUE #set byrow as true by default
-    if(missing(name)) name="A Markov chain"
+    if(missing(name)) name="Unnamed Markov chain"
 		callNextMethod(.Object, states = states, byrow = byrow, transitionMatrix=transitionMatrix,name=name,...)
     }
 )
@@ -84,29 +84,6 @@ setMethod("states","markovchain",
             return(out)
           }
 )
-
-#generic summary function for markovchain
-
-#setMethod("summary","markovchain",
-#		function(object){
-#			temp<-.commclassesKernel(object@transitionMatrix)
-#			classList<-list()
-#			for(i in 1:dim(object))
-#			{
-#				#extract names
-#				matrLine<-temp$C[i,]
-#				index<-names(which(matrLine==TRUE))
-#				
-#				if(i>1)
-#				{
-#					for(j in 1:i)
-#					{
-#						
-#					}
-#				}
-#			}
-#		}
-#)
 
 
 
@@ -170,7 +147,8 @@ setValidity("markovchain",
   }
    #subset the eigenvectors
   #normalize
- 
+ #take the real part: need to be sanitized
+  out<-Re(out)
   return(out)
 }
 
@@ -180,6 +158,7 @@ setMethod("steadyStates","markovchain",
           function(object) {
 			transposeYN=FALSE
 			if(object@byrow==TRUE) transposeYN=TRUE
+      #forcing to real
             out<-.mcEigen(matr=object@transitionMatrix, transpose=transposeYN) #wrapper for .mcEigen
             if(is.null(out)) {
               warning("Warning! No steady state")
@@ -296,6 +275,69 @@ setMethod("plotMc","markovchain", #metodo plot
             plot.igraph(x=netMc,edge.label=edgeLabel, ...)
           }
 )
+
+setGeneric("canonicForm",function(object) standardGeneric("canonicForm"))
+setMethod("canonicForm","markovchain",
+          function(object)
+          {
+            P<-object@transitionMatrix
+            comclasList<-.commclassesKernel(P)
+            vu<-comclasList$v
+            u<-find(vu==TRUE)
+            w<-find(vu==FALSE)
+            
+            Cmatr<-comclasList$C
+            R<-numeric()
+            while(length(u)>0)
+            {
+              R<-c(R,u[1])
+              vu=as.logical(vu*(Cmatr[u[1],]==FALSE));
+              u<-find(vu==TRUE);
+            }
+            p=numeric();
+            for (i in 1:length(R))
+            {
+              a=find(Cmatr[R[i],])
+              p=c(p,a)
+            }
+            p<-c(p, w); #permutation
+            Q<-P[p,p]
+            out<-new("markovchain",transitionMatrix=Q,name=object@name)
+            return(out)
+          }
+)
+
+
+#plot method from stat5
+setMethod("plot", signature(x="markovchain", y="missing"),
+          function(x, y, ...){
+            netMc<-.getNet(x)
+            edgeLabel=E(netMc)$weight/100
+            plot.igraph(x=netMc,edge.label=edgeLabel, ...)
+          }
+)
+
+#require probabilistic loaded
+setMethod("summary", signature(object="markovchain"),
+          function(object){
+          outs<-.summaryKernel(object)
+          cat(object@name," Markov chain that is comprised by:","\n")
+          check<-length(outs$closedClasses)
+          cat("Closed classes:","\n")
+          if(check==0) cat("NONE","\n") else {for(i in 1:check) cat(outs$closedClasses[[i]],"\n")}
+          check<-length(outs$transientClasses)
+          cat("Transient classes:","\n")
+          if(check==0) cat("NONE","\n") else {for(i in 1:check) cat(outs$transientClasses[[i]],"\n")}
+          irreducibility<-is.irreducible(object)
+          if(irreducibility) cat("The Markov chain is irreducible","\n") else cat("The Markov chain is not irreducible","\n")
+          check<-absorbingStates(object)
+          if(length(check)==0) check="NONE"
+          cat("The absorbing states are:",check )
+          cat("\n")
+          invisible(outs) #returns the list
+          }
+)
+
 
 ###converting from and to df.
 

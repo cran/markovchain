@@ -212,7 +212,8 @@ markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10,laplacian=0, nam
 }
 
 
-#example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4)
-#ciao<-markovchainFit(data=example4Fit,method="bootstrap")
+# example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4)
+# s<-c(5,6,1,1,6,1,2,6,6,6,4)
+# ciao<-markovchainFit(data=s,method="mle")
 
 

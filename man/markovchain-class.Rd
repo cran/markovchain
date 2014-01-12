@@ -12,17 +12,20 @@
 \alias{==,markovchain,markovchain-method}
 \alias{absorbingStates,markovchain-method}
 \alias{conditionalDistribution,markovchain-method}
+\alias{canonicForm,markovchain-method}
 \alias{coerce,data.frame,markovchain-method}
 \alias{coerce,markovchain,data.frame-method}
 \alias{coerce,table,markovchain-method}
 \alias{dim,markovchain-method}
 \alias{initialize,markovchain-method}
+\alias{plot,markovchain,missing-method}
 \alias{plotMc,markovchain-method}
 \alias{predict,markovchain-method}
 \alias{print,markovchain-method}
 \alias{show,markovchain-method}
 \alias{states,markovchain-method}
 \alias{steadyStates,markovchain-method}
+\alias{summary,markovchain-method}
 \alias{transientStates,markovchain-method}
 \alias{t,markovchain-method}
 \alias{transitionProbability,markovchain-method}
@@ -52,18 +55,21 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{^}{\code{signature(e1 = "markovchain", e2 = "numeric")}: power of a \code{markovchain} object}
     \item{==}{\code{signature(e1 = "markovchain", e2 = "markovchain")}: equality of two \code{markovchain} object}
     \item{absorbingStates}{\code{signature(object = "markovchain")}: method to get absorbing states }
+	\item{canonicForm}{\code{signature(object = "markovchain")}: return a \code{markovchain} object into canonic form }
     \item{coerce}{\code{signature(from = "markovchain", to = "data.frame")}: coerce method from markovchain to \code{data.frame}}
     \item{conditionalDistribution}{\code{signature(object = "markovchain")}: returns the conditional probability of subsequent states given a state}
     \item{coerce}{\code{signature(from = "data.frame", to = "markovchain")}: coerce method from \code{data.frame} to \code{markovchain}}
     \item{coerce}{\code{signature(from = "table", to = "markovchain")}: coerce method from \code{table} to \code{markovchain} }
     \item{dim}{\code{signature(x = "markovchain")}: method to get the size}
     \item{initialize}{\code{signature(.Object = "markovchain")}: initialize method }
-    \item{plotMc}{\code{signature(object = "markovchain")}: plot method }
+    \item{plot}{\code{signature(x = "markovchain", y = "missing")}: plot method for \code{markovchain} objects }
+    \item{plotMc}{\code{signature(object = "markovchain")}: plot method (deprecated) }
 	\item{predict}{\code{signature(object = "markovchain")}: predict method }
     \item{print}{\code{signature(x = "markovchain")}: print method. }
     \item{show}{\code{signature(object = "markovchain")}: show method. }
     \item{states}{\code{signature(object = "markovchain")}: states method. }
     \item{steadyStates}{\code{signature(object = "markovchain")}: method to get the steady vector. }
+	 \item{summary}{\code{signature(object = "markovchain")}: method to summarize structure of the markov chain }
 	\item{transientStates}{\code{signature(object = "markovchain")}: method to get the transient states. }
     \item{t}{\code{signature(x = "markovchain")}: transpose matrix }
     \item{transitionProbability}{\code{signature(object = "markovchain")}: transition probability }
@@ -99,5 +105,8 @@ conditionalDistribution(simpleMc, "b")
 sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
 mcFit<-markovchainFit(data=sequence)
 predict(mcFit$estimate, newdata="b",n.ahead=3)
+#example of summary
+summary(simpleMc)
+\dontrun{plot(simpleMc)}
 }
 \keyword{classes}

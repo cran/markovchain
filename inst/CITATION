@@ -3,9 +3,9 @@ citHeader("To cite package markovchain in publications use:")
 citEntry(entry="Manual",
          title = "markovchain: an R package to easily handle discrete Markov chains",
          author = person(first="Giorgio Alfredo", last="Spedicato"),
-         month="12",
-         year="2013",
-         note="R package version 0.0.5",
+         month="01",
+         year="2014",
+         note="R package version 0.0.7",
          textVersion = "Giorgio Alfredo Spedicato. 
 		 markovchain: an R package to easily handle discrete Markov chains"
          )
