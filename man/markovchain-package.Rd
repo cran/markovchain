@@ -11,8 +11,8 @@ It contains S4 classes and methods to create and operates with Markov chains}
 \tabular{ll}{
 Package: \tab markovchain\cr
 Type: \tab Package\cr
-Version: \tab 0.0.7\cr
-Date: \tab 2014-01-12\cr
+Version: \tab 0.0.8\cr
+Date: \tab 2014-02-09\cr
 License: \tab GPL-2\cr
 Depends: \tab R (>= 2.14), methods, expm, matlab, igraph, Matrix\cr
 }

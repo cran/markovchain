@@ -1,5 +1,4 @@
-12-01-2014
-Version 0.0.7
-Deeply improved vignettes
-Added predict and summary methods
-Added function to perform probabilistic analysis
+09-02-2014
+Version 0.0.8
+Minor vignette enhancements
+Added function to find period of a DTMC

@@ -16,6 +16,8 @@
 \alias{coerce,data.frame,markovchain-method}
 \alias{coerce,markovchain,data.frame-method}
 \alias{coerce,table,markovchain-method}
+\alias{coerce,markovchain,igraph-method}
+\alias{coerce,markovchain,matrix-method}
 \alias{dim,markovchain-method}
 \alias{initialize,markovchain-method}
 \alias{plot,markovchain,missing-method}
@@ -60,6 +62,8 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{conditionalDistribution}{\code{signature(object = "markovchain")}: returns the conditional probability of subsequent states given a state}
     \item{coerce}{\code{signature(from = "data.frame", to = "markovchain")}: coerce method from \code{data.frame} to \code{markovchain}}
     \item{coerce}{\code{signature(from = "table", to = "markovchain")}: coerce method from \code{table} to \code{markovchain} }
+    \item{coerce}{\code{signature(from = "markovchain", to = "igraph")}: coercing to \code{igraph} objects }
+    \item{coerce}{\code{signature(from = "markovchain", to = "matrix")}: coercing to \code{matrix} objects }
     \item{dim}{\code{signature(x = "markovchain")}: method to get the size}
     \item{initialize}{\code{signature(.Object = "markovchain")}: initialize method }
     \item{plot}{\code{signature(x = "markovchain", y = "missing")}: plot method for \code{markovchain} objects }

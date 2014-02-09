@@ -396,7 +396,7 @@ setAs(from="markovchain", to="data.frame", def=.mc2Df)
 setAs(from="data.frame", to="markovchain", def=.df2Mc)
 
 
-#converting from table
+#converting from 
 
 .table2Mc<-function(from)
 {
@@ -413,10 +413,33 @@ setAs(from="data.frame", to="markovchain", def=.df2Mc)
 
 setAs(from="table", to="markovchain", def=.table2Mc)
 
+#converting to matrix
 
+.mc2matrix<-function(from)
+{
+	out<-from@transitionMatrix
+	return(out)
+}
+
+setAs(from="markovchain", to="matrix", def=.mc2matrix)
+
+#converting to igraph
+
+.mc2igraph<-function(from)
+{
+	temp<-.mc2Df(from) #convert the markovchain to data.frame
+	out<-graph.data.frame(temp) #convert the data frame to igraph graph
+	return(out) #return
+}
+
+setAs(from="markovchain", to="igraph", def=.mc2igraph)
+
+#####################
 
 #aritmethics
 
+
+#####################
 
 #transposing method for markov chain
 

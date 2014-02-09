@@ -2,8 +2,9 @@
 \alias{absorbingStates}
 \alias{transientStates}
 \alias{canonicForm}
+\alias{period}
 \title{
-Function to get the absorbing, transient states of a Markov chain and to put the matrix in canonic form
+Various function to perform statistical and probabilistic analysis
 }
 \description{
 These functions returns absorbing and transient states of the \code{markovchain} object.
@@ -36,6 +37,20 @@ markovB<-new("markovchain", states=statesNames, transitionMatrix=
 absorbingStates(markovB)
 transientStates(markovB)
 canonicForm(markovB)
+#periodicity analysis
+E=matrix(0,nrow=4,ncol=4)
+E[1,2]=1
+#E[2,c(1, 3)]=1/2;
+E[2,1]=1/3;E[2,3]=2/3
+#E[3,c(2, 4)]=1/2;
+E[3,2]=1/4;E[3,4]=3/4
+E[4,3]=1
+mcE <- new("markovchain", states = c("a", "b", "c", "d"), 
+                 transitionMatrix = E, 
+                 name = "E")
+
+is.irreducible(mcE) #true
+period(mcE) #2
 
 }
 
