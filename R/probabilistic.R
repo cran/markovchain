@@ -129,4 +129,68 @@ firstPassage<-function(object,state,n)
   rownames(outMatr)<-1:n
   return(outMatr)
 }
+#periodicity
+
+
+# massimo comun denominatore:
+.gcd = function(f,s) {
+	n=min(abs(f),abs(s))
+	N=max(abs(f),abs(s))
+	if (n==0) {
+		g=N
+	}
+	else {
+		u=1
+		while (u!=0) {
+			u=N%%n
+			if (u==0) {
+				g=n
+			}
+			N=n
+			n=u
+		}
+	}
+	return(g)
+}
+#funzione x analizzare il periodo
+period<-function(object) {
+	check<-is.irreducible(object)
+	if(check==FALSE){
+		warning("The matrix is not irreducible")
+		return(0)
+	} else {
+	P<-object@transitionMatrix
+	n=size(P,2)
+	v=zeros(1,n)
+	v[1,1]=1
+	w=numeric()
+	d=0
+	T=c(1)
+	m=size(T,2)
+	while (m>0 & d!=1) {
+		i=T[1]
+		T=T[-1]
+		w=c(w,i)
+		j=1
+		while (j<=n) {
+			if (P[i,j]>0) {
+				r=c(w,T)
+				k=sum(r==j)
+				if (k>0) {
+					b=v[1,i]+1-v[1,j]
+					d=.gcd(d,b)
+				}
+				else {
+					T=c(T,j)
+					v[1,j]=v[1,i]+1
+				}
+			}
+			j=j+1
+		}
+		m=size(T,2)
+	}
+	v=v%%d
+	return(d)
+	}
+}
 
