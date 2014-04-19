@@ -8,8 +8,7 @@ setClass("markovchain", #classe
                                            nrow=2,
                                            byrow=TRUE, 
                                            dimnames=list(c("a","b"), c("a","b"))),
-                   name="Unnamed Markov chain"
-         )
+                   name="Unnamed Markov chain")
          )
 
 
@@ -256,11 +255,12 @@ setMethod("print","markovchain", #metodo print
 )
 
 #function to get the absorbency matrix
-.getNet<-function(object)
+.getNet<-function(object,round=FALSE)
 {
    if(object@byrow==FALSE) object<-t(object)
  
   matr<-Matrix(data=object@transitionMatrix, sparse=TRUE)*100 #need to multiply by 100
+  if(round==TRUE) matr<-round(matr,2)
   net<-graph.adjacency(adjmatrix=matr, weighted=TRUE,
                        mode="directed")
   return(net)
@@ -270,8 +270,8 @@ setMethod("print","markovchain", #metodo print
 setGeneric("plotMc", function(object,...) standardGeneric("plotMc"))
 setMethod("plotMc","markovchain", #metodo plot
           function(object,...){
-            netMc<-.getNet(object)
-            edgeLabel=E(netMc)$weight/100
+            netMc<-.getNet(object,round=TRUE)
+            edgeLabel<-round(E(netMc)$weight/100,2)
             plot.igraph(x=netMc,edge.label=edgeLabel, ...)
           }
 )
@@ -311,8 +311,8 @@ setMethod("canonicForm","markovchain",
 #plot method from stat5
 setMethod("plot", signature(x="markovchain", y="missing"),
           function(x, y, ...){
-            netMc<-.getNet(x)
-            edgeLabel=E(netMc)$weight/100
+            netMc<-.getNet(x,round=TRUE)
+            edgeLabel<-round(E(netMc)$weight/100,2)
             plot.igraph(x=netMc,edge.label=edgeLabel, ...)
           }
 )
@@ -321,7 +321,7 @@ setMethod("plot", signature(x="markovchain", y="missing"),
 setMethod("summary", signature(object="markovchain"),
           function(object){
           outs<-.summaryKernel(object)
-          cat(object@name," Markov chain that is comprised by:","\n")
+          cat(object@name," Markov chain that is composed by:","\n")
           check<-length(outs$closedClasses)
           cat("Closed classes:","\n")
           if(check==0) cat("NONE","\n") else {for(i in 1:check) cat(outs$closedClasses[[i]],"\n")}
@@ -590,7 +590,6 @@ setMethod("predict","markovchain",
             out<-character()
             for(i in 1:n.ahead)
             {
-             
               newState<-.getMode(probVector=conditionalDistribution(object,lastState),
 					  ties="random")
               out<-c(out,newState)

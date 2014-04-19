@@ -9,7 +9,8 @@ Given a sequence of states arising from a stationary state,
 it fits the underlying Markov chain distribution using either MLE (also using a Laplacian smoother) or bootstrap.
 }
 \usage{
-markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10,laplacian=0,name)
+markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10,laplacian=0,name,
+parallel=FALSE)
 createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 }
 
@@ -31,6 +32,9 @@ Laplacian smoothing parameter, default zero. It is only used when "laplace" meth
 }
   \item{name}{
 Optional character for name slot.
+}
+  \item{parallel}{
+Use parallel processing when performing Boostrap estimates.
 }
   \item{stringchar}{
 Equivalent to data
@@ -54,10 +58,12 @@ Giorgio Spedicato
 }
 \note{
 When MLE method is called, the lists contains one entry: estimate. 
-Bootstrap method has been defined "euristically".
+Bootstrap method has been defined "euristically". In addition, parallel estimation capabilities 
+involves only a part of the bootstrap process.
 }
 
-\section{Warning }{"mle" method calls \code{createSequenceMatrix} function using \code{sanitize} parameter set to TRUE.}
+\section{Warning }{"mle" method calls \code{createSequenceMatrix} function using \code{sanitize} 
+parameter set to TRUE.}
 
 \seealso{
 \code{\link{markovchainSequence}}

@@ -1,5 +1,6 @@
 exportPattern("^[[:alpha:]]+")
 import(igraph, Matrix,  methods)
+import(parallel)
 importFrom("stats4",  plot, summary)
 importFrom("matlab", zeros)
 importFrom("matlab", find)

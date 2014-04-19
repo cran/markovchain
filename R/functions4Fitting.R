@@ -179,17 +179,28 @@ createSequenceMatrix<-function(stringchar, toRowProbs=FALSE,sanitize=TRUE)
       matrSd[i,j]<-sdCell
     }
   }
-out<-list(estMu=matrMean, estSigma=matrSd)
-  return(out)
+	out<-list(estMu=matrMean, estSigma=matrSd)
+    return(out)
 }
 
 
-.mcFitBootStrap<-function(data, nboot=10,byrow=TRUE)
+.mcFitBootStrap<-function(data, nboot=10,byrow=TRUE, parallel=FALSE)
 {
   #create the list of bootstrap sequence sample
-  theList<-.bootstrapCharacterSequences(stringchar=data, n=nboot)
-  #convert the list in a probability matrix
-  pmsBootStrapped<-lapply(X=theList, FUN=createSequenceMatrix, toRowProbs=TRUE,sanitize=TRUE)
+	theList<-.bootstrapCharacterSequences(stringchar=data, n=nboot)
+	if(!parallel)
+		#convert the list in a probability matrix
+		pmsBootStrapped<-lapply(X=theList, FUN=createSequenceMatrix, toRowProbs=TRUE,sanitize=TRUE)
+		 else {
+		#require(parallel)
+		type <- if(exists("mcfork", mode = "function")) "FORK" else "PSOCK"
+		cores <- getOption("mc.cores", detectCores())
+		cl <- makeCluster(cores, type = type)
+			clusterExport(cl, varlist = c("createSequenceMatrix","zeros"))
+			pmsBootStrapped<-parLapply(cl=cl, X=theList, fun="createSequenceMatrix", toRowProbs=TRUE,sanitize=TRUE)
+		stopCluster(cl)
+	}
+ 
   estimateList<-.fromBoot2Estimate(listMatr=pmsBootStrapped)
   #from raw to estimate
   temp<-estimateList$estMu
@@ -201,19 +212,19 @@ out<-list(estMu=matrMean, estSigma=matrSd)
 
 #fit
 
-markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10,laplacian=0, name)
+markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10,laplacian=0, name, parallel=FALSE)
 {
   #MLE FIT
   if(method=="mle") out<-.mcFitMle(stringchar=data,byrow=byrow)
-  if(method=="bootstrap") out<-.mcFitBootStrap(data=data,byrow=byrow,nboot=nboot)
+  if(method=="bootstrap") out<-.mcFitBootStrap(data=data,byrow=byrow,nboot=nboot, parallel=parallel)
   if(method=="laplace") out<-.mcFitLaplacianSmooth(stringchar=data,byrow=byrow,laplacian=laplacian)
   if(!missing(name)) out$estimate@name<-name
   return(out)
 }
 
 
-# example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4)
-# s<-c(5,6,1,1,6,1,2,6,6,6,4)
-# ciao<-markovchainFit(data=s,method="mle")
+#example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4,1,2,5,2,4)
+#s<-c(5,6,1,1,6,1,2,6,6,6,4)
+#ciao<-markovchainFit(data=example4Fit,method="mle")
 
 
