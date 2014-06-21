@@ -7,7 +7,7 @@
 Various function to perform statistical and probabilistic analysis
 }
 \description{
-These functions returns absorbing and transient states of the \code{markovchain} object.
+These functions return absorbing and transient states of the \code{markovchain} objects.
 }
 \usage{
 absorbingStates(object)

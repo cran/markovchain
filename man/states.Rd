@@ -14,7 +14,7 @@ states(object)
 }
 \value{The character vector corresponding to states slot.}
 \references{
-	Sheldon Ross, Probability Models
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \author{
 Giorgio Spedicato

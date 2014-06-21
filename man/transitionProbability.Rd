@@ -16,7 +16,7 @@ transitionProbability(object,t0,t1)
 }
 \value{A matrix}
 \references{
-	Sheldon Ross, Probability Models
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \author{
 Giorgio Spedicato

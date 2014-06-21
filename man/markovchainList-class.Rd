@@ -7,10 +7,9 @@
 \alias{predict,markovchainList-method}
 \alias{print,markovchainList-method}
 \alias{show,markovchainList-method}
-
 \title{Class \code{"markovchainList"}}
 \description{
-A class to handle non - homogeneous markov chains
+A class to handle non - homogeneous Markov chains
 }
 \section{Objects from the Class}{
 Objects can be created by calls of the form \code{new("markovchainList", ...)}.
@@ -37,13 +36,14 @@ Each item in the list is a \code{markovchain} object.
    }
 }
 \references{
-Sheldon Ross
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \author{
 Giorgio Spedicato
 }
 \note{
-It can help to deal with non - homogeneous markov chains.
+The class consists in a list of \code{markovchain} objects. 
+It can help to deal with non - homogeneous Markov chains.
 }
 \seealso{
 \code{\linkS4class{markovchain}}
@@ -52,16 +52,19 @@ It can help to deal with non - homogeneous markov chains.
 showClass("markovchainList")
 #define a markovchainList
 statesNames=c("a","b")
- mcA<-new("markovchain", transitionMatrix=matrix(c(0.7,0.3,0.1,0.9),
- byrow=TRUE, nrow=2, dimnames=list(statesNames,statesNames)))
-mcB<-new("markovchain", states=c("a","b","c"), 
+
+mcA<-new("markovchain",name="MCA", transitionMatrix=matrix(c(0.7,0.3,0.1,0.9),
+byrow=TRUE, nrow=2, dimnames=list(statesNames,statesNames)))
+
+mcB<-new("markovchain", states=c("a","b","c"), name="MCB",
 transitionMatrix=matrix(c(0.2,0.5,0.3,0,1,0,0.1,0.8,0.1),
 nrow=3, byrow=TRUE))
-mcC<-new("markovchain", states=c("a","b","c","d"), 
+
+mcC<-new("markovchain", states=c("a","b","c","d"), name="MCC",
   	transitionMatrix=matrix(c(0.25,0.75,0,0,0.4,0.6,
     0,0,0,0,0.1,0.9,0,0,0.7,0.3), nrow=4, byrow=TRUE)
 )
-mcList<-new("markovchainList",markovchains=list(mcA, mcB, mcC))
-
+mcList<-new("markovchainList",markovchains=list(mcA, mcB, mcC), 
+name="Non - homogeneous Markov Chain")
 }
 \keyword{classes}

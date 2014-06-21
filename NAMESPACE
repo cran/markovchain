@@ -18,7 +18,7 @@ exportMethods(
     "coerce",
     "dim",
     "initialize",
-    "plotMc",
+    #"plotMc",
     "plot",
     "print",
 	"summary",

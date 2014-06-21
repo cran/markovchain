@@ -469,11 +469,19 @@ plot(mcWeather,layout = layout.fruchterman.reingold,main="Weather transition mat
 Import and export from some specific classes is possible, as shown in
 Table~\ref{tab:fromAndTo} and in the following code.\\
 
-<<exportImport, keep.source=TRUE>>=
+<<exportImport1, keep.source=TRUE>>=
 mcDf <- as(mcWeather, "data.frame")
 mcNew <- as(mcDf, "markovchain")
 mcDf
 mcIgraph <- as(mcWeather, "igraph")
+@
+
+Coerce from \code{matrix} method, as the code below shows, represents another approach to create a \code{markovchain} method starting from a given squared probability matrix.
+
+<<exportImport2, keep.source=TRUE>>=
+myMatr<-matrix(c(.1,.8,.1,.2,.6,.2,.3,.4,.3), byrow=TRUE, ncol=3)
+myMc<-as(myMatr, "markovchain")
+myMc
 @
 
 \begin{table}[h]
@@ -484,7 +492,7 @@ mcIgraph <- as(mcWeather, "igraph")
     \hline  \hline
   \code{data.frame} & bidirectional \\
   \code{igraph} & only to igraph\\
-  \code{matrix} & only to matrix\\
+  \code{matrix} & bidirectional\\
   \code{table} & only from table\\
   \hline
 \end{tabular}

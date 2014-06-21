@@ -1,10 +1,10 @@
 
 
 .commclassesKernel <- function(P){
-	m=ncol(P)
-	stateNames<-rownames(P)
-	T=zeros(m) 
-	i=1
+	m <- ncol(P)
+	stateNames <- rownames(P)
+	T <- zeros(m) 
+	i <- 1
 	while (i<=m) { 
 		a=i 
 		b<-zeros(1,m)
@@ -12,43 +12,44 @@
 		old<-1
 		new<-0
 		while (old != new) {
-			old=sum(find(b>0))
-			n=size(a)[2]
-			matr<-matrix(as.numeric(P[a,]),ncol=m,nrow=n) #fix
-			c=colSums(matr)
-			d=find(c)
-			n=size(d)[2]
-			b[1,d]<-ones(1,n)
-			new<-sum(find(b>0))
+			old <- sum(find(b>0))
+			n <- size(a)[2]
+			matr <- matrix(as.numeric(P[a,]),ncol=m,nrow=n) #fix
+			c <- colSums(matr)
+			d <- find(c)
+			n <- size(d)[2]
+			b[1,d] <- ones(1,n)
+			new <- sum(find(b>0))
 			a<-d
 		}
-		T[i,]=b
-		i=i+1 }
-	F=t(T)  
-	C=(T>0)&(F>0)
-	v=(apply(t(C)==t(T),2,sum)==m)
-	colnames(C)=stateNames
-	rownames(C)=stateNames
-	names(v)=stateNames
-	out<-list(C=C,v=v)
+		T[i,] <- b
+		i <- i+1 
+	}
+	F <- t(T)  
+	C <- (T>0)&(F>0)
+	v <- (apply(t(C)==t(T),2,sum)==m)
+	colnames(C) <- stateNames
+	rownames(C) <- stateNames
+	names(v) <- stateNames
+	out <- list(C=C,v=v)
 	return(out)
 }
 
 #returns the underlying communicating classes
 .communicatingClasses<-function(adjMatr)
 {
-  len<-dim(adjMatr)[1]
-  classesList<-list()
+  len <- dim(adjMatr)[1]
+  classesList <- list()
   for(i in 1:len)
   {
-    row2Check<-adjMatr[i,]
-    proposedCommClass<-names(which(row2Check==TRUE))
+    row2Check <- adjMatr[i,]
+    proposedCommClass <- names(which(row2Check==TRUE))
     if(i>1) 
     {
       for(j in 1:(length(classesList)))
       {
-        check<-FALSE
-        check<-setequal(classesList[[j]],proposedCommClass)
+        check <- FALSE
+        check <- setequal(classesList[[j]],proposedCommClass)
         if(check==TRUE) {proposedCommClass<-NULL; break}
       }
     }

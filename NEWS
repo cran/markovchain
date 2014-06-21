@@ -1,4 +1,4 @@
-15-04-2014
-Version 0.0.9
-Updated vignette
-Added parallel processing for bootstrap estimation
+21-06-2014
+Version 0.0.9.5
+Updated vignettes
+Added a method to convert a square matrix into a markovchain object.

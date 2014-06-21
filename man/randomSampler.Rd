@@ -2,50 +2,49 @@
 \alias{rmarkovchain}
 \alias{markovchainSequence}
 \title{
-Function to generate a sequence of states from homogeneous or non-homogeneous markov chains.
+Function to generate a sequence of states from homogeneous or non-homogeneous Markov chains.
 }
 \description{
-Provided a \code{markovchain} or \code{markovchainList} object, it returns a sequence of states coming from the underlying 
-stationary distribution. 
+Provided any \code{markovchain} or \code{markovchainList} objects, it returns a sequence of 
+states coming from the underlying stationary distribution. 
 }
 \usage{
-
 rmarkovchain(n, object, ...)
-
 markovchainSequence(n, markovchain, t0 = sample(markovchain@states, 1), 
 include.t0 = FALSE)
 }
 
 \arguments{
-
-  \item{n}{
+\item{n}{
 Sample size
 }
-  \item{object}{
+\item{object}{
 Either a \code{markovchain} or a \code{markovchainList} object.
 }
-  \item{\dots}{
-attitional parameters passed to the internal sampler
+\item{\dots}{
+additional parameters passed to the internal sampler
 }
-
-  \item{markovchain}{
-The markovchain object
+\item{markovchain}{
+The \code{markovchain} object
 }
-  \item{t0}{
-Tha initial state.
+\item{t0}{
+The initial state.
 }
-  \item{include.t0}{
+\item{include.t0}{
 Specify if the initial state shall be used.
 }
 }
 \details{
-When an homogeneous process is assumed (\code{markovchain} object) a sequence is sampled of size n. When an non - homogeneous process is assumed,
-n samples are taken but the process is assumed to last from the begin to the end of the non-homogeneous markov process.
+When an homogeneous process is assumed (\code{markovchain} object) a sequence is 
+sampled of size n. When an non - homogeneous process is assumed,
+n samples are taken but the process is assumed to last from the begin to the end of the 
+non-homogeneous markov process.
 }
 \value{
-Either a character vector or a data frame}
+Either a character vector or a data frame
+}
 \references{
-Sheldon Ross
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \author{
 Giorgio Spedicato
@@ -58,7 +57,7 @@ Check the type of input
 \code{\link{markovchainFit}}
 }
 \examples{
-#define the markov chain
+#define the Markov chain
 statesNames=c("a","b","c")
 mcB<-new("markovchain", states=statesNames, transitionMatrix=matrix(c(0.2,0.5,0.3,
 0,0.2,0.8,0.1,0.8,0.1),nrow=3, byrow=TRUE, dimnames=list(statesNames,statesNames)

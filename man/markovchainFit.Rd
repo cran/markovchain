@@ -6,10 +6,11 @@ Function to fit a discrete Markov chain
 }
 \description{
 Given a sequence of states arising from a stationary state, 
-it fits the underlying Markov chain distribution using either MLE (also using a Laplacian smoother) or bootstrap.
+it fits the underlying Markov chain distribution using either MLE (also using a 
+Laplacian smoother) or bootstrap.
 }
 \usage{
-markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10,laplacian=0,name,
+markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10,laplacian=0,name, 
 parallel=FALSE)
 createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 }
@@ -19,16 +20,17 @@ createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 A character list.
 }
 \item{method}{
-Method used to estimate the markov chain. Either "mle" or "bootstrap" or "laplace"
+Method used to estimate the Markov chain. Either "mle" or "bootstrap" or "laplace"
 }
   \item{byrow}{
-it tells whether the output markov chain should show the transition probabilities by row.
+it tells whether the output Markov chain should show the transition probabilities by row.
 }
   \item{nboot}{
 Number of bootstrap replicates in case "bootstrap" is used.
 }
   \item{laplacian}{
-Laplacian smoothing parameter, default zero. It is only used when "laplace" method is chosen.
+Laplacian smoothing parameter, default zero. It is only used when "laplace" method 
+is chosen.
 }
   \item{name}{
 Optional character for name slot.
@@ -51,19 +53,18 @@ A list containing an estimate and, when "bootstrap" method is used, a matrix
 of standards deviations and the bootstrap samples.
 }
 \references{
-Sheldon Ross, Probability Models.
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \author{
 Giorgio Spedicato
 }
 \note{
 When MLE method is called, the lists contains one entry: estimate. 
-Bootstrap method has been defined "euristically". In addition, parallel estimation capabilities 
-involves only a part of the bootstrap process.
+Bootstrap algorithm has been defined "euristically". In addition, parallel facility is not complete,
+involving only a part of the bootstrap process.
 }
 
-\section{Warning }{"mle" method calls \code{createSequenceMatrix} function using \code{sanitize} 
-parameter set to TRUE.}
+\section{Warning }{"mle" method calls \code{createSequenceMatrix} function using \code{sanitize} parameter set to TRUE.}
 
 \seealso{
 \code{\link{markovchainSequence}}

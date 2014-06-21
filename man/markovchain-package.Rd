@@ -11,8 +11,8 @@ It contains S4 classes and methods to create and operates with Markov chains}
 \tabular{ll}{
 Package: \tab markovchain\cr
 Type: \tab Package\cr
-Version: \tab 0.0.9\cr
-Date: \tab 2014-04-15\cr
+Version: \tab 0.0.9.5\cr
+Date: \tab 2014-06-21\cr
 License: \tab GPL-2\cr
 Depends: \tab R (>= 2.14), methods, expm, matlab, igraph, Matrix\cr
 }
@@ -23,7 +23,7 @@ Maintainer: Giorgio Alfredo Spedicato <spedicato_giorgio@yahoo.it>
 
 }
 \references{
-Introduction to Probability Models, Sheldon Ross
+A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 }
 \keyword{ package }
 
