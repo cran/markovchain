@@ -1,4 +1,5 @@
-21-06-2014
-Version 0.0.9.5
+04-01-2015
+Version 0.1.0
+It is now possible to fit a markovchain and a markovchainList object from a matrix or data.frame
 Updated vignettes
-Added a method to convert a square matrix into a markovchain object.
+Added tests

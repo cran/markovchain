@@ -3,16 +3,17 @@
 \alias{markovchain}
 \docType{package}
 \title{
-A package for easily handling discrete Markov chains
+Easy Handling Discrete Time Markov Chains
 }
 \description{
-It contains S4 classes and methods to create and operates with Markov chains}
+The package contains classes and method to create and manage (plot, print, export for example) discrete time Markov chains (DTMC). In addition it provide functions to perform statistical (fitting and drawing random variates) and probabilistic (analysis of DTMC proprieties) analysis.
+}
 \details{
 \tabular{ll}{
 Package: \tab markovchain\cr
 Type: \tab Package\cr
-Version: \tab 0.0.9.5\cr
-Date: \tab 2014-06-21\cr
+Version: \tab 0.1.0\cr
+Date: \tab 2015-01-04\cr
 License: \tab GPL-2\cr
 Depends: \tab R (>= 2.14), methods, expm, matlab, igraph, Matrix\cr
 }

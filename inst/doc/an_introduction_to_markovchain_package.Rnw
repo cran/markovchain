@@ -50,7 +50,7 @@ Markov Chains in R} %% without formatting
 %% an abstract and keywords
 \Abstract{The \pkg{markovchain} package aims to fill a gap within
 the \proglang{R} framework providing S4 classes and methods for easily handling
-discrete time Markov chains, homogeneous and inhomogeneous.
+discrete time Markov chains, homogeneous and simple inhomogeneous ones.
 The S4 classes for handling and analysing discrete time Markov chains are presented, as well as 
 functions and method for performing probabilistic and statistical analysis.
 Finally, some examples in which the package's functions are applied to Economics, Finance and Natural Sciences topics are shown.}
@@ -178,15 +178,13 @@ p_{31} & p_{32} & p_{33}
 \end{equation}
 
 
-The distribution over the states can be written in the form of a stocastic row
+The distribution over the states can be written in the form of a stochastic row
 vector $x$ (the term stochastic means that $\sum_{i}x_{i}=1, x_{i} \geq 0$): e.g., if the current state of $x$ is $s_{2}$, $x=\left(0\:1\:0\right)$.
 As a consequence, the relation between $x^{(1)}$ and $x^{(0)}$
 is $x^{(1)}=x^{(0)}P$ and, recursively, we get $x^{(2)}=x^{(0)}P^{2}$ and
 $x^{(n)}=x^{(0)}P^{n},\, n>0$.
 
-DTMC are explained in most theory books on stochastic processes, see for example \cite{ching2006markov}. 
-Valuable references online available are:
-\cite{konstantopoulos2009markov}, \cite{probBook} and \cite{bardPpt}.
+DTMC are explained in most theory books on stochastic processes, see \cite{bremaud1999discrete} and \cite{ching2006markov} for example. Valuable references online available are: \cite{konstantopoulos2009markov}, \cite{probBook} and \cite{bardPpt}.
 
 
 \subsection{Properties and classification of states}\label{sec:properties}
@@ -201,8 +199,8 @@ A DTMC can be composed by one or more communicating classes.  If the DTMC is
 composed by only one communicating class (i.e., if all states in the chain communicate), then
 it is said irreducible. A communicating class is said to be closed if no states outside of the class can be reached from any state inside it.
 
-If $p_{ii}=1$, $s_{i}$ is defined an absorbing
-state; an absorbing state corresponds to a closed communicating class composed by one state only.
+If $p_{ii}=1$, $s_{i}$ is defined as absorbing
+state: an absorbing state corresponds to a closed communicating class composed by one state only.
 
 The canonic form of a DTMC transition matrix is a matrix having a
 block form, where the closed communicating classes are shown at the beginning of the diagonal matrix.
@@ -212,7 +210,7 @@ must occur in multiplies of $k_{i}$ steps, that is $k_{i}=gcd\left\{ n:Pr\left(X
 $gcd$ is the greatest common divisor. If $k_{i}=1$ the state $s_{i}$ is said
 to be aperiodic, else if $k_{i}>1$ the state $s_{i}$ is periodic with period $k_{i}$. Loosely speaking, $s_{i}$  is periodic if it can only return to itself after a fixed number of transitions $k_{i}>1$ (or multiple of $k_{i}$), else it is aperiodic. 
 
-If states $s_{i}$ and $s_{j}$ belong to the same communicating class, then they have the same period $k_{i}$. As a consequence, each of the states of an irreducible DTMC share the same periodicity and this periodicity is also referred to be the periodicity of the DTMC.
+If states $s_{i}$ and $s_{j}$ belong to the same communicating class, then they have the same period $k_{i}$. As a consequence, each of the states of an irreducible DTMC share the same periodicity. This periodicity is also considered the DTMC periodicity.
 
 It is possible to analyze the timing to reach a certain state. The first passage time from state $s_{i}$ to state $s_{j}$ is the number $T_{ij}$ of steps taken by the chain until it arrives for the first time to state $s_{j}$, given that $X_{0} = s_{i}$. The probability distribution of $T_{ij}$ is defined by Equation~\ref{eq:fpt1}
 
@@ -243,7 +241,7 @@ is the $k\times k$ transition matrix of the chain and $z=\left(z_{1},...,z_{k}\r
 \end{equation}
 
 
-where $Z$ is the matrix having all rows equal to $z$. $z$ is the stationary distribution of $\{X_{n}\}$.
+where $Z$ is the matrix having all rows equal to $z$. The stationary distribution of $\{X_{n}\}$ is represented by $z$.
 
 
 \subsection{A short example}
@@ -261,7 +259,7 @@ P=\left[\begin{array}{ccc}
 
 In $P$, $p_{11}=0.5$ is the probability that $X_{1}=s_{1}$ given
 that we observed $X_{0}=s_{1}$ is 0.5, and so on. 
-It is easy to see that all the states communicate and, then, the chain is irreducible (it is made by one communicating class only).
+It is easy to see that the chain is irreducible since all the states communicate (it is made by one communicating class only).
 
 Suppose that the current state of the chain is $X_{0}=s_{2}$, i.e., $x^{(0)}=(0\:1\:0)$, then the probability distribution of states after 1 and 2 steps can be computed as shown in Equations~\ref{eq:trPropExEx2} and
 ~\ref{eq:trPropExEx3}.
@@ -277,7 +275,7 @@ x^{(1)}=\left(0\:1\:0\right)\left[\begin{array}{ccc}
 
 
 \begin{equation}
-x^{(2)}=x^{(n+1)}P=\left(0.15\:0.45\:0.4\right)\left[\begin{array}{ccc}
+x^{(n)}=x^{(n-1)}P \to \left(0.15\:0.45\:0.4\right)\left[\begin{array}{ccc}
 0.5 & 0.2 & 0.3\\
 0.15 & 0.45 & 0.4\\
 0.25 & 0.35 & 0.4
@@ -360,7 +358,7 @@ defaultMc <- new("markovchain")
 @
 
 The quicker way to create \code{markovchain} objects is made possible thanks to
-the implemented \code{initialize} S4 method that assures:
+the implemented \code{initialize} S4 method that checks that:
 
 \begin{itemize}
   \item the \code{transitionMatrix} to be a transition matrix, i.e., all entries to be probabilities and either all rows or all columns to sum up to one.
@@ -407,8 +405,8 @@ manipulate \code{markovchain} objects.
 \end{table}  
 
 
-Operations on \code{markovchain} objects can be easily performed.
-Using the previously defined matrix we can find what is the probability distribution of expected weather states in two and  seven days, given the actual state to be cloudy. 
+The examples that follow shows how operations on \code{markovchain} objects can be easily performed. 
+For example, using the previously defined matrix we can find what is the probability distribution of expected weather states in two and  seven days, given the actual state to be cloudy. 
 
 <<operations,keep.source=TRUE>>=
 initialState <- c(0, 1, 0)
@@ -467,7 +465,7 @@ plot(mcWeather,layout = layout.fruchterman.reingold,main="Weather transition mat
 \end{figure}
 
 Import and export from some specific classes is possible, as shown in
-Table~\ref{tab:fromAndTo} and in the following code.\\
+Figure~\ref{fig:fromAndTo} and in the following code.\\
 
 <<exportImport1, keep.source=TRUE>>=
 mcDf <- as(mcWeather, "data.frame")
@@ -475,6 +473,19 @@ mcNew <- as(mcDf, "markovchain")
 mcDf
 mcIgraph <- as(mcWeather, "igraph")
 @
+
+\begin{figure}
+\begin{center}
+<<importExportPlot,fig=TRUE,echo=FALSE>>=
+library(igraph)
+importExportGraph<-graph.formula(dataframe++markovchain,markovchain-+igraph,markovchain++matrix,table-+markovchain)
+plot(importExportGraph,main="Import - Export from and to markovchain objects")
+@
+\caption{The \pkg{markovchain} methods for import and export.}
+\label{fig:fromAndTo}
+\end{center}
+\end{figure}
+
 
 Coerce from \code{matrix} method, as the code below shows, represents another approach to create a \code{markovchain} method starting from a given squared probability matrix.
 
@@ -484,21 +495,21 @@ myMc<-as(myMatr, "markovchain")
 myMc
 @
 
-\begin{table}[h]
-  \centering
-  \begin{tabular}{lll}
-    \hline
-  Object & Direction \\
-    \hline  \hline
-  \code{data.frame} & bidirectional \\
-  \code{igraph} & only to igraph\\
-  \code{matrix} & bidirectional\\
-  \code{table} & only from table\\
-  \hline
-\end{tabular}
-\caption{The \pkg{markovchain} methods for import and export.}
-\label{tab:fromAndTo}
-\end{table}  
+% \begin{table}[h]
+%   \centering
+%   \begin{tabular}{lll}
+%     \hline
+%   Object & Direction \\
+%     \hline  \hline
+%   \code{data.frame} & bidirectional \\
+%   \code{igraph} & only to igraph\\
+%   \code{matrix} & bidirectional\\
+%   \code{table} & only from table\\
+%   \hline
+% \end{tabular}
+% \caption{The \pkg{markovchain} methods for import and export.}
+% \label{tab:fromAndTo}
+% \end{table}  
 
 Non-homogeneous Markov chains can be created with the aid of \code{markovchainList} object. The example that follows arises from health insurance, where the costs associated to patients in a Continuous Care Health Community (CCHC) are modelled by a non-homogeneous Markov Chain, since the 
 transition probabilities change by year. Methods explicitly written for
@@ -541,6 +552,7 @@ the package.
   \code{craigsendi} & CD4 cells, \cite{craigSendi}.\\
   \code{preproglucacon} & Preproglucacon DNA basis, \cite{averyHenderson}.\\
   \code{rain} & Alofi Island rains, \cite{averyHenderson}.\\
+  \code{holson} & Individual states trajectiories.\\ 
 \hline
 \end{tabular}
 \caption{The \pkg{markovchain} \code{data.frame} and \code{table}.}
@@ -583,22 +595,21 @@ Table~\ref{tab:methodsToStats} shows methods that can be applied on \code{markov
   \centering
   \begin{tabular}{lll}
     \hline
-  Method & Purpose \\
+  Method & Returns \\
     \hline  \hline
-  \code{absorbingStates} & It returns the absorbing states of the transition
+  \code{absorbingStates} & the absorbing states of the transition
   matrix, if any.\\
-\code{conditionalDistribution} & It returns the conditional distribution of the
+\code{conditionalDistribution} & the conditional distribution of the
 subsequent state \\
  & $s_{j}$, given actual state $s_{i}$.\\
-\code{canonicForm} & It turns the transition matrix into canonic form.\\
-\code{is.accessible} & It verifies if a state j is reachable from state i.\\
-\code{is.irreducible} & It verifies whether a DTMC is irreducible.\\
-\code{period} & It returns the period of an irreducible DTMC.\\
-\code{steadyStates} & It returns the vector(s) of steady state(s) in matrix
+\code{canonicForm} & the transition matrix into canonic form.\\
+\code{is.accessible} & verification if a state j is reachable from state i.\\
+\code{is.irreducible} & verification whether a DTMC is irreducible.\\
+\code{period} & the period of an irreducible DTMC.\\
+\code{steadyStates} & the vector(s) of steady state(s) in matrix
 form.\\
-\code{summary} & It summarizes the statistical probabilities of a Markov
-chain.\\
-\code{transientStates} & It returns the transient states of the transition
+\code{summary} & DTMC summary.\\
+\code{transientStates} & the transient states of the transition
   matrix, if any.\\
 \hline
 \end{tabular}
@@ -956,6 +967,16 @@ weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 @
 
+Is is also possible to fit a DTMC or a \code{markovchainList} object 
+from \code{matrix} or \code{data.frame} objects as shown in following code.
+
+<<fitMclists, keep.source=TRUE>>=
+data(holson)
+singleMc<-markovchainFit(data=holson[,2:12],name="holson")
+mcListFist<-markovchainListFit(data=holson[,2:12],name="holson")
+@
+
+
 \subsection{Prediction}
 
 
@@ -1116,20 +1137,22 @@ absorbingStates(creditMc)
 
 \subsubsection{Economics}\label{fin:ec}
 
+For a recent application of \pkg{markovchain} in Economic, see \cite{manchesterR}. 
+
 A dynamic system generates two kinds of economic effects \citep{bardPpt}:
 \begin{enumerate}
 \item those incurred when the system is in a specified state, and
 \item those incurred when the system makes a transition from one state to another.
 \end{enumerate}
 
-Let the monetary amount of being in a particular state be represented as a m-dimensional column vector $c_{s}$, while let the monetary amount of a transition be embodied in a $C^{R}$ matrix in which each component specifies the monetary amount of going from state i to state j in a single step. Henceforth, Equation~\ref{eq:cost} represents the monetary of being in state $i$.
+Let the monetary amount of being in a particular state be represented as a m-dimensional column vector $c^{\rm{S}}$, while let the monetary amount of a transition be embodied in a $C^{R}$ matrix in which each component specifies the monetary amount of going from state i to state j in a single step. Henceforth, Equation~\ref{eq:cost} represents the monetary of being in state $i$.
 
 \begin{equation}
 {c_i} = c_i^{\rm{S}} + \sum\limits_{j = 1}^m {C_{ij}^{\rm{R}}} {p_{ij}}.
 \label{eq:cost}
 \end{equation}
 
-Let $\bar C = \left[ c_i \right]$ and let $e_i$ be the vector valued 1 in the initial state and 0 in all other, then, if $f_n$ is the random variable representing the economic return associated with the stochastic process at time $n$, Equation~\ref{eq:return} holds:
+Let $\bar c = \left[ c_i \right]$ and let $e_i$ be the vector valued 1 in the initial state and 0 in all other, then, if $f_n$ is the random variable representing the economic return associated with the stochastic process at time $n$, Equation~\ref{eq:return} holds:
 
 \begin{equation}
 E\left[ {{f_n}\left( {{X_n}} \right)|{X_0} = i} \right] = {e_i}{P^n}\bar c.

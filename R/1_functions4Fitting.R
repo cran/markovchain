@@ -40,10 +40,10 @@ markovchainSequence<-function(n,markovchain, t0=sample(markovchain@states,1),inc
 #function to perform random sampling
 rmarkovchain<-function(n,object,...)
 {
-  if(class(object)=="markovchain") out<-markovchainSequence(n=n, markovchain=object,...)
-  if(class(object)=="markovchainList")
+  if (class(object)=="markovchain") out<-markovchainSequence(n=n, markovchain=object,...)
+  if (class(object)=="markovchainList")
   {
-    verify<-.checkSequence(object=object)
+    verify <-.checkSequence(object=object)
     if(!verify) warning("Warning: some states in the markovchain sequences are not contained in the following states!")
     iteration<-numeric()
     values<-character()
@@ -73,15 +73,15 @@ rmarkovchain<-function(n,object,...)
 
 createSequenceMatrix<-function(stringchar, toRowProbs=FALSE,sanitize=TRUE)
 {
-  elements<-sort(unique(stringchar))
-  sizeMatr<-length(elements)
-  freqMatrix<-zeros(sizeMatr)
-  rownames(freqMatrix)<-elements
-  colnames(freqMatrix)<-elements
+  elements <- sort(unique(stringchar))
+  sizeMatr <- length(elements)
+  freqMatrix <- zeros(sizeMatr)
+  rownames(freqMatrix) <- elements
+  colnames(freqMatrix) <- elements
   for(i in 1:(length(stringchar)-1))
   {
-    posFrom<-which(rownames(freqMatrix)==stringchar[i])
-    posTo<-which(rownames(freqMatrix)==stringchar[i+1])
+    posFrom <- which(rownames(freqMatrix)==stringchar[i])
+    posTo <- which(rownames(freqMatrix)==stringchar[i+1])
     freqMatrix[posFrom,posTo]=freqMatrix[posFrom,posTo]+1
   }
   #sanitizing if any row in the matrix sums to zero by posing the corresponding diagonal equal to 1/dim
@@ -112,6 +112,9 @@ createSequenceMatrix<-function(stringchar, toRowProbs=FALSE,sanitize=TRUE)
   out<-list(estimate=outMc)
   return(out)
 }
+
+
+#function to fit a DTMC with Laplacian Smoother
 
 .mcFitLaplacianSmooth<-function(stringchar,byrow,laplacian=0.01)
 {
@@ -210,21 +213,105 @@ createSequenceMatrix<-function(stringchar, toRowProbs=FALSE,sanitize=TRUE)
   return(out)
 }
 
+###############################################
+#special function for matrices and data.frames#
+###############################################
+
+#function that return a Markov Chain from a given matrix of observations
+
+.matr2Mc<-function(matrData,laplacian=0) {
+  #find unique values scanning the matrix
+  nCols<-ncol(matrData)
+  uniqueVals<-character()
+  for(i in 1:nCols) uniqueVals<-union(uniqueVals,unique(as.character(matrData[,i])))
+  uniqueVals<-sort(uniqueVals)
+  #create a contingency matrix
+  contingencyMatrix<-matrix(rep(0,length(uniqueVals)^2),ncol=length(uniqueVals))
+  rownames(contingencyMatrix)<-colnames(contingencyMatrix)<-uniqueVals
+  #fill the contingency matrix
+  for(i in 1:nrow(matrData))
+  {
+    for( j in 2:nCols)
+    {
+      stateBegin<-as.character(matrData[i,j-1]);whichRow<-which(uniqueVals==stateBegin)
+      stateEnd<-as.character(matrData[i,j]);whichCols<-which(uniqueVals==stateEnd)
+      contingencyMatrix[whichRow,whichCols]<-contingencyMatrix[whichRow,whichCols]+1
+    }
+  }
+  #add laplacian correction if needed
+  contingencyMatrix<-contingencyMatrix+laplacian
+  #get a transition matrix and a DTMC
+  transitionMatrix<-contingencyMatrix/rowSums(contingencyMatrix)
+  outMc<-new("markovchain",transitionMatrix=transitionMatrix)
+ 
+  return(outMc)
+}
+
+
 #fit
 
 markovchainFit<-function(data,method="mle", byrow=TRUE,nboot=10,laplacian=0, name, parallel=FALSE)
 {
-  #MLE FIT
+  if(class(data) %in% c("data.frame","matrix")) {
+    #if data is a data.frame forced to matrix
+    if(is.data.frame(data)) data<-as.matrix(data)
+    #byrow assumes distinct observations (trajectiories) are per row
+    #otherwise transpose
+    if(!byrow) data<-t(data)
+    outMc<-.matr2Mc(matrData = data,laplacian=laplacian)
+    out<-list(estimate=outMc)
+  } else {
+  #fits other methods
   if(method=="mle") out<-.mcFitMle(stringchar=data,byrow=byrow)
   if(method=="bootstrap") out<-.mcFitBootStrap(data=data,byrow=byrow,nboot=nboot, parallel=parallel)
   if(method=="laplace") out<-.mcFitLaplacianSmooth(stringchar=data,byrow=byrow,laplacian=laplacian)
+  }
   if(!missing(name)) out$estimate@name<-name
   return(out)
 }
 
 
-#example4Fit<-c(5,6,1,1,6,1,2,6,6,6,2,3,1,4,5,6,9,4,6,2,4,1,2,5,2,4)
-#s<-c(5,6,1,1,6,1,2,6,6,6,4)
-#ciao<-markovchainFit(data=example4Fit,method="mle")
 
+#' Fit a markovchainList
+#' 
+#' @param data Either a matrix or a data.frame object.
+#' @param laplacian Laplacian correction (default 0).
+#' @param byrow Indicates whether distinc stochastic processes trajectiories are shown in distinct rows.
+#' @param name Optional name.
+#' 
+#' @return A list containing two slots:
+#' estimate (the estimate)
+#' name
+#' 
+#' @examples
+#' 
+#' #using holson dataset
+#' data(holson)
+#' #fitting a single markovchain
+#' singleMc<-markovchainFit(data=holson[,2:12])
+#' #fitting a markovchainList
+#' mclistFit<-markovchainListFit(data=holson[,2:12],name="holsonMcList")
+
+markovchainListFit<-function(data,byrow=TRUE, laplacian=0, name) {
+  if (!(class(data) %in% c("data.frame","matrix"))) stop("Error: data must be either a matrix or a data.frame")
+  if(is.data.frame(data)) data<-as.matrix(data)
+  #byrow assumes distinct observations (trajectiories) are per row
+  #otherwise transpose
+  if(!byrow) data<-t(data)
+  nCols<-ncol(data)
+  #allocate a the list of markovchain
+  markovchains<-list(nCols-1)
+  #fit by cols
+  for(i in 2:(nCols)) {
+
+    estMc<-.matr2Mc(matrData = data[,c(i-1,i)],laplacian = laplacian)
+    if(!is.null(colnames(data))) estMc@name<-colnames(data)[i-1]
+    markovchains[i-1]<-estMc
+  }
+  #return the fitted list
+  outMcList<-new("markovchainList",markovchains=markovchains)
+  out<-list(estimate=outMcList)
+  if(!missing(name)) out$estimate@name<-name
+  return(out)
+}
 

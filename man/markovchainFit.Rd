@@ -60,14 +60,14 @@ Giorgio Spedicato
 }
 \note{
 When MLE method is called, the lists contains one entry: estimate. 
-Bootstrap algorithm has been defined "euristically". In addition, parallel facility is not complete,
-involving only a part of the bootstrap process.
+Bootstrap algorithm has been defined "euristically". In addition, parallel facility is not complete,involving only a part of the bootstrap process.
+When \code{data} is either a \code{data.frame} or a \code{matrix} object, only MLE fit is currently available.
 }
 
 \section{Warning }{"mle" method calls \code{createSequenceMatrix} function using \code{sanitize} parameter set to TRUE.}
 
 \seealso{
-\code{\link{markovchainSequence}}
+\code{\link{markovchainSequence}}, \code{\link{markovchainListFit}}
 }
 \examples{
 sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", 
