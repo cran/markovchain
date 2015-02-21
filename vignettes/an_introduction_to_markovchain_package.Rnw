@@ -973,7 +973,8 @@ from \code{matrix} or \code{data.frame} objects as shown in following code.
 <<fitMclists, keep.source=TRUE>>=
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
-mcListFist<-markovchainListFit(data=holson[,2:12],name="holson")
+mcListFit<-markovchainListFit(data=holson[,2:12],name="holson")
+mcListFit$estimate[[1]]
 @
 
 

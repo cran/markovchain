@@ -395,7 +395,8 @@ weatherFittedBOOT$standardError
 ###################################################
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
-mcListFist<-markovchainListFit(data=holson[,2:12],name="holson")
+mcListFit<-markovchainListFit(data=holson[,2:12],name="holson")
+mcListFit$estimate[[1]]
 
 
 ###################################################

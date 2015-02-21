@@ -1,18 +1,42 @@
 #sampler for univariate markov chains
-markovchainSequence<-function(n,markovchain, t0=sample(markovchain@states,1),include.t0=FALSE)
+# markovchainSequence<-function(n,markovchain, t0=sample(markovchain@states,1),include.t0=FALSE)
+# {
+#   if(!(t0%in%markovchain@states)) stop("Error! Initial state not defined")
+#   chain=character()
+#   state=t0
+#   for(i in 1:n) {
+#     rowProbs<-markovchain@transitionMatrix[which(markovchain@states==state),]
+#     outstate<-sample(size=1, x=markovchain@states, prob=rowProbs)
+#     chain=c(chain, outstate)
+#     state=outstate
+#   }
+#   if(include.t0) out<-c(t0, chain) else out<-chain
+#   return(out)
+# }
+
+
+markovchainSequence<-function (n, markovchain, t0 = sample(markovchain@states, 1),
+                               include.t0 = FALSE)
 {
-  if(!(t0%in%markovchain@states)) stop("Error! Initial state not defined")
-  chain=character()
-  state=t0
-  for(i in 1:n) {
-    rowProbs<-markovchain@transitionMatrix[which(markovchain@states==state),]
-    outstate<-sample(size=1, x=markovchain@states, prob=rowProbs)
-    chain=c(chain, outstate)
-    state=outstate
+  if (!(t0 %in% markovchain@states))
+    stop("Error! Initial state not defined")
+  chain <- rep(NA,n)# CHANGED
+  state <- t0
+  for (i in 1:n) {
+    rowProbs <- markovchain@transitionMatrix[which(markovchain@states == state), ]
+    outstate <- sample(size = 1, x = markovchain@states,
+                       prob = rowProbs)
+    chain[i] <- outstate #CHANGED
+    state <- outstate
   }
-  if(include.t0) out<-c(t0, chain) else out<-chain
+  if (include.t0)
+    out <- c(t0, chain)
+  else out <- chain
   return(out)
 }
+
+
+
 ################
 #random sampler#
 ################
