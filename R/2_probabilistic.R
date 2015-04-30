@@ -108,14 +108,16 @@ is.irreducible<-function(object)
 }
 
 
-#qui la funzione firstpassage
+#here the function to compute the first passage
 .firstpassageKernel<-function(P,i,n){
   G<-P
-  H<-P[i,]
+  H <- matrix(NA, ncol=dim(P)[2], nrow=n) #here Thoralf suggestion
+  H[1,]<-P[i,] #initializing the first row
   E<-1-diag(size(P)[2])
   for (m in 2:n) {
     G<-P%*%(G*E)
-    H<-rbind(H,G[i,])
+    #H<-rbind(H,G[i,]) #removed thanks to Thoralf 
+    H[m,] <- G[i,] #here Thoralf suggestion
   }
   return(H)
 }
@@ -135,8 +137,13 @@ firstPassage<-function(object,state,n)
 
 # massimo comun denominatore:
 .gcd = function(f,s) {
-	n=min(abs(f),abs(s))
-	N=max(abs(f),abs(s))
+  
+  f <- abs(f)
+  s <- abs(s)
+  
+	n=min(f,s)
+	N=max(f,s)
+  
 	if (n==0) {
 		g=N
 	}
@@ -153,7 +160,10 @@ firstPassage<-function(object,state,n)
 	}
 	return(g)
 }
-#funzione x analizzare il periodo
+
+
+
+#function to  get the period of a DTMC
 period<-function(object) {
 	check<-is.irreducible(object)
 	if(check==FALSE){
@@ -169,10 +179,10 @@ period<-function(object) {
 	T=c(1)
 	m=size(T,2)
 	while (m>0 & d!=1) {
-		i=T[1]
-		T=T[-1]
-		w=c(w,i)
-		j=1
+		i <- T[1]
+		T <- T[-1]
+		w <- c(w,i)
+		j <- 1
 		while (j<=n) {
 			if (P[i,j]>0) {
 				r=c(w,T)
