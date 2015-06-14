@@ -37,14 +37,14 @@
 %% almost as usual
 
 
-\author{Giorgio Alfredo Spedicato}
+\author{Giorgio Alfredo Spedicato, Tae Seung Kang, and Sai Bhargav Yalamanchi}
 
 \title{The \pkg{markovchain} Package: A Package for Easily Handling Discrete
 Markov Chains in \proglang{R}}
 
 %% for pretty printing and a nice hypersummary also set:
-\Plainauthor{Giorgio Alfredo Spedicato} %% comma-separated
-\Plaintitle{The markovchaing Package: A Package for Easily Handling Discrete
+\Plainauthor{Giorgio Alfredo Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi} %% comma-separated
+\Plaintitle{The markovchain Package: A Package for Easily Handling Discrete
 Markov Chains in R} %% without formatting
 \Shorttitle{The markovchain package} %% a short title (if necessary)
 %% an abstract and keywords
@@ -80,6 +80,20 @@ Finally, some examples in which the package's functions are applied to Economics
   Telephone: +39/334/6634384\\
   E-mail: \email{spedygiorgio@gmail.com}\\
   URL: \url{www.statisticaladvisor.com}\\
+  
+  Tae Seung Kang\\
+  Ph.D student\\
+  Computer \& Information Science \& Engineering\\
+  University of Florida\\
+  Gainesville, FL, USA\\
+  E-mail: \email{tskang3@gmail.com}\\
+  
+  Sai Bhargav Yalamanchi\\
+  B-Tech student\\
+  Electrical Engineering\\
+  Indian Institute of Technology, Bombay\\
+  Mumbai - 400 076, India\\
+  E-mail: \email{bhargavcoolboy@gmail.com}\\
 }
 
 %% for those who use Sweave please include the following line (with % symbols):
@@ -88,6 +102,7 @@ Finally, some examples in which the package's functions are applied to Economics
 %% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 <<setup,echo=FALSE, results=hide>>=
 	options(prompt = "R> ", continue = "+  ", 
@@ -114,7 +129,7 @@ solutions, providing S4 classes for both homogeneous and non-homogeneous Markov 
 The \pkg{markovchain} package depends on the following \proglang{R} packages: \pkg{expm} \citep{expmR} to perform efficient matrices powers; \pkg{igraph} \citep{pkg:igraph} to perform pretty plotting of \code{markovchain} objects and \pkg{matlab} \citep{pkg:matlab}, that contains functions for matrix management and calculations that emulate those within \proglang{MATLAB} environment.
 Moreover, other scientific softwares provide functions specifically designed
 to analyze DTMC, as \proglang{Mathematica} 9 \citep{mathematica9}.\\
-The paper is structured as follows:
+The paper is structured as follows: 
 Section~\ref{sec:mathematic} briefly reviews mathematics and 
 definitions regarding DTMC, Section~\ref{sec:structure}
 discusses how to handle and manage Markov chain objects within the package,
@@ -885,9 +900,9 @@ patientStates[1:10,]
 
 \subsection{Estimation}
 
-A time homogeneous Markov chain can be fit from given data. Three methods have been implemented within current version of
+A time homogeneous Markov chain can be fit from given data. Four methods have been implemented within current version of
 \pkg{markovchain} package: maximum likelihood, maximum likelihood with Laplace
-smoothing, Bootstrap approach.
+smoothing, Bootstrap approach, maximum a posteriori. 
 
 Equation~\ref{eq:MLE} shows the maximum likelihood estimator (MLE) of the
 $p_{ij}$ entry, where the $n_{ij}$ element consists in the number sequences $\left( X_{t}=s_{i}, X_{t+1}=s_{j}\right)$
@@ -898,11 +913,18 @@ found in the sample, that is
 \label{eq:MLE}
 \end{equation}
 
+Equation~\ref{eq:SE} shows the \code{standardError} of the MLE.
+
+\begin{equation}
+SE_{ij} = \frac{ {\hat p^{MLE}}_{ij} }{\sqrt{n_{ij}}}
+\label{eq:SE}
+\end{equation}
 
 <<fitMcbyMLE, keep.source=TRUE>>=
 weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",
                                  name = "Weather MLE")
 weatherFittedMLE$estimate
+weatherFittedMLE$standardError
 @
 
 The Laplace smoothing approach is a variation of the MLE, where the $n_{ij}$
@@ -963,6 +985,20 @@ weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 @
 
+For all the methods, the \code{logLikelihood} denoted in Equation~\ref{eq:LLH} is provided. 
+
+\begin{equation}
+LLH = \sum_{i,j} n_{ij} * log (p_{ij})
+\label{eq:LLH}
+\end{equation}
+where $n_{ij}$ is the entry of the frequency matrix and $p_{ij}$ is the entry of the transition probability matrix.
+
+<<fitMcbyMLE, keep.source=TRUE>>=
+weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",
+                                 name = "Weather MLE")
+weatherFittedMLE$logLikelihood
+@
+
 The functions for fitting DTMC have mostly been rewritten in \proglang{C++} using \pkg{Rcpp} \cite{RcppR} since version 0.2.\\
 
 Is is also possible to fit a DTMC or a \code{markovchainList} object 
@@ -975,6 +1011,7 @@ mcListFit<-markovchainListFit(data=holson[,2:12],name="holson")
 mcListFit$estimate[[1]]
 @
 
+The maximum a posteriori method (MAP) has been implemented using Bayesian inference \citep{sch}. For details on usage, refer to the stand-alone vignette for MAP \citep{MAPmcR}.
 
 \subsection{Prediction}
 

@@ -4,19 +4,9 @@
 
 using namespace Rcpp;
 
-template <typename T>
-T _transpose(T & m) {      
-  int k = m.rows(), n = m.cols();
-  T z(n, k);
-  z.attr("dimnames") = List::create(colnames(m), rownames(m)); 
-  int sz1 = n*k-1;
-  typename T::iterator mit, zit;
-  for (mit = m.begin(), zit = z.begin(); mit != m.end(); mit++, zit += n) {
-  	if (zit >= z.end()) zit -= sz1;
-        *zit = *mit;
-  }
-  return (z);
-}
+#include "mathHelperFunctions.h"
+#include "mapFitFunctionsSAI.h"
+#include <math.h>
 
 NumericMatrix _toRowProbs(NumericMatrix x) {
   int nrow = x.nrow(), ncol = x.ncol();
@@ -42,31 +32,45 @@ NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs=f
   freqMatrix.attr("dimnames") = List::create(elements, elements); 
   CharacterVector rnames = rownames(freqMatrix);
 
-  int posFrom, posTo;
+  int posFrom = 0, posTo = 0;
   for(int i = 0; i < stringchar.size() - 1; i ++) {
-	for (int j = 0; j < rnames.size(); j ++) {
-		if(stringchar[i] == rnames[j]) posFrom = j;
-		if(stringchar[i + 1] == rnames[j]) posTo = j;
-	}
+    for (int j = 0; j < rnames.size(); j ++) {
+      if(stringchar[i] == rnames[j]) posFrom = j;
+      if(stringchar[i + 1] == rnames[j]) posTo = j;
+    }
   	freqMatrix(posFrom,posTo)++;
   }
  
   //sanitizing if any row in the matrix sums to zero by posing the corresponding diagonal equal to 1/dim
   if(sanitize==true)
   {
-	for (int i = 0; i < sizeMatr; i++) {
-    		double rowSum = 0;
-    		for (int j = 0; j < sizeMatr; j++) 
-      			rowSum += freqMatrix(i, j);
-		if(rowSum == 0)
-    			for (int j = 0; j < sizeMatr; j++) 
-      				freqMatrix(i, j) = 1/sizeMatr;
-	}
+    for (int i = 0; i < sizeMatr; i++) {
+      double rowSum = 0;
+      for (int j = 0; j < sizeMatr; j++) 
+      rowSum += freqMatrix(i, j);
+      if(rowSum == 0)
+      for (int j = 0; j < sizeMatr; j++) 
+      freqMatrix(i, j) = 1/sizeMatr;
+    }
   }
   if(toRowProbs==true)
-	freqMatrix = _toRowProbs(freqMatrix);
-
+  freqMatrix = _toRowProbs(freqMatrix);
+  
   return (freqMatrix);
+}
+
+double _loglikelihood(CharacterVector seq, NumericMatrix transMatr) {
+  double out = 0;
+  CharacterVector rnames = rownames(transMatr);
+  int from = 0, to = 0; 
+  for(int i = 0; i < seq.size() - 1; i ++) {
+    for(int r = 0; r < rnames.size(); r ++) {
+      if(rnames[r] == seq[i]) from = r; 
+      if(rnames[r] == seq[i + 1]) to = r; 
+    }    
+    out += log(transMatr(from, to));
+  }
+  return out;
 }
 
 List _mcFitMle(CharacterVector stringchar, bool byrow, double confidencelevel) {
@@ -78,59 +82,62 @@ List _mcFitMle(CharacterVector stringchar, bool byrow, double confidencelevel) {
   NumericMatrix freqMatr(sizeMatr);
   initialMatr.attr("dimnames") = List::create(elements, elements); 
 
-  int posFrom, posTo;
+  int posFrom = 0, posTo = 0;
   for(int i = 0; i < stringchar.size() - 1; i ++) {
-	for (int j = 0; j < sizeMatr; j ++) {
-		if(stringchar[i] == elements[j]) posFrom = j;
-		if(stringchar[i + 1] == elements[j]) posTo = j;
-	}
-  	freqMatr(posFrom,posTo)++;
+    for (int j = 0; j < sizeMatr; j ++) {
+      if(stringchar[i] == elements[j]) posFrom = j;
+      if(stringchar[i + 1] == elements[j]) posTo = j;
+    }
+    freqMatr(posFrom,posTo)++;
   }
- 
+
   // sanitize and to row probs
   for (int i = 0; i < sizeMatr; i++) {
   	double rowSum = 0;
   	for (int j = 0; j < sizeMatr; j++) 
   		rowSum += freqMatr(i, j);
   	// toRowProbs
-    	for (int j = 0; j < sizeMatr; j++) {
-		if(rowSum == 0)
-      			initialMatr(i, j) = 1/sizeMatr;
-		else
-      			initialMatr(i, j) = freqMatr(i, j)/rowSum;
-	}
+  	for (int j = 0; j < sizeMatr; j++) {
+  	  if(rowSum == 0)
+  	    initialMatr(i, j) = 1/sizeMatr;
+  	  else
+  	    initialMatr(i, j) = freqMatr(i, j)/rowSum;
+  	}
   }
 
   if(byrow==false) initialMatr = _transpose(initialMatr);
 
   // confidence interval
   double zscore = stats::qnorm_0(confidencelevel, 1.0, 0.0);
-
-  int n = stringchar.size();
-  NumericMatrix lowerEndpointMatr = NumericMatrix(initialMatr.nrow(), initialMatr.ncol());
-  NumericMatrix upperEndpointMatr = NumericMatrix(initialMatr.nrow(), initialMatr.ncol());
+  int nrows = initialMatr.nrow();
+  int ncols = initialMatr.ncol();
+  NumericMatrix lowerEndpointMatr(nrows, ncols);
+  NumericMatrix upperEndpointMatr(nrows, ncols);
+  NumericMatrix standardError(nrows, ncols);
 
   double marginOfError, lowerEndpoint, upperEndpoint;
-  for(int i = 0; i < initialMatr.nrow(); i ++) {
-	for(int j = 0; j < initialMatr.ncol(); j ++) {
-		marginOfError = zscore * initialMatr(i, j) / sqrt(freqMatr(i, j));
-		lowerEndpoint = initialMatr(i, j) - marginOfError;
-		upperEndpoint = initialMatr(i, j) + marginOfError;
-		lowerEndpointMatr(i,j) = (lowerEndpoint > 1.0) ? 1.0 : ((0.0 > lowerEndpoint) ? 0.0 : lowerEndpoint);
-		upperEndpointMatr(i,j) = (upperEndpoint > 1.0) ? 1.0 : ((0.0 > upperEndpoint) ? 0.0 : upperEndpoint);
-  	}
+  for(int i = 0; i < nrows; i ++) {
+    for(int j = 0; j < ncols; j ++) {
+      standardError(i, j) = initialMatr(i, j) / sqrt(freqMatr(i, j));
+      marginOfError = zscore * standardError(i, j);
+      lowerEndpoint = initialMatr(i, j) - marginOfError;
+      upperEndpoint = initialMatr(i, j) + marginOfError;
+      lowerEndpointMatr(i,j) = (lowerEndpoint > 1.0) ? 1.0 : ((0.0 > lowerEndpoint) ? 0.0 : lowerEndpoint);
+      upperEndpointMatr(i,j) = (upperEndpoint > 1.0) ? 1.0 : ((0.0 > upperEndpoint) ? 0.0 : upperEndpoint);
+    }
   }
-  lowerEndpointMatr.attr("dimnames") = List::create(elements, elements); 
-  upperEndpointMatr.attr("dimnames") = List::create(elements, elements); 
+  standardError.attr("dimnames") = upperEndpointMatr.attr("dimnames") 
+          = lowerEndpointMatr.attr("dimnames") = List::create(elements, elements); 
 
   S4 outMc("markovchain");
   outMc.slot("transitionMatrix") = initialMatr;
   outMc.slot("name") = "MLE Fit";  
   
   return List::create(_["estimate"] = outMc
-		, _["confidenceInterval"] = List::create(_["confidenceLevel"]=confidencelevel, 
-							_["lowerEndpointMatrix"]=lowerEndpointMatr, 
-							_["upperEndpointMatrix"]=upperEndpointMatr)
+		      , _["confidenceInterval"] = List::create(_["confidenceLevel"]=confidencelevel, 
+					                		          _["lowerEndpointMatrix"]=lowerEndpointMatr, 
+							                          _["upperEndpointMatrix"]=upperEndpointMatr)
+							, _["standardError"] = standardError
 	);
 }
 
@@ -160,31 +167,30 @@ List _mcFitLaplacianSmooth(CharacterVector stringchar, bool byrow, double laplac
 List _bootstrapCharacterSequences(CharacterVector stringchar, int n, int size=-1) {
   if(size == -1) size = stringchar.size();
   NumericMatrix contingencyMatrix = createSequenceMatrix(stringchar);
-
   List samples, res;
   CharacterVector itemset = rownames(contingencyMatrix);
   int itemsetsize = itemset.size();
 
   Function sample("sample");
   for(int i = 0; i < n; i ++) {
-	CharacterVector charseq, resvec;	
-  int rnd = (int)(runif(1)(0) * itemsetsize);
- 	String ch = itemset[rnd];
-	charseq.push_back(ch);
-	for(int j = 1; j < size; j ++) {
-		NumericVector probsVector;
-		for(int k = 0; k < itemsetsize; k ++) {
-			if((std::string)itemset[k] == (std::string) ch) {
-				probsVector = contingencyMatrix(k, _);	
-				break;
-			}
-		}
-		res = sample(itemset, 1, true, probsVector);
-		resvec = res[0];
-		ch = resvec[0];
-		charseq.push_back(ch);
- 	}
-	samples.push_back(charseq);
+    CharacterVector charseq, resvec;	
+    int rnd = (int)(runif(1)(0) * itemsetsize);
+    String ch = itemset[rnd];
+    charseq.push_back(ch);
+    for(int j = 1; j < size; j ++) {
+      NumericVector probsVector;
+      for(int k = 0; k < itemsetsize; k ++) {
+        if((std::string)itemset[k] == (std::string) ch) {
+          probsVector = contingencyMatrix(k, _);	
+          break;
+        }
+      }
+      res = sample(itemset, 1, true, probsVector);
+      resvec = res[0];
+      ch = resvec[0];
+      charseq.push_back(ch);
+    }
+    samples.push_back(charseq);
   }
 
   return samples;
@@ -194,18 +200,17 @@ List _fromBoot2Estimate(List listMatr) {
   int sampleSize = listMatr.size();
   NumericMatrix firstMat = listMatr[0];
   int matrDim = firstMat.nrow();
-  NumericMatrix matrMean(matrDim);
-  NumericMatrix matrSd(matrDim);
+  NumericMatrix matrMean(matrDim), matrSd(matrDim);
 
   for(int i = 0; i < matrDim; i ++) { 
   	for(int j = 0; j < matrDim; j ++) { 
-		NumericVector probsEstimated;
-		for(int k = 0; k < sampleSize; k ++) {
-			NumericMatrix mat = listMatr[k];
-			probsEstimated.push_back(mat(i,j));
-		}
-		matrMean(i,j) = mean(probsEstimated);
-		matrSd(i,j) = sd(probsEstimated);
+  	  NumericVector probsEstimated;
+  	  for(int k = 0; k < sampleSize; k ++) {
+  	    NumericMatrix mat = listMatr[k];
+  	    probsEstimated.push_back(mat(i,j));
+  	  }
+  	  matrMean(i,j) = mean(probsEstimated);
+  	  matrSd(i,j) = sd(probsEstimated);
   	}
   }
   matrMean.attr("dimnames") = List::create(rownames(firstMat), colnames(firstMat)); 
@@ -227,14 +232,14 @@ struct ForLoopWorker : public RcppParallel::Worker
    }
 };
 
-List _mcFitBootStrap(CharacterVector data, int nboot=10, bool byrow=true, bool parallel=false) {
+List _mcFitBootStrap(CharacterVector data, int nboot, bool byrow, bool parallel, double confidencelevel) {
   List theList = _bootstrapCharacterSequences(data, nboot);
   int n = theList.size();
   List pmsBootStrapped(n);
 
   if(!parallel) { 
-	for(int i = 0; i < n; i++) 
-		pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, true);
+    for(int i = 0; i < n; i++) 
+      pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, true);
   } else {
   	ForLoopWorker forloop(theList, pmsBootStrapped);
   	parallelFor(0, n, forloop);
@@ -247,9 +252,33 @@ List _mcFitBootStrap(CharacterVector data, int nboot=10, bool byrow=true, bool p
   estimate.slot("byrow") = byrow;
   estimate.slot("name") = "BootStrap Estimate";  
 
+  // confidence interval
+  double zscore = stats::qnorm_0(confidencelevel, 1.0, 0.0);
+  int nrows = transMatr.nrow();
+  int ncols = transMatr.ncol();
+  NumericMatrix lowerEndpointMatr(nrows, ncols), upperEndpointMatr(nrows, ncols);
+  NumericMatrix sigma = estimateList["estSigma"], standardError(nrows, ncols);
+  
+  double marginOfError, lowerEndpoint, upperEndpoint;
+  for(int i = 0; i < nrows; i ++) {
+    for(int j = 0; j < ncols; j ++) {
+      standardError(i, j) = sigma(i, j) / sqrt(n); 
+      marginOfError = zscore * standardError(i, j);
+      lowerEndpoint = transMatr(i, j) - marginOfError;
+      upperEndpoint = transMatr(i, j) + marginOfError;
+      lowerEndpointMatr(i,j) = (lowerEndpoint > 1.0) ? 1.0 : ((0.0 > lowerEndpoint) ? 0.0 : lowerEndpoint);
+      upperEndpointMatr(i,j) = (upperEndpoint > 1.0) ? 1.0 : ((0.0 > upperEndpoint) ? 0.0 : upperEndpoint);
+    }
+  }
+  standardError.attr("dimnames") = upperEndpointMatr.attr("dimnames") 
+              = lowerEndpointMatr.attr("dimnames") = transMatr.attr("dimnames"); 
+  
   return List::create(_["estimate"] = estimate
-		, _["standardError"] = estimateList["estSigma"]
+		, _["standardError"] = standardError
 		, _["bootStrapSamples"] = pmsBootStrapped
+    , _["confidenceInterval"] = List::create(_["confidenceLevel"]=confidencelevel, 
+  				                		          _["lowerEndpointMatrix"]=lowerEndpointMatr, 
+							                          _["upperEndpointMatrix"]=upperEndpointMatr)
 		);
 }
 
@@ -266,16 +295,16 @@ S4 _matr2Mc(CharacterMatrix matrData, double laplacian=0) {
   contingencyMatrix.attr("dimnames") = List::create(uniqueVals, uniqueVals); 
   
   std::set<std::string>::iterator it;
-  int stateBegin, stateEnd;
+  int stateBegin = 0, stateEnd = 0;
   for(int i = 0; i < nRows; i ++) {
-	for(int j = 1; j < nCols; j ++) {
-		int k = 0;
-  		for(it=uniqueVals.begin(); it!=uniqueVals.end(); ++it, k++) {
-			if(*it == (std::string)matrData(i,j-1)) stateBegin = k;
-			if(*it == (std::string)matrData(i,j)) stateEnd = k;
-		}
-    		contingencyMatrix(stateBegin,stateEnd)++;
-	}
+    for(int j = 1; j < nCols; j ++) {
+      int k = 0;
+      for(it=uniqueVals.begin(); it!=uniqueVals.end(); ++it, k++) {
+        if(*it == (std::string)matrData(i,j-1)) stateBegin = k;
+        if(*it == (std::string)matrData(i,j)) stateEnd = k;
+      }
+      contingencyMatrix(stateBegin,stateEnd)++;
+    }
   }
 
   //add laplacian correction if needed
@@ -297,28 +326,117 @@ S4 _matr2Mc(CharacterMatrix matrData, double laplacian=0) {
 }
 
 // [[Rcpp::export]]
-List markovchainFit(SEXP data, String method="mle", bool byrow=true, int nboot=10, double laplacian=0, String name="", bool parallel=false, double confidencelevel=0.95) {
+List inferHyperparam(NumericMatrix transMatr = NumericMatrix(), NumericVector scale = NumericVector(), CharacterVector data = CharacterVector()){
+  if(transMatr.nrow() * transMatr.ncol() == 1 && data.size() == 0)
+    stop("Provide the prior transition matrix or the data set in order to infer the hyperparameters");
+  
+  List out;
+  
+  if(transMatr.nrow() * transMatr.ncol() != 1){
+    if(scale.size() == 0)
+      stop("Provide a non-zero scaling factor vector to infer integer hyperparameters");
+      
+    // begin validity checks for the transition matrix
+    if(transMatr.nrow() != transMatr.ncol())
+      stop("Transition matrix dimensions are inconsistent");
+      
+    int sizeMatr = transMatr.nrow();
+    for(int i = 0; i < sizeMatr; i++){
+      double rowSum = 0., eps = 1e-10;
+      for(int j = 0; j < sizeMatr; j++)
+        rowSum += transMatr(i, j);
+      if(rowSum <= 1. - eps || rowSum >= 1. + eps)
+        stop("The rows of the transition matrix must each sum to 1");
+    }
+    
+    List dimNames = transMatr.attr("dimnames");
+    CharacterVector colNames = dimNames[1];
+    CharacterVector rowNames = dimNames[0];
+    CharacterVector sortedColNames(sizeMatr), sortedRowNames(sizeMatr);
+    for(int i = 0; i < sizeMatr; i++)
+      sortedColNames(i) = colNames(i), sortedRowNames(i) = rowNames(i);
+    sortedColNames.sort();
+    sortedRowNames.sort();
+    
+    for(int i = 0; i < sizeMatr; i++) 
+      if(i > 0 && (sortedColNames(i) == sortedColNames(i-1) || sortedRowNames(i) == sortedRowNames(i-1)))  
+        stop("The states must all be unique");
+      else if(sortedColNames(i) != sortedRowNames(i))
+        stop("The set of row names must be the same as the set of column names");
+        
+    // validity check for the scaling factor vector
+    if(scale.size() != sizeMatr)
+      stop("The dimensions of the scale vector must match the number of states in the chain");
+      
+    for(int i = 0; i < sizeMatr; i++)
+      if(scale(i) == 0)
+        stop("The scaling factors must be non-zero!");
+    
+    NumericMatrix hpScaled(sizeMatr);
+    hpScaled.attr("dimnames") = List::create(rowNames, colNames);
+    for(int i = 0; i < sizeMatr; i++)
+      for(int j = 0; j < sizeMatr; j++)
+        hpScaled(i, j) = scale(i) * transMatr(i, j);
+        
+    hpScaled = sortByDimNames(hpScaled);
+    
+    out = List::create(_["scaledInference"] = hpScaled);
+  }
+  
+  else if(data.size() != 0){
+    CharacterVector elements = data;
+    for(int i = 0; i < data.size(); i++)
+      elements.push_back(data[i]);
+    
+    elements = unique(elements).sort();
+    int sizeMatr = elements.size();
+    
+    NumericMatrix hpData(sizeMatr);
+    hpData.attr("dimnames") = List::create(elements, elements); 
+    std::fill(hpData.begin(), hpData.end(), 1);
+    
+    int posFrom = 0, posTo = 0;
+    for(int i = 0; i < data.size() - 1; i ++) {
+      for (int j = 0; j < sizeMatr; j ++) {
+        if(data[i] == elements[j]) posFrom = j;
+        if(data[i + 1] == elements[j]) posTo = j;
+      }
+      hpData(posFrom,posTo)++;
+    }
+    
+    out = List::create(_["dataInference"] = hpData);
+  }
+  
+  return out;
+}
+
+// [[Rcpp::export]]
+List markovchainFit(SEXP data, String method="mle", bool byrow=true, int nboot=10, double laplacian=0
+            , String name="", bool parallel=false, double confidencelevel=0.95
+            , NumericMatrix hyperparam = NumericMatrix()) 
+{
   List out;
   if(Rf_inherits(data, "data.frame") || Rf_inherits(data, "matrix")) { 
-	CharacterMatrix mat;
-    	//if data is a data.frame forced to matrix
+    CharacterMatrix mat;
+    //if data is a data.frame forced to matrix
   	if(Rf_inherits(data, "data.frame")) {
-		DataFrame df(data);
-		mat = CharacterMatrix(df.nrows(), df.size());
-		for(int i = 0; i < df.size(); i++)
-			mat(_,i) = CharacterVector(df[i]);
- 	} else {
-		mat = data;
-	}
-    	//byrow assumes distinct observations (trajectiories) are per row
-    	//otherwise transpose
+  	  DataFrame df(data);
+  	  mat = CharacterMatrix(df.nrows(), df.size());
+  	  for(int i = 0; i < df.size(); i++)
+    	  mat(_,i) = CharacterVector(df[i]);
+ 	  } else {
+		  mat = data;
+	  }
+  	//byrow assumes distinct observations (trajectiories) are per row
+  	//otherwise transpose
   	if(!byrow) mat = _transpose(mat);
    	S4 outMc =_matr2Mc(mat,laplacian);
- 	out = List::create(_["estimate"] = outMc);
+   	out = List::create(_["estimate"] = outMc);
   } else {
     if(method == "mle") out = _mcFitMle(data, byrow, confidencelevel);
-    if(method == "bootstrap") out = _mcFitBootStrap(data, nboot, byrow, parallel);
+    if(method == "bootstrap") out = _mcFitBootStrap(data, nboot, byrow, parallel, confidencelevel);
     if(method == "laplace") out = _mcFitLaplacianSmooth(data, byrow, laplacian);
+    if(method == "map") out = _mcFitMap(data, byrow, confidencelevel, hyperparam);
   }
 
   if(name != "") {
@@ -328,8 +446,10 @@ List markovchainFit(SEXP data, String method="mle", bool byrow=true, int nboot=1
   }
   
   S4 estimate = out["estimate"];
-  estimate.slot("states") = rownames(estimate.slot("transitionMatrix"));
+  NumericMatrix transMatr = estimate.slot("transitionMatrix");
+  estimate.slot("states") = rownames(transMatr);
   out["estimate"] = estimate;
-  
+  if(!Rf_inherits(data, "data.frame") && !Rf_inherits(data, "matrix")) 
+    out["logLikelihood"] = _loglikelihood(data, transMatr);
   return out;
 }

@@ -7,11 +7,12 @@ Function to fit a discrete Markov chain
 \description{
 Given a sequence of states arising from a stationary state, 
 it fits the underlying Markov chain distribution using either MLE (also using a 
-Laplacian smoother) or bootstrap.
+Laplacian smoother), bootstrap or by MAP (Bayesian) inference. 
 }
 \usage{
-markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10,laplacian=0,name, 
-parallel=FALSE, confidencelevel=0.95)
+markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10L,
+               laplacian = 0, name = "", parallel = FALSE,
+               confidencelevel = 0.95, hyperparam = matrix())
 createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 }
 
@@ -20,7 +21,7 @@ createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = TRUE)
 A character list.
 }
 \item{method}{
-Method used to estimate the Markov chain. Either "mle" or "bootstrap" or "laplace"
+Method used to estimate the Markov chain. Either "mle", "map", "bootstrap" or "laplace"
 }
   \item{byrow}{
 it tells whether the output Markov chain should show the transition probabilities by row.
@@ -41,6 +42,9 @@ Use parallel processing when performing Boostrap estimates.
   \item{confidencelevel}{
 \deqn{\alpha} level for conficence intervals width. Used only when \code{method} equal to "mle".
 }
+  \item{hyperparam}{
+Hyperparameter matrix for the a priori distribution. If none is provided, default value of 1 is assigned to each parameter. This must be of size kxk where k is the number of states in the chain and the values should typically be non-negative integers.
+}
   \item{stringchar}{
 Equivalent to data
 }
@@ -52,18 +56,22 @@ put 1 in all rows having rowSum equal to zero
 }
 }
 \value{
-A list containing an estimate and, when "bootstrap" method is used, a matrix 
-of standards deviations and the bootstrap samples.
+A list containing an estimate, log-likelihood, and, when "bootstrap" method is used, a matrix 
+of standards deviations and the bootstrap samples. When the "mle", "bootstrap" or "map" method is used, the lower and upper confidence bounds are returned along with the standard error. The "map" method also returns the expected value of the parameters with respect to the posterior distribution.
 }
 \references{
 A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
+
+Inferring Markov Chains: Bayesian Estimation, Model Comparison, Entropy Rate, and Out-of-Class Modeling, Christopher C. Strelioff, James P. Crutchfield, Alfred Hubler, Santa Fe Institute
+
+Yalamanchi SB, Spedicato GA (2015). Bayesian Inference of First Order Markov Chains. R
+package version 0.2.5
 }
 \author{
-Giorgio Spedicato
+Giorgio Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi
 }
 \note{
-This function has been rewritten in Rcpp in most parts.
-When MLE method is called, the lists contains one entry: estimate. 
+This function has been rewritten in Rcpp.
 Bootstrap algorithm has been defined "euristically". In addition, parallel facility is not complete,involving only a part of the bootstrap process.
 When \code{data} is either a \code{data.frame} or a \code{matrix} object, only MLE fit is currently available.
 }

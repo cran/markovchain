@@ -26,10 +26,13 @@ test_that("States are those that should be", {
   expect_equal(transientStates(markov1), c("a","c"))
   expect_equal(is.irreducible(mathematicaMc),FALSE)
   expect_equal(transientStates(mathematicaMc), c("a","b"))
+  expect_equal(is.accessible(mathematicaMc, "a", "c"),TRUE)
+  expect_equal(.canonicForm(mathematicaMc)@transitionMatrix, .canonicFormRcpp(mathematicaMc)@transitionMatrix) 
+  expect_equal(summary(mathematicaMc), list(closedClasses = list(c("c", "d"), c("e")), 
+                                            transientClasses = list(c("a", "b"))))
 })
 
-
-###testing proper conversion of objeects
+###testing proper conversion of objects
 context("Conversion of objects")
 provaMatr2Mc<-as(mathematicaMatr,"markovchain")
 
@@ -37,4 +40,14 @@ test_that("Conversion of objects",
           {
             expect_equal(class(provaMatr2Mc)=="markovchain",TRUE)
           })
+
+###perform some fitting
+sequence1<-c("a", "b", "a", "a", "a")
+sequence2<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
+mcFit<-markovchainFit(data=sequence1,byrow=FALSE)
+test_that("Fit should satisfy", {
+  expect_equal((mcFit["logLikelihood"])[[1]], log(1/3) + 2*log(2/3))
+  expect_equal(markovchainFit(data=sequence2, method="bootstrap")["confidenceInterval"]
+               [[1]]["confidenceLevel"][[1]], 0.95)
+})
 

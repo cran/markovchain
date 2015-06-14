@@ -1,3 +1,5 @@
+#@TAE: substitute calls to hidden functions written in 2_probabilistic with Rcpp ones.
+
 # define Markov Chain class
 
 setClass("markovchain", #class name
@@ -70,14 +72,14 @@ setMethod("initialize",
 #                                                  dimnames=list(stateNames,stateNames)
 #                                                  ))
 
+#@TAE: try to see if it can be moved to Rcpp efficiently
 
-
-.isProb<-function(prob)
-{
-	if (class(prob)!="numeric") return(FALSE)
-	if (prob<0 | prob >1) return(FALSE)
-	return(TRUE)
-}
+# .isProb<-function(prob)
+# {
+# 	if (class(prob)!="numeric") return(FALSE)
+# 	if (prob<0 | prob >1) return(FALSE)
+# 	return(TRUE)
+# }
 
 
 # generic method to print out states
@@ -115,7 +117,7 @@ setValidity("markovchain",
 		function(object) {
 			check<-NULL
 			# performs a set of check whose results are saved in check
-			if (any(sapply(as.numeric(object@transitionMatrix),.isProb))==FALSE) check <- "Error! Some elements are not probabilities" #checks if probability
+			if (any(sapply(as.numeric(object@transitionMatrix),.isProbRcpp))==FALSE) check <- "Error! Some elements are not probabilities" #checks if probability
 			if (object@byrow==TRUE) {
 				if(any(round(rowSums(object@transitionMatrix),5)!=1)) check <- "Error! Row sums not equal to one"
 			} else {
@@ -160,6 +162,8 @@ setValidity("markovchain",
   # subset the eigenvectors
   # normalize
   # take the real part: need to be sanitized
+	#@TAE: later we have to see and optimize this part. I am not sure taking
+	#the real part is the most appropriate.
   out <- Re(out)
   return(out)
 }
@@ -211,7 +215,7 @@ setMethod("transientStates","markovchain",
 		function(object) {
 			out <- character()
 			matr <- object@transitionMatrix #extract the byrow transition matrix
-			temp <- .commclassesKernel(matr)
+			temp <- .commclassesKernelRcpp(matr)
 			index <- which(temp$v==FALSE)
 			if(length(index)>0) out <- names(temp$v[index])
 			return(out)
@@ -312,6 +316,8 @@ setMethod("plot", signature(x="markovchain", y="missing"),
 )
 
 
+#@TAE: create an internal function that does this. Check also if the canonic form function 
+#is appropriate
 
  # method to convert into canonic form a markovchain object
  # TODO: check meaninsg of this function
@@ -320,7 +326,7 @@ setMethod("canonicForm","markovchain",
           function(object)
           {
             P <- object@transitionMatrix
-            comclasList <- .commclassesKernel(P)
+            comclasList <- .commclassesKernelRcpp(P)
             vu <- comclasList$v
 			
             u <- find(vu==TRUE)
@@ -347,13 +353,40 @@ setMethod("canonicForm","markovchain",
           }
 )
 
-
+.canonicForm<-function(object)
+{
+  P <- object@transitionMatrix
+  comclasList <- .commclassesKernelRcpp(P)
+  vu <- comclasList$v
+  
+  u <- find(vu==TRUE)
+  w <- find(vu==FALSE)
+  
+  Cmatr <- comclasList$C
+  R <- numeric()
+  while(length(u)>0)
+  {
+    R <- c(R,u[1])
+    vu <- as.logical(vu*(Cmatr[u[1],]==FALSE));
+    u <- find(vu==TRUE);
+  }
+  p <- numeric()
+  for (i in 1:length(R))
+  {
+    a <- find(Cmatr[R[i],])
+    p <- c(p,a)
+  }
+  p <- c(p, w)
+  Q <- P[p,p]
+  out<-new("markovchain",transitionMatrix=Q,name=object@name)
+  return(out)
+}
 
 # summary method for markovchain class
 # lists: closed, transient classes, irreducibility, absorbint, transient states
 setMethod("summary", signature(object="markovchain"),
 		function(object){
-			outs <- .summaryKernel(object)
+			outs <- .summaryKernelRcpp(object)
 			cat(object@name," Markov chain that is composed by:","\n")
 			check <- length(outs$closedClasses)
 			cat("Closed classes:","\n")
@@ -387,7 +420,7 @@ setMethod("summary", signature(object="markovchain"),
 	
 	for(i in 1:nrow(matr)) {
 		for(j in 1:ncol(matr)){
-			if(!(.isProb(matr[i,j]))){
+			if(!(.isProbRcpp(matr[i,j]))){
 				if(verbose) stop("Error! Non probabilities")
 				return(FALSE)}
 		}
@@ -470,7 +503,7 @@ setAs(from="markovchain", to="data.frame", def=.mc2Df)
 	
 	for(i in 1:ncol(df))
 		{
-			if((class(df[,i])=="numeric")&(all(sapply(df[,i], .isProb)==TRUE))) #when found the first numeric and probability col
+			if((class(df[,i])=="numeric")&(all(sapply(df[,i], .isProbRcpp)==TRUE))) #when found the first numeric and probability col
 				{
 					out=i
 					break
