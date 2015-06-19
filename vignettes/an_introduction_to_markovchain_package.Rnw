@@ -985,7 +985,29 @@ weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 @
 
-For all the methods, the \code{logLikelihood} denoted in Equation~\ref{eq:LLH} is provided. 
+The bootstrapping process can be done in \code{parallel}.
+
+<<fitMcbyBootStrap, keep.source=TRUE, eval=FALSE>>=
+weatherFittedBOOTParallel <- markovchainFit(data = weathersOfDays, 
+                                    method = "bootstrap", nboot = 10, 
+                                    parallel = TRUE)
+weatherFittedBOOTParallel$estimate
+weatherFittedBOOTParallel$standardError
+@
+
+The parallel bootstrapping uses all the available cores on a machine by default.
+However, it is also possible to tune the number of threads used. 
+Note that this should be done in R before calling the \code{markovchainFit} function.
+For example, the following code will set the number of threads to 4.
+
+<<fitMcbyBootStrap, keep.source=TRUE, eval=FALSE>>=
+RcppParallel::setNumThreads(4)
+@
+
+For more details, please refer to \pkg{RcppParallel} (http://rcppcore.github.io/RcppParallel/).
+
+
+For all the fitting methods, the \code{logLikelihood} denoted in Equation~\ref{eq:LLH} is provided. 
 
 \begin{equation}
 LLH = \sum_{i,j} n_{ij} * log (p_{ij})
@@ -994,9 +1016,8 @@ LLH = \sum_{i,j} n_{ij} * log (p_{ij})
 where $n_{ij}$ is the entry of the frequency matrix and $p_{ij}$ is the entry of the transition probability matrix.
 
 <<fitMcbyMLE, keep.source=TRUE>>=
-weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",
-                                 name = "Weather MLE")
 weatherFittedMLE$logLikelihood
+weatherFittedBOOT$logLikelihood
 @
 
 Confidence matrices of estimated parameters (parametric for MLE, non - parametric for BootStrap) are available as well.

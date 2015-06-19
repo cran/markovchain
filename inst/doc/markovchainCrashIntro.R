@@ -3,7 +3,8 @@ library(knitr)
 rm(list=ls())
 
 ## ----load, echo=TRUE, warning=FALSE--------------------------------------
-library(markovchain) #load the package
+#load the package
+library(markovchain) 
 
 ## ----create, echo=TRUE, tidy=FALSE, message=FALSE,tidy=FALSE-------------
 tmA <- matrix(c(0,0.5,0.5,.5,0,.5,.5,.5,0),nrow = 3,
