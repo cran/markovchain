@@ -82,6 +82,7 @@ round(after7Days, 3)
 ### code chunk number 10: otherMethods
 ###################################################
 states(mcWeather)
+names(mcWeather)
 dim(mcWeather)
 
 

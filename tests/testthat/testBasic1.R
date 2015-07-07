@@ -18,6 +18,7 @@ mathematicaMatr[5,] <- c(0, 0, 0, 0, 1)
 statesNames <- letters[1:5]
 mathematicaMc <- new("markovchain", transitionMatrix = mathematicaMatr,
                      name = "Mathematica MC", states = statesNames)
+
 ####end creating DTMC
 context("Basic DTMC proprieties")
 
@@ -27,7 +28,8 @@ test_that("States are those that should be", {
   expect_equal(is.irreducible(mathematicaMc),FALSE)
   expect_equal(transientStates(mathematicaMc), c("a","b"))
   expect_equal(is.accessible(mathematicaMc, "a", "c"),TRUE)
-  expect_equal(.canonicForm(mathematicaMc)@transitionMatrix, .canonicFormRcpp(mathematicaMc)@transitionMatrix) 
+  expect_equal(.canonicForm(mathematicaMc)@transitionMatrix, .canonicFormRcpp(mathematicaMc)@transitionMatrix)
+  expect_equal(.recurrentClassesRcpp(mathematicaMc), list(c("c", "d"), c("e")))
   expect_equal(summary(mathematicaMc), list(closedClasses = list(c("c", "d"), c("e")), 
                                             transientClasses = list(c("a", "b"))))
 })
@@ -50,13 +52,6 @@ test_that("Fit should satisfy", {
   expect_equal(markovchainFit(data=sequence2, method="bootstrap")["confidenceInterval"]
                [[1]]["confidenceLevel"][[1]], 0.95)
 })
-
-data(rain)
-sequs<-rain$rain
-# mcBoot<-markovchainFit(data = sequs,nboot = 10,method="bootstrap") #ok
-# mcBoot2<-markovchainFit(data = sequs,nboot = 200,method="bootstrap") #ok but slower
-mcBoot<-markovchainFit(data = sequs[1:100],nboot = 100,method="bootstrap",parallel=TRUE) # ok
-# mcBoot<-markovchainFit(data = sequs,nboot = 100,method="bootstrap",parallel=TRUE)
 
 ### MAP fit function tests
 data1 <- c("a", "b", "a", "c", "a", "b", "a", "b", "c", "b", "b", "a", "b")
@@ -111,4 +106,29 @@ test_that("inferHyperparam must satisfy", {
                             8, 2, 5, 
                             2, 2, 0), nrow = 3, 
                           dimnames = list(c("a", "b", "c"), c("a", "b", "c"))))
+})
+
+pDRes <- c(log(3/2), log(3/2))
+names(pDRes) <- c("a", "b")
+test_that("priorDistribution must sastisfy", {
+  expect_equal(priorDistribution(matrix(c(0.5, 0.5, 0.5, 0.5), 
+                                            nrow = 2, 
+                                            dimnames = list(c("a", "b"), c("a", "b"))), 
+                                     matrix(c(2, 2, 2, 2), 
+                                            nrow = 2, 
+                                            dimnames = list(c("a", "b"), c("a", "b")))), 
+                   pDRes)
+})
+
+energyStates <- c("sigma", "sigma_star")
+byRow <- TRUE
+gen <- matrix(data = c(-3, 3,
+                       1, -1), nrow = 2,
+              byrow = byRow, dimnames = list(energyStates, energyStates))
+molecularCTMC <- new("ctmc", states = energyStates, 
+                     byrow = byRow, generator = gen, 
+                     name = "Molecular Transition Model")      
+test_that("steadyStates must satisfy", {
+  expect_identical(steadyStates(molecularCTMC), 
+                   matrix(c(1/4, 3/4), nrow = 1, dimnames = list(c(), energyStates)))
 })

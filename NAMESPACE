@@ -2,6 +2,7 @@ useDynLib(markovchain)
 exportPattern("^[[:alpha:]]+")
 import(igraph, Matrix,  methods)
 import(parallel)
+importFrom(MultinomialCI, multinomialCI)
 importFrom(utils, packageDescription)
 importFrom(Rcpp, evalCpp)
 importFrom(RcppParallel, RcppParallelLibs)
@@ -12,6 +13,8 @@ importFrom("matlab", eye)
 importFrom("matlab", size)
 importFrom("matlab", ones)
 importFrom("expm",'%^%')
+
+importFrom("stats", sd,rexp)
 
 exportMethods(
     "*",

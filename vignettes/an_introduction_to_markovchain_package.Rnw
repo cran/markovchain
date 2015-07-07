@@ -403,6 +403,7 @@ manipulate \code{markovchain} objects.
   \code{as} & Operator to convert \code{markovchain} objects into \code{data.frame} and\\
   & \code{table} object.\\
 \code{dim} & Dimension of the transition matrix.\\
+\code{names} & Equal to \code{states}.\\
 \code{plot} & \code{plot} method for \code{markovchain} objects.\\
 \code{print} & \code{print} method for \code{markovchain} objects.\\
 \code{show} & \code{show} method for \code{markovchain} objects.\\
@@ -442,6 +443,7 @@ quickly get states and transition matrix dimension.
 
 <<otherMethods, keep.source=TRUE>>=
 states(mcWeather)
+names(mcWeather)
 dim(mcWeather)
 @
 
@@ -610,13 +612,15 @@ Table~\ref{tab:methodsToStats} shows methods that can be applied on \code{markov
     \hline  \hline
   \code{absorbingStates} & the absorbing states of the transition
   matrix, if any.\\
-\code{conditionalDistribution} & the conditional distribution of the
-subsequent state \\
+  \code{steadyStates} & the vector(s) of steady state(s) in matrix
+form.\\
+\code{communicatingClasses} & list of communicating classes. \\
  & $s_{j}$, given actual state $s_{i}$.\\
 \code{canonicForm} & the transition matrix into canonic form.\\
 \code{is.accessible} & verification if a state j is reachable from state i.\\
 \code{is.irreducible} & verification whether a DTMC is irreducible.\\
 \code{period} & the period of an irreducible DTMC.\\
+\code{recurrentClasses} & list of recurrent classes. \\
 \code{steadyStates} & the vector(s) of steady state(s) in matrix
 form.\\
 \code{summary} & DTMC summary.\\
@@ -913,7 +917,7 @@ found in the sample, that is
 \label{eq:MLE}
 \end{equation}
 
-Equation~\ref{eq:SE} shows the \code{standardError} of the MLE.
+Equation~\ref{eq:SE} shows the \code{standardError} of the MLE~\citep{MSkuriat}.
 
 \begin{equation}
 SE_{ij} = \frac{ {\hat p^{MLE}}_{ij} }{\sqrt{n_{ij}}}
@@ -1007,7 +1011,7 @@ RcppParallel::setNumThreads(4)
 For more details, please refer to \pkg{RcppParallel} (http://rcppcore.github.io/RcppParallel/).
 
 
-For all the fitting methods, the \code{logLikelihood} denoted in Equation~\ref{eq:LLH} is provided. 
+For all the fitting methods, the \code{logLikelihood}~\citep{MSkuriat} denoted in Equation~\ref{eq:LLH} is provided. 
 
 \begin{equation}
 LLH = \sum_{i,j} n_{ij} * log (p_{ij})
@@ -1020,7 +1024,15 @@ weatherFittedMLE$logLikelihood
 weatherFittedBOOT$logLikelihood
 @
 
-Confidence matrices of estimated parameters (parametric for MLE, non - parametric for BootStrap) are available as well.
+Confidence matrices of estimated parameters (parametric for MLE, non - parametric for BootStrap) are available as well. The \code{confidenceInterval} is provided with the two matrices: \code{lowerEndpointMatrix} and \code{upperEndpointMatrix}. The confidence level (CL) is 0.95 by default and can be given as an argument of the function \code{markovchainFit}. This is used to obtain the standard score (z-score).
+Equations~\ref{eq:CIL} and~\ref{eq:CIU}~\citep{MSkuriat} show the \code{confidenceInterval} of a fitting.
+Note that each entry of the matrices is bounded between 0 and 1.
+
+\begin{align}
+LowerEndpoint_{ij} = p_{ij} - zscore (CL) * SE_{ij} \label{eq:CIL} \\
+UpperEndpoint_{ij} = p_{ij} + zscore (CL) * SE_{ij}
+\label{eq:CIU}
+\end{align}
 
 <<confint, keep.source=TRUE>>=
 weatherFittedMLE$confidenceInterval

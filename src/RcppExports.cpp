@@ -17,8 +17,19 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// isGen
+bool isGen(NumericMatrix gen);
+RcppExport SEXP markovchain_isGen(SEXP genSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type gen(genSEXP);
+    __result = Rcpp::wrap(isGen(gen));
+    return __result;
+END_RCPP
+}
 // canonicForm
-extern "C" SEXP canonicForm(S4 object);
+SEXP canonicForm(S4 object);
 RcppExport SEXP markovchain_canonicForm(SEXP objectSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
@@ -28,17 +39,28 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// generatorToTransitionMatrix
+NumericMatrix generatorToTransitionMatrix(NumericMatrix gen, bool byrow);
+RcppExport SEXP markovchain_generatorToTransitionMatrix(SEXP genSEXP, SEXP byrowSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type gen(genSEXP);
+    Rcpp::traits::input_parameter< bool >::type byrow(byrowSEXP);
+    __result = Rcpp::wrap(generatorToTransitionMatrix(gen, byrow));
+    return __result;
+END_RCPP
+}
 // createSequenceMatrix
-NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs, bool sanitize, bool parallel);
-RcppExport SEXP markovchain_createSequenceMatrix(SEXP stringcharSEXP, SEXP toRowProbsSEXP, SEXP sanitizeSEXP, SEXP parallelSEXP) {
+NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs, bool sanitize);
+RcppExport SEXP markovchain_createSequenceMatrix(SEXP stringcharSEXP, SEXP toRowProbsSEXP, SEXP sanitizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< CharacterVector >::type stringchar(stringcharSEXP);
     Rcpp::traits::input_parameter< bool >::type toRowProbs(toRowProbsSEXP);
     Rcpp::traits::input_parameter< bool >::type sanitize(sanitizeSEXP);
-    Rcpp::traits::input_parameter< bool >::type parallel(parallelSEXP);
-    __result = Rcpp::wrap(createSequenceMatrix(stringchar, toRowProbs, sanitize, parallel));
+    __result = Rcpp::wrap(createSequenceMatrix(stringchar, toRowProbs, sanitize));
     return __result;
 END_RCPP
 }
@@ -75,7 +97,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // commclassesKernel
-extern "C" SEXP commclassesKernel(NumericMatrix P);
+SEXP commclassesKernel(NumericMatrix P);
 RcppExport SEXP markovchain_commclassesKernel(SEXP PSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
@@ -86,13 +108,24 @@ BEGIN_RCPP
 END_RCPP
 }
 // communicatingClasses
-List communicatingClasses(LogicalMatrix adjMatr);
-RcppExport SEXP markovchain_communicatingClasses(SEXP adjMatrSEXP) {
+List communicatingClasses(S4 object);
+RcppExport SEXP markovchain_communicatingClasses(SEXP objectSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< LogicalMatrix >::type adjMatr(adjMatrSEXP);
-    __result = Rcpp::wrap(communicatingClasses(adjMatr));
+    Rcpp::traits::input_parameter< S4 >::type object(objectSEXP);
+    __result = Rcpp::wrap(communicatingClasses(object));
+    return __result;
+END_RCPP
+}
+// recurrentClasses
+List recurrentClasses(S4 object);
+RcppExport SEXP markovchain_recurrentClasses(SEXP objectSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< S4 >::type object(objectSEXP);
+    __result = Rcpp::wrap(recurrentClasses(object));
     return __result;
 END_RCPP
 }
@@ -132,14 +165,25 @@ BEGIN_RCPP
 END_RCPP
 }
 // gcd
-double gcd(int f, int s);
-RcppExport SEXP markovchain_gcd(SEXP fSEXP, SEXP sSEXP) {
+int gcd(int a, int b);
+RcppExport SEXP markovchain_gcd(SEXP aSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< int >::type f(fSEXP);
-    Rcpp::traits::input_parameter< int >::type s(sSEXP);
-    __result = Rcpp::wrap(gcd(f, s));
+    Rcpp::traits::input_parameter< int >::type a(aSEXP);
+    Rcpp::traits::input_parameter< int >::type b(bSEXP);
+    __result = Rcpp::wrap(gcd(a, b));
+    return __result;
+END_RCPP
+}
+// period
+int period(S4 object);
+RcppExport SEXP markovchain_period(SEXP objectSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< S4 >::type object(objectSEXP);
+    __result = Rcpp::wrap(period(object));
     return __result;
 END_RCPP
 }
@@ -153,6 +197,31 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type newData(newDataSEXP);
     Rcpp::traits::input_parameter< NumericMatrix >::type hyperparam(hyperparamSEXP);
     __result = Rcpp::wrap(predictiveDistribution(stringchar, newData, hyperparam));
+    return __result;
+END_RCPP
+}
+// priorDistribution
+NumericVector priorDistribution(NumericMatrix transMatr, NumericMatrix hyperparam);
+RcppExport SEXP markovchain_priorDistribution(SEXP transMatrSEXP, SEXP hyperparamSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type transMatr(transMatrSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type hyperparam(hyperparamSEXP);
+    __result = Rcpp::wrap(priorDistribution(transMatr, hyperparam));
+    return __result;
+END_RCPP
+}
+// multinomCI
+List multinomCI(NumericMatrix transMat, NumericMatrix seqMat, double confidencelevel);
+RcppExport SEXP markovchain_multinomCI(SEXP transMatSEXP, SEXP seqMatSEXP, SEXP confidencelevelSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type transMat(transMatSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type seqMat(seqMatSEXP);
+    Rcpp::traits::input_parameter< double >::type confidencelevel(confidencelevelSEXP);
+    __result = Rcpp::wrap(multinomCI(transMat, seqMat, confidencelevel));
     return __result;
 END_RCPP
 }

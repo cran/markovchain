@@ -65,14 +65,14 @@ setMethod("initialize",
 		callNextMethod(.Object, states = states, byrow = byrow, transitionMatrix=transitionMatrix,name=name,...)
     }
 )
-		 
+
 # #test
 # stateNames=c("a","b")
 # ciao<-new("markovchain", states=stateNames, transitionMatrix=matrix(c(1,0,0,1),byrow=TRUE, nrow=2, 
 #                                                  dimnames=list(stateNames,stateNames)
 #                                                  ))
 
-#@TAE: try to see if it can be moved to Rcpp efficiently
+
 
 # .isProb<-function(prob)
 # {
@@ -88,6 +88,14 @@ setGeneric("states", function(object) standardGeneric("states"))
 setMethod("states","markovchain", 
           function(object) {
             out <- object@states
+            return(out)
+          }
+)
+
+#adding a method names
+setMethod("names","markovchain", 
+          function(x) {
+            out <- x@states
             return(out)
           }
 )
@@ -129,8 +137,6 @@ setValidity("markovchain",
 			if ( is.null(check) ) return(TRUE) else return(check)
 		}
 )
-
-
 
 .mcEigen<-function(matr, transpose=TRUE)
 {
@@ -285,9 +291,13 @@ setMethod("print","markovchain", #metodo print
 	#
 	# a graph adjacenty
 	if (object@byrow==FALSE) object <- t(object)
-	matr <- Matrix(data=object@transitionMatrix, sparse=TRUE)*100 #need to multiply by 100
+	#with this fails 
+	#matr <- Matrix(data=object@transitionMatrix, sparse = TRUE)*100 #need to multiply by 100
+	#with this works. 
+	matr<-object@transitionMatrix*100
 	if(round==TRUE) matr <- round(matr,2)
 	net <- graph.adjacency(adjmatrix=matr, weighted=TRUE, mode="directed")
+	#net<-graph_from_adjacency_matrix(adjmatrix = matr,weighted = TRUE,mode="directed")
 	return(net)
 }
 
@@ -314,6 +324,8 @@ setMethod("plot", signature(x="markovchain", y="missing"),
 			plot.igraph(x=netMc,edge.label=edgeLabel, ...)
 		}
 )
+
+
 
 
 #@TAE: create an internal function that does this. Check also if the canonic form function 
@@ -671,30 +683,41 @@ setMethod("*", c("markovchain","numeric"),
 setMethod("==", c("markovchain","markovchain"),
           function(e1, e2) {
             out <- FALSE
-            out <- identical(e1@transitionMatrix, e2@transitionMatrix)
+            out <-
+              identical(e1@transitionMatrix, e2@transitionMatrix)
             return(out)
-          }
-)
+          })
 
+setMethod("!=", c("markovchain","markovchain"),
+          function(e1, e2) {
+            out <- FALSE
+            out <-
+              (!(identical(
+                e1@transitionMatrix, e2@transitionMatrix
+              )))
+            return(out)
+          })
 
 setMethod("^", c("markovchain", "numeric"),
-function(e1, e2) {
-	 out <- new("markovchain", states=e1@states, byrow=e1@byrow,transitionMatrix=e1@transitionMatrix%^%e2,
-			 name=paste(e1@name,"^",e2,sep=""))
-	 return(out)
-}
-)
+          function(e1, e2) {
+            out <-
+              new(
+                "markovchain", states = e1@states, byrow = e1@byrow,transitionMatrix = e1@transitionMatrix %^%
+                  e2,
+                name = paste(e1@name,"^",e2,sep = "")
+              )
+            return(out)
+          })
 
 
 #methods to directly access transition matrix elements
 
 setMethod("[",
-		signature(x = "markovchain", i = "ANY", j = "ANY"),
-		function(x, i, j) {
-			out <- x@transitionMatrix[i,j]
-			return(out)
-		}
-)
+          signature(x = "markovchain", i = "ANY", j = "ANY"),
+          function(x, i, j) {
+            out <- x@transitionMatrix[i,j]
+            return(out)
+          })
 
 #methods to directly access markovchain objects composing a markovchainList object
 

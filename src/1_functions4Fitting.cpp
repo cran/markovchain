@@ -24,57 +24,9 @@ NumericMatrix _toRowProbs(NumericMatrix x) {
   return out;
 }
 
-// worker for parallel loop
-struct SanitizeLoop : public RcppParallel::Worker
-{
-  const RcppParallel::RMatrix< double > input;
-  RcppParallel::RMatrix< double > output;
-  int sizeMatr;
-
-  SanitizeLoop(const NumericMatrix input, NumericMatrix output, int sizeMatr)
-    : input(input), output(output), sizeMatr(sizeMatr) {}
-
-  void operator()(std::size_t begin, std::size_t end) {
-    for(size_t i = begin; i < end; i ++) {
-      double rowSum = 0;
-      for (int j = 0; j < sizeMatr; j++) 
-        rowSum += input(i, j);
-      if(rowSum == 0)
-        for (int j = 0; j < sizeMatr; j++) 
-          output(i, j) = 1/sizeMatr;
-    }
-  }
-};
-
-// worker for parallel loop
-struct FreqLoop : public RcppParallel::Worker
-{
-  const RcppParallel::RMatrix< double > input;
-  RcppParallel::RMatrix< double > output;
-  CharacterVector seq, rnames;
-
-  FreqLoop(const NumericMatrix input, NumericMatrix output, CharacterVector seq, CharacterVector rnames)
-    : input(input), output(output), seq(seq), rnames(rnames) {}
-
-  void operator()(std::size_t begin, std::size_t end) {
-    int posFrom = 0, posTo = 0;
-    for(size_t i = begin; i < end; i ++) {
-      for (int j = 0; j < rnames.size(); j ++) {
-        if(seq[i] == rnames[j]) posFrom = j;
-        if(seq[i + 1] == rnames[j]) posTo = j;
-      }
-      output(posFrom,posTo)++;
-    }
-  }
-};
-
 // [[Rcpp::export]]
-NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs=false, bool sanitize=true, bool parallel=false) {
-  clock_t begin = clock();
+NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs=false, bool sanitize=true) {
   CharacterVector elements = unique(stringchar).sort();
-  clock_t end = clock();
-  double ms = double (end - begin) / CLOCKS_PER_SEC * 1000;
-//  Rcout << ms << " ms (" << end << "-" << begin << ")" << std::endl;
   int sizeMatr = elements.size();
   
   NumericMatrix freqMatrix(sizeMatr);
@@ -82,26 +34,17 @@ NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs=f
   CharacterVector rnames = rownames(freqMatrix);
 
   int posFrom = 0, posTo = 0;
-  if(parallel) {
-    FreqLoop worker(freqMatrix, freqMatrix, stringchar, rnames);
-    parallelFor(0, stringchar.size() - 1, worker);
-  } else {
-    for(int i = 0; i < stringchar.size() - 1; i ++) {
-      for (int j = 0; j < rnames.size(); j ++) {
-        if(stringchar[i] == rnames[j]) posFrom = j;
-        if(stringchar[i + 1] == rnames[j]) posTo = j;
-      }
-    	freqMatrix(posFrom,posTo)++;
+  for(int i = 0; i < stringchar.size() - 1; i ++) {
+    for (int j = 0; j < rnames.size(); j ++) {
+      if(stringchar[i] == rnames[j]) posFrom = j;
+      if(stringchar[i + 1] == rnames[j]) posTo = j;
     }
+    freqMatrix(posFrom,posTo)++;
   }
- 
+  
   //sanitizing if any row in the matrix sums to zero by posing the corresponding diagonal equal to 1/dim
   if(sanitize==true)
   {
-//    if(parallel) {
-//      SanitizeLoop worker(freqMatrix, freqMatrix, sizeMatr);
-//      parallelFor(0, sizeMatr, worker);
-//    } else {
       for (int i = 0; i < sizeMatr; i++) {
         double rowSum = 0;
         for (int j = 0; j < sizeMatr; j++) 
@@ -110,7 +53,6 @@ NumericMatrix createSequenceMatrix(CharacterVector stringchar, bool toRowProbs=f
           for (int j = 0; j < sizeMatr; j++) 
             freqMatrix(i, j) = 1/sizeMatr;
       }
-//    }
   }
   if(toRowProbs==true)
     freqMatrix = _toRowProbs(freqMatrix);
@@ -269,7 +211,7 @@ List _fromBoot2Estimate(List listMatr) {
   	    probsEstimated.push_back(mat(i,j));
   	  }
   	  matrMean(i,j) = mean(probsEstimated);
-  	  matrSd(i,j) = sd(probsEstimated);
+  	  matrSd(i,j) = Rcpp::sd(probsEstimated);
   	}
   }
   matrMean.attr("dimnames") = List::create(rownames(firstMat), colnames(firstMat)); 
@@ -282,8 +224,13 @@ List _mcFitBootStrap(CharacterVector data, int nboot, bool byrow, bool parallel,
   int n = theList.size();
   List pmsBootStrapped(n);
 
-  for(int i = 0; i < n; i++) {
-    pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, true, parallel);
+  if(parallel) {
+    for(int i = 0; i < n; i++) {
+      pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, true);
+    }
+  } else {
+    for(int i = 0; i < n; i++) 
+      pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, true);
   }
 
   List estimateList = _fromBoot2Estimate(pmsBootStrapped);
@@ -388,7 +335,10 @@ List inferHyperparam(NumericMatrix transMatr = NumericMatrix(), NumericVector sc
     for(int i = 0; i < sizeMatr; i++){
       double rowSum = 0., eps = 1e-10;
       for(int j = 0; j < sizeMatr; j++)
-        rowSum += transMatr(i, j);
+        if(transMatr(i, j) < 0. || transMatr(i, j) > 1.)
+          stop("The entries in the transition matrix must each belong to the interval [0, 1]");
+        else
+          rowSum += transMatr(i, j);
       if(rowSum <= 1. - eps || rowSum >= 1. + eps)
         stop("The rows of the transition matrix must each sum to 1");
     }

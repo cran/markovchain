@@ -2,9 +2,11 @@
 \alias{absorbingStates}
 \alias{transientStates}
 \alias{canonicForm}
+\alias{communicatingClasses}
+\alias{recurrentClasses}
 \alias{period}
 \title{
-Various function to perform statistical and probabilistic analysis
+Various function to perform structural analysis of DTMC
 }
 \description{
 These functions return absorbing and transient states of the \code{markovchain} objects.
@@ -13,6 +15,8 @@ These functions return absorbing and transient states of the \code{markovchain} 
 absorbingStates(object)
 transientStates(object)
 canonicForm(object)
+communicatingClasses(object)
+recurrentClasses(object)
 period(object)
 }
 \arguments{
@@ -23,7 +27,7 @@ period(object)
 Feres, Matlab listing for markov chain.
 }
 \author{
-Giorgio Spedicato
+Giorgio Alfredo Spedicato
 }
 \seealso{
 \code{\linkS4class{markovchain}}
@@ -37,6 +41,7 @@ markovB<-new("markovchain", states=statesNames, transitionMatrix=
                  ))
 absorbingStates(markovB)
 transientStates(markovB)
+communicatingClasses(markovB)
 canonicForm(markovB)
 #periodicity analysis
 E=matrix(0,nrow=4,ncol=4)

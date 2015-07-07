@@ -5,12 +5,20 @@
     .Call('markovchain_isProb', PACKAGE = 'markovchain', prob)
 }
 
+.isGenRcpp <- function(gen) {
+    .Call('markovchain_isGen', PACKAGE = 'markovchain', gen)
+}
+
 .canonicFormRcpp <- function(object) {
     .Call('markovchain_canonicForm', PACKAGE = 'markovchain', object)
 }
 
-createSequenceMatrix <- function(stringchar, toRowProbs = FALSE, sanitize = TRUE, parallel = FALSE) {
-    .Call('markovchain_createSequenceMatrix', PACKAGE = 'markovchain', stringchar, toRowProbs, sanitize, parallel)
+generatorToTransitionMatrix <- function(gen, byrow = TRUE) {
+    .Call('markovchain_generatorToTransitionMatrix', PACKAGE = 'markovchain', gen, byrow)
+}
+
+createSequenceMatrix <- function(stringchar, toRowProbs = FALSE, sanitize = TRUE) {
+    .Call('markovchain_createSequenceMatrix', PACKAGE = 'markovchain', stringchar, toRowProbs, sanitize)
 }
 
 inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = character()) {
@@ -25,8 +33,12 @@ markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, lapl
     .Call('markovchain_commclassesKernel', PACKAGE = 'markovchain', P)
 }
 
-.communicatingClassesRcpp <- function(adjMatr) {
-    .Call('markovchain_communicatingClasses', PACKAGE = 'markovchain', adjMatr)
+.communicatingClassesRcpp <- function(object) {
+    .Call('markovchain_communicatingClasses', PACKAGE = 'markovchain', object)
+}
+
+.recurrentClassesRcpp <- function(object) {
+    .Call('markovchain_recurrentClasses', PACKAGE = 'markovchain', object)
 }
 
 .commStatesFinderRcpp <- function(matr) {
@@ -41,11 +53,23 @@ markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, lapl
     .Call('markovchain_firstpassageKernel', PACKAGE = 'markovchain', P, i, n)
 }
 
-.gcdRcpp <- function(f, s) {
-    .Call('markovchain_gcd', PACKAGE = 'markovchain', f, s)
+.gcdRcpp <- function(a, b) {
+    .Call('markovchain_gcd', PACKAGE = 'markovchain', a, b)
+}
+
+period <- function(object) {
+    .Call('markovchain_period', PACKAGE = 'markovchain', object)
 }
 
 predictiveDistribution <- function(stringchar, newData, hyperparam = matrix()) {
     .Call('markovchain_predictiveDistribution', PACKAGE = 'markovchain', stringchar, newData, hyperparam)
+}
+
+priorDistribution <- function(transMatr, hyperparam = matrix()) {
+    .Call('markovchain_priorDistribution', PACKAGE = 'markovchain', transMatr, hyperparam)
+}
+
+.multinomialCIRcpp <- function(transMat, seqMat, confidencelevel) {
+    .Call('markovchain_multinomCI', PACKAGE = 'markovchain', transMat, seqMat, confidencelevel)
 }
 
