@@ -225,4 +225,3 @@ recurrentClasses<-function(object) {
   out<-.recurrentClassesRcpp(object)
   return(out)
 }
-

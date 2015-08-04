@@ -1,5 +1,4 @@
 library(markovchain)
-library(MultinomialCI)
 
 seq<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
 mcfit<-markovchainFit(data=seq,byrow=TRUE)
@@ -17,8 +16,8 @@ test_that("multinomial CI statisfay", {
 #                                                  0.5714286,0.1428571),nrow=2, byrow=TRUE, dimnames=list(c("a","b"),
 #                                                                                                 c("a","b"))
 #   ))
-#   expect_equal(mCI$upperEndpointMatrix, matrix(c(0.8070205,0.9181316,
-#                                                  1,0.6806468),nrow=2, byrow=TRUE, dimnames=list(c("a","b"),
+#   expect_equal(mCI$upperEndpointMatrix, matrix(c(0.8111456,0.9222567,
+#                                                  1,0.6839473),nrow=2, byrow=TRUE, dimnames=list(c("a","b"),
 #                                                                                                 c("a","b"))
 #   ))
   expect_equal(mCI$upperEndpointMatrix[2,1],1)

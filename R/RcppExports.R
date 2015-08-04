@@ -17,6 +17,10 @@ generatorToTransitionMatrix <- function(gen, byrow = TRUE) {
     .Call('markovchain_generatorToTransitionMatrix', PACKAGE = 'markovchain', gen, byrow)
 }
 
+ctmcFit <- function(data, byrow = TRUE, name = "", confidencelevel = 0.95) {
+    .Call('markovchain_ctmcFit', PACKAGE = 'markovchain', data, byrow, name, confidencelevel)
+}
+
 createSequenceMatrix <- function(stringchar, toRowProbs = FALSE, sanitize = TRUE) {
     .Call('markovchain_createSequenceMatrix', PACKAGE = 'markovchain', stringchar, toRowProbs, sanitize)
 }
@@ -67,6 +71,10 @@ predictiveDistribution <- function(stringchar, newData, hyperparam = matrix()) {
 
 priorDistribution <- function(transMatr, hyperparam = matrix()) {
     .Call('markovchain_priorDistribution', PACKAGE = 'markovchain', transMatr, hyperparam)
+}
+
+.multinomialCIForRowRcpp <- function(x, confidencelevel) {
+    .Call('markovchain_multinomialCIForRow', PACKAGE = 'markovchain', x, confidencelevel)
 }
 
 .multinomialCIRcpp <- function(transMat, seqMat, confidencelevel) {

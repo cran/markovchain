@@ -1,4 +1,3 @@
-#@TAE: substitute calls to hidden functions written in 2_probabilistic with Rcpp ones.
 
 # define Markov Chain class
 
@@ -65,13 +64,6 @@ setMethod("initialize",
 		callNextMethod(.Object, states = states, byrow = byrow, transitionMatrix=transitionMatrix,name=name,...)
     }
 )
-
-# #test
-# stateNames=c("a","b")
-# ciao<-new("markovchain", states=stateNames, transitionMatrix=matrix(c(1,0,0,1),byrow=TRUE, nrow=2, 
-#                                                  dimnames=list(stateNames,stateNames)
-#                                                  ))
-
 
 
 # .isProb<-function(prob)
@@ -304,28 +296,25 @@ setMethod("print","markovchain", #metodo print
 
  # Plot methods for markovchain objects
 
- # plotMc legagy
 
-#setGeneric("plotMc", function(object,...) standardGeneric("plotMc"))
-#setMethod("plotMc","markovchain", 
-#		function(object,...){
-#			warning("Legacy method. Will be removed in forthcoming versions")
-#			netMc <- .getNet(object,round=TRUE)
-#            edgeLabel <- round(E(netMc)$weight/100,2)
-#            plot.igraph(x=netMc,edge.label=edgeLabel, ...) #calls plot method from igraph
-#          }
-#)
 
 #plot method from stat5
 setMethod("plot", signature(x="markovchain", y="missing"),
-		function(x, y, ...){
-			netMc <- .getNet(x,round=TRUE)
-			edgeLabel <- round(E(netMc)$weight/100,2)
-			plot.igraph(x=netMc,edge.label=edgeLabel, ...)
+		function(x, y, package="igraph",...){
+		  switch(package,
+		         diagram = {
+		           .plotdiagram(object=x,...)
+		         },
+		         DiagrammeR= {
+		           .plotDiagrammeR(object=x,...)
+		         },
+		         {
+		           netMc <- .getNet(object=x,round=TRUE)
+		           edgeLabel <- round(E(netMc)$weight/100,2)
+		           plot.igraph(x=netMc,edge.label=edgeLabel, ...)
+		         })
 		}
 )
-
-
 
 
 #@TAE: create an internal function that does this. Check also if the canonic form function 
@@ -405,10 +394,36 @@ setMethod("summary", signature(object="markovchain"),
 			if(check==0) cat("NONE","\n") else {
 				for(i in 1:check) cat(outs$closedClasses[[i]],"\n")
 			}
+			check <- length(outs$recurrentClasses)
+			cat("Recurrent classes:","\n")
+			if(check==0) cat("NONE","\n") else {
+			  cat("{")
+			  cat(outs$recurrentClasses[[1]], sep=",")
+			  cat("}")
+			  if(check > 1) {
+			    for(i in 2:check) {
+			      cat(",{")
+			      cat(outs$recurrentClasses[[i]],sep=",")
+			      cat("}")
+			    }
+			  }
+			  cat("\n")
+			}
 			check <- length(outs$transientClasses)
 			cat("Transient classes:","\n")
 			if(check==0) cat("NONE","\n") else {
-				for(i in 1:check) cat(outs$transientClasses[[i]],"\n")
+				# for(i in 1:check) cat(outs$transientClasses[[i]],"\n")
+			  cat("{")
+			  cat(outs$transientClasses[[1]], sep=",")
+			  cat("}")
+			  if(check > 1) { 
+			    for(i in 2:check) {
+			      cat(",{")
+			      cat(outs$transientClasses[[i]],sep=",")
+			      cat("}")
+			    }
+			  }
+			  cat("\n")
 			}
 			irreducibility <- is.irreducible(object)
 			if(irreducibility) cat("The Markov chain is irreducible","\n") else cat("The Markov chain is not irreducible","\n")
@@ -569,6 +584,47 @@ setAs(from="data.frame", to="markovchain", def=.df2Mc)
 
 setAs(from="table", to="markovchain", def=.table2Mc)
 
+#function from msm to markovchain
+
+.msm2Mc<-function(from)
+{
+  temp <- msm::pmatrix.msm(from)
+  prMatr <- unclass(as.matrix(temp))
+  out<-new("markovchain", transitionMatrix=prMatr)
+  return(out)
+}
+
+setAs(from="msm", to="markovchain", def=.msm2Mc)
+
+#function from etm to markovchain
+
+.etm2Mc<-function(from)
+{
+  df<-from$trans
+  elements<-from$state.names
+  nelements<-length(elements)
+  prMatr<-zeros(nelements)
+  dimnames(prMatr) = list(elements, elements)
+  for(i in 1:dim(df)[1]) {
+    r<-df[i,]
+    stateFrom<-r$from
+    stateTo<-r$to
+    prMatr[stateFrom, stateTo]<-prMatr[stateFrom, stateTo] + 1
+  }
+  rsums<-rowSums(prMatr)
+  prMatr<-prMatr/rsums
+  if(any(rsums == 0)) {
+    indicesToBeSanitized<-which(rsums==0)
+    for(i in indicesToBeSanitized) {
+      for(j in 1:nelements) prMatr[i,j]<-1/nelements
+    }
+  }
+  out<-new("markovchain", transitionMatrix=prMatr)
+  return(out)
+}
+
+setAs(from="etm", to="markovchain", def=.etm2Mc)
+
 #functions and methods to return a matrix
 
 .mc2matrix<-function(from)
@@ -658,27 +714,6 @@ setMethod("*", c("markovchain","numeric"),
 		}
 )
 
-#power method
-
-# setMethod("^", c("markovchain", "numeric"),
-# function(e1, e2) {
-	 # if(e2==1) return(e1)
-	 # newStates<-e1@states
-	 # if(e2<1) stop("Error. Power must be greater or equal than one")
-	 # newTransMatr<-e1@transitionMatrix
-	 # for(i in 1:(e2-1))
-		# {
-			# newTransMatr<-newTransMatr%*%e1@transitionMatrix
-		# }
-	 # out<-new("markovchain", states=newStates, transitionMatrix=newTransMatr)
-	 # return(out)
-# }
-# )
-
-
-# library(microbenchmark)
-
-#method to ckeck the equality of two markovchain (on the transition matrices)
 
 setMethod("==", c("markovchain","markovchain"),
           function(e1, e2) {

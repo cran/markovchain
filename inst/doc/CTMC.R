@@ -20,3 +20,7 @@ rctmc(n = Inf, ctmc = molecularCTMC, initDist = statesDist, T = 2)
 ## ----ctmcSteadyStates, echo = TRUE, message=FALSE, warning=FALSE---------
 steadyStates(molecularCTMC)
 
+## ----ctmcFitting, echo = TRUE, message=FALSE, warning=FALSE--------------
+data <- list(c("a", "b", "c", "a", "b", "a", "c", "b", "c"), c(0, 0.8, 2.1, 2.4, 4, 5, 5.9, 8.2, 9))
+ctmcFit(data)
+
