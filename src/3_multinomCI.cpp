@@ -4,6 +4,7 @@
 
 using namespace Rcpp;
 
+// returns the column sums of a matrix
 NumericVector colSums(NumericMatrix m) {
   NumericVector out;
   for(int i = 0; i < m.cols(); i ++) 
@@ -11,10 +12,12 @@ NumericVector colSums(NumericMatrix m) {
   return out;
 }
 
+// poisson distribution
 double ppois(double n, double lambda) {
   return R::ppois(n,lambda, true, false);
 }
 
+// moments
 NumericVector moments(int c, double lambda){
   double a=lambda+c;
   double b=lambda-c;
@@ -45,6 +48,7 @@ NumericVector moments(int c, double lambda){
   return mom;
 }
 
+// coverage probability for the particular choice of c 
 double truncpoi(int c, NumericVector x, double n, int k){
   NumericMatrix m(k,5);
   for(int i = 0; i < k; i ++){
@@ -68,7 +72,7 @@ double truncpoi(int c, NumericVector x, double n, int k){
   double g2=s4/(pow(s2,2));
   double poly=1.0+g1*(pow(z,3)-3*z)/6.0+g2*(pow(z,4)-6.0*pow(z,2)+3.0)/24.0
               +pow(g1,2)*(pow(z,6)-15.0*pow(z,4)+45.0*pow(z,2)-15.0)/72.0;
-  double f=poly*exp(-pow(z,2)/2)/(sqrt(2)*R::gammafn(0.5)); 
+  double f=poly*exp(-pow(z,2)/2)/(sqrt(2.0)*R::gammafn(0.5)); 
   double probx=1;
   for(int i = 0; i < k; i++)
     probx=probx*m(i,4);
@@ -78,6 +82,7 @@ double truncpoi(int c, NumericVector x, double n, int k){
   return(probn*probx*f/sqrt(s2));
 }
 
+// multinomial confidence intervals for a row
 // [[Rcpp::export(.multinomialCIForRowRcpp)]]
 NumericMatrix multinomialCIForRow (NumericVector x, double confidencelevel){
   double n = std::accumulate(x.begin(), x.end(), 0.0);
@@ -114,6 +119,7 @@ NumericMatrix multinomialCIForRow (NumericVector x, double confidencelevel){
   return salida;
 }
 
+// multinomial confidence intervals
 // [[Rcpp::export(.multinomialCIRcpp)]]
 List multinomCI(NumericMatrix transMat, NumericMatrix seqMat, double confidencelevel) {
   NumericMatrix res;

@@ -10,15 +10,16 @@ Various functions to perform statistical inference of DTMC
 These functions verify the Markov property, assess the order and stationarity of the Markov chain.
 }
 \usage{
-verifyMarkovProperty(mc)
-assessOrder(mc)
-assessStationarity(mc)
-divergenceTest(m1, m2, mc)
+verifyMarkovProperty(sequence, ...)
+assessOrder(sequence)
+assessStationarity(sequence, nblocks)
+divergenceTest(sequence, hypothetic)
 }
 \arguments{
-  \item{mc}{A markov chain sequence.}
-  \item{m1}{A transition matrix for a markov chain sequence.}
-  \item{m2}{A transition matrix for a markov chain sequence.}
+  \item{sequence}{An empirical sequence.}
+  \item{...}{Parameters for chi-square test.}
+  \item{hypothetic}{A transition matrix for a hypothetic markov chain sequence.}
+  \item{nblocks}{Number of blocks.}
 }
 \value{Verification result}
 \references{
@@ -31,17 +32,11 @@ Tae Seung Kang, Giorgio Alfredo Spedicato
 \code{\linkS4class{markovchain}}
 }
 \examples{
-statesNames=c("a","b","c")
-markovB<-new("markovchain", states=statesNames, transitionMatrix=
-          matrix(c(0.2,0.5,0.3,
-                   0,1,0,
-                   0.1,0.8,0.1),nrow=3, byrow=TRUE, dimnames=list(statesNames,statesNames)
-                 ))
 sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
 mcFit<-markovchainFit(data=sequence,byrow=FALSE)
 verifyMarkovProperty(sequence)
 assessOrder(sequence)
-assessStationarity(sequence)
-divergenceTest(mcFit$estimate@transitionMatrix, mcFit$estimate@transitionMatrix, sequence)
+assessStationarity(sequence,1)
+divergenceTest(sequence, mcFit$estimate@transitionMatrix)
 }
 
