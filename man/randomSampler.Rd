@@ -9,9 +9,9 @@ Provided any \code{markovchain} or \code{markovchainList} objects, it returns a 
 states coming from the underlying stationary distribution. 
 }
 \usage{
-rmarkovchain(n, object, what="data.frame",...)
+rmarkovchain(n, object, what="data.frame",useRCpp = TRUE,...)
 markovchainSequence(n, markovchain, t0 = sample(markovchain@states, 1), 
-include.t0 = FALSE)
+include.t0 = FALSE,useRCpp = TRUE)
 }
 
 \arguments{
@@ -22,7 +22,7 @@ Sample size
 Either a \code{markovchain} or a \code{markovchainList} object.
 }
 \item{what}{
-It specifies whether a \code{data.frame} or a \code{matrix} (each rows represent a simulation)
+It specifies whether either a \code{data.frame} or a \code{matrix} (each rows represent a simulation) or a \code{list} is returned.
 }
 \item{\dots}{
 additional parameters passed to the internal sampler
@@ -35,6 +35,9 @@ The initial state.
 }
 \item{include.t0}{
 Specify if the initial state shall be used.
+}
+\item{useRCpp}{
+Boolean. Should RCpp fast implementation being used? Default is yes.
 }
 }
 \details{
