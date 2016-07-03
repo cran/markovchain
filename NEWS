@@ -1,4 +1,3 @@
-10-10-2016
-Version 0.4.4
-rmarkovchain in RCpp (thanks to Deepak and GSOC 2016)
-Various small fixes
+24-06-2016
+Version 0.4.5
+Speeding up rmarkovchain using parallel and RcppParallel library.

@@ -28,13 +28,13 @@
 %% almost as usual
 
 
-\author{Giorgio Alfredo Spedicato, Tae Seung Kang, and Sai Bhargav Yalamanchi}
+\author{Giorgio Alfredo Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi and Deepak Yadav}
 
 \title{The \pkg{markovchain} Package: A Package for Easily Handling Discrete
 Markov Chains in \proglang{R}}
 
 %% for pretty printing and a nice hypersummary also set:
-\Plainauthor{Giorgio Alfredo Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi} %% comma-separated
+\Plainauthor{Giorgio Alfredo Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi, Deepak Yadav} %% comma-separated
 \Plaintitle{The markovchain Package: A Package for Easily Handling Discrete
 Markov Chains in R} %% without formatting
 \Shorttitle{The markovchain package} %% a short title (if necessary)
@@ -84,6 +84,13 @@ Finally, some examples in which the package's functions are applied to Economics
   Indian Institute of Technology, Bombay\\
   Mumbai - 400 076, India\\
   E-mail: \email{bhargavcoolboy@gmail.com}\\
+  
+  Deepak Yadav\\
+  B-Tech student\\
+  Computer Science and Engineering\\
+  Indian Institute of Technology, Varanasi\\
+  Uttar Pradesh - 221 005, India\\
+  E-mail: \email{deepakyadav.iitbhu@gmail.com}\\
 }
 
 %% for those who use Sweave please include the following line (with % symbols):
@@ -395,6 +402,8 @@ manipulate \code{markovchain} objects.
 \code{dim} & Dimension of the transition matrix.\\
 \code{names} & Equal to \code{states}.\\
 \code{names<-} & Change the \code{states} name.\\
+\code{name} & Get the name of \code{markovchain object}.\\
+\code{name<-} & Change the name of \code{markovchain object}.\\
 \code{plot} & \code{plot} method for \code{markovchain} objects.\\
 \code{print} & \code{print} method for \code{markovchain} objects.\\
 \code{show} & \code{show} method for \code{markovchain} objects.\\
@@ -456,6 +465,14 @@ quickly get states and transition matrix dimension.
 states(mcWeather)
 names(mcWeather)
 dim(mcWeather)
+@
+
+Methods are available to set and get the name of \code{markovchain} object.
+
+<<otherMethods, keep.source=TRUE>>=
+name(mcWeather)
+name(mcWeather) <- "New Name"
+name(mcWeather)
 @
 
 A direct access to transition probabilities is provided both by \code{transitionProbability} method and "[" method.
@@ -652,6 +669,7 @@ Finally, Table~\ref{tab:demos} lists the demos included in the demo directory of
     \code{bard.R} & Structural analysis of Markov chains from Bard PPT.\\
     \code{examples.R} & Notable Markov chains, e.g., The Gambler Ruin chain.\\
     \code{quickStart.R} & Generic examples.\\
+    \code{extractMatrices.R} & Generic examples.\\
 \hline
 \end{tabular}
 \caption{The \pkg{markovchain} demos.}
@@ -971,7 +989,7 @@ patientStates <- rmarkovchain(n = 5, object = mcCCRC, t0 = "H",
 patientStates[1:10,]
 @
 
-
+Two advance parameters are availabe to the \code{rmarkovchain} method which helps you decide which implementation to use. There are four options available : \proglang{R}, \proglang{R} in parallel, \proglang{C++} and \proglang{C++} in parallel. Two boolean parameters \code{useRcpp} and \code{parallel} will decide which implementation will be used. Default is \code{useRcpp = TRUE} and \code{parallel = FALSE} i.e. \proglang{C++} implementation. The \proglang{C++} implementation is generally faster than the \code{R} implementation. If you have multicore processors then you can take advantage of \code{parallel} parameter by setting it to \code{TRUE}. When both \code{Rcpp=TRUE} and  \code{parallel=TRUE} the parallelization has been carried out using \pkg{RcppParallel} package \citep{pkg:RcppParallel}.
 
 \subsection{Estimation}
 
@@ -1034,6 +1052,14 @@ createSequenceMatrix(stringchar = weathersOfDays)
 An issue occurs when the sample contains only one realization of a state (say $X_{\beta}$) which is located at the end of the data sequence, since it yields to a row of zero (no sample to estimate the conditional
 distribution of the transition). In this case the estimated transition matrix is
 corrected assuming $p_{\beta,j}=1/k$, being $k$ the possible states.
+
+Create sequence matrix can also be used to obtain transition matrices from a given $n*2$ matrix as the following example shows:
+
+<<fitSequenceMatrix2, keep.source=TRUE>>=
+myMatr<-matrix(c("a","b","b","a","a","b","b","b","b","a","a","a","b","a"),ncol=2)
+createSequenceMatrix(stringchar = myMatr,toRowProbs = TRUE)
+@
+
 
 A bootstrap estimation approach has been developed within the package in order
 to provide an indication of the variability of ${\hat p}_{ij}$ estimates. The
@@ -1130,8 +1156,8 @@ from \code{matrix} or \code{data.frame} objects as shown in following code.
 <<fitMclists, keep.source=TRUE>>=
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
-mcListFit<-markovchainListFit(data=holson[,2:12],name="holson")
-mcListFit$estimate[[1]]
+mcListFit<-markovchainListFit(data=holson[,2:6],name="holson")
+mcListFit$estimate
 @
 
 
@@ -1435,7 +1461,7 @@ where the search space is the set of right stochastic matrices of dimension $|\m
 $n(u, s)$ denotes the number of times the word $us$ occurs in $D$ and $n(u)=\sum_{s \in \mathcal{A}}n(u, s)$. The hyperparameters are similarly denoted by $\alpha(u, s)$ and $\alpha(u)$ respectively.
 
 \subsubsection{Methods}
-Given $D$, its likelihood is given by
+Given $D$, its likelihood conditioned on the observed initial state in D is given by
 $$ P(D|\theta) = \prod_{s \in \mathcal{A}} \prod_{u \in \mathcal{A}} p(s|u)^{n(u, s)}$$
 
 Conjugate priors are used to model the prior $P(\theta)$. The reasons are two fold:

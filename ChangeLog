@@ -1,4 +1,21 @@
-10-10-2016
+24-06-2016
+Version 0.4.5
+Speeding up rmarkovchain using parallel and RcppParallel library.
+
+14-06-2016
+Version 0.4.4.4
+Bug fixed for markovchainFit when method = bootstrap
+
+09-06-2016
+Version 0.4.4.2
+added sanitize=false paramter to markovchainFit
+
+31-05-2016
+Version 0.4.4.1
+Improvement of the internal method checkSequence.
+name method to set and get the names of markovchain object.
+
+10-05-2016
 Version 0.4.4
 rmarkovchain in RCpp (thanks to Deepak and GSOC 2016)
 Various small fixes

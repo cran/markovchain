@@ -1,230 +1,216 @@
-#moved in Rcpp
+# given a markovchain object is it possible to reach goal state from 
+# a given state
 
-# .commclassesKernel <- function(P){
-# 	m <- ncol(P)
-# 	stateNames <- rownames(P)
-# 	T <- zeros(m) 
-# 	i <- 1
-# 	while (i<=m) { 
-# 		a=i 
-# 		b<-zeros(1,m)
-# 		b[1,i]<-1
-# 		old<-1
-# 		new<-0
-# 		while (old != new) {
-# 			old <- sum(find(b>0))
-# 			n <- size(a)[2]
-# 			matr <- matrix(as.numeric(P[a,]),ncol=m,nrow=n) #fix
-# 			c <- colSums(matr)
-# 			d <- find(c)
-# 			n <- size(d)[2]
-# 			b[1,d] <- ones(1,n)
-# 			new <- sum(find(b>0))
-# 			a<-d
-# 		}
-# 		T[i,] <- b
-# 		i <- i+1 
-# 	}
-# 	F <- t(T)  
-# 	C <- (T>0)&(F>0)
-# 	v <- (apply(t(C)==t(T),2,sum)==m)
-# 	colnames(C) <- stateNames
-# 	rownames(C) <- stateNames
-# 	names(v) <- stateNames
-# 	out <- list(C=C,v=v)
-# 	return(out)
-# }
+#' @name is.accessible
+#' @title Verify if a state j is reachable from state i.
+#' @description This function verifies if a state is reachable from another, i.e., 
+#'              if exists a path that leads to state j leaving from state i with 
+#'              positive probability
+#'              
+#' @param object A \code{markovchain} object.
+#' @param from The name of state "i" (beginning state).
+#' @param to The name of state "j" (ending state).
+#' 
+#' @details It wraps an internal function named \code{.commStatesFinder}.
+#' @return A boolean value.
+#' 
+#' @references James Montgomery, University of Madison
+#' 
+#' @author Giorgio Spedicato
+#' @seealso \code{is.irreducible}
+#' 
+#' @examples 
+#' statesNames <- c("a", "b", "c")
+#' markovB <- new("markovchain", states = statesNames, 
+#'                transitionMatrix = matrix(c(0.2, 0.5, 0.3,
+#'                                              0,   1,   0,
+#'                                            0.1, 0.8, 0.1), nrow = 3, byrow = TRUE, 
+#'                                          dimnames = list(statesNames, statesNames)
+#'                                         )
+#'                )
+#' is.accessible(markovB, "a", "c")
+#' @export
 
-#@ Tae: to be fully moved in Rcpp
-#returns the underlying communicating classes
-# .communicatingClasses<-function(adjMatr)
-# {
-#   len <- dim(adjMatr)[1]
-#   classesList <- list()
-#   for(i in 1:len)
-#   {
-#     row2Check <- adjMatr[i,]
-#     proposedCommClass <- names(which(row2Check==TRUE))
-#     if(i>1) 
-#     {
-#       for(j in 1:(length(classesList)))
-#       {
-#         check <- FALSE
-#         check <- setequal(classesList[[j]],proposedCommClass)
-#         if(check==TRUE) {proposedCommClass<-NULL; break}
-#       }
-#     }
-#     if(!is.null(proposedCommClass)) classesList[[length(classesList)+1]]<-proposedCommClass
-#   }
-#   return(classesList)
-# }
+is.accessible <- function(object, from, to) {
+  # assume that it is not possible
+  out <- FALSE
+  
+  # names of states
+  statesNames <- states(object)
+  
+  # row number
+  fromPos <- which(statesNames == from)
+  
+  # column number
+  toPos<-which(statesNames == to)
 
-#@ Tae: to be fully moved in Rcpp
-#communicating states
-# .commStatesFinder<-function(matr)
-# {
-#   #Reachability matrix
-#   dimMatr<-dim(matr)[1]
-#   Z<-sign(matr)
-#   temp<-(eye(dimMatr)+Z)%^%(dimMatr-1)
-#   R<-sign(temp)
-#   return(R)
-# }
-
-#moved in Rcpp
-
-is.accessible<-function(object, from, to)
-{
-  out<-FALSE
-  statesNames<-states(object)
-  fromPos<-which(statesNames==from)
-  toPos<-which(statesNames==to)
-#   R<-.commStatesFinder(object@transitionMatrix)
-  R<-.commStatesFinderRcpp(object@transitionMatrix)
-  if(R[fromPos,toPos]==TRUE) out<-TRUE
+  # a logical matrix which will tell the reachability of jth state from ith state
+  R <- .commStatesFinderRcpp(object@transitionMatrix)
+  
+  if(R[fromPos, toPos] == TRUE) {
+    out <- TRUE 
+  }
+  
   return(out)
 }
 
-#moved in Rcpp
+# a markov chain is irreducible if it is composed of only one communicating class
 
-#a markov chain is irreducible if is composed by only one communicating class
-is.irreducible<-function(object)
-{
-  out<-FALSE
-#   tocheck<-.communicatingClasses(.commclassesKernel(object@transitionMatrix)$C)
-  tocheck<-.communicatingClassesRcpp(object)
-  if(length(tocheck)==1) out<-TRUE
+#' @name is.irreducible
+#' @title Function to check if a Markov chain is irreducible
+#' @description This function verifies whether a \code{markovchain} object transition matrix 
+#'              is composed by only one communicating class.
+#' @param object A \code{markovchain} object
+#' 
+#' @details It is based on \code{.communicatingClasses} internal function.
+#' @return A boolean values.
+#' 
+#' @references Feres, Matlab listings for Markov Chains.
+#' @author Giorgio Spedicato
+#' 
+#' @seealso \code{\link{summary}}
+#' 
+#' @examples 
+#' statesNames <- c("a", "b")
+#' mcA <- new("markovchain", transitionMatrix = matrix(c(0.7,0.3,0.1,0.9),
+#'                                              byrow = TRUE, nrow = 2, 
+#'                                              dimnames = list(statesNames, statesNames)
+#'            ))
+#' is.irreducible(mcA)
+#' @export
+
+is.irreducible <- function(object) {
+  # assuming markovchain chain has more than 1 communicating classes
+  out <- FALSE
+
+  # this function will return a list of communicating classes 
+  tocheck <- .communicatingClassesRcpp(object)
+  
+  # only one class implies irreducible markovchain
+  if(length(tocheck) == 1) {
+    out<-TRUE  
+  }
+  
   return(out)
 }
 
-#moved in Rcpp
+# what this function will do?
+# It calculates the probability to go from given state
+# to all other states in k steps
+# k varies from 1 to n
 
-# .summaryKernel<-function(object)
-# {
-#   matr<-object@transitionMatrix
-#   temp<-.commclassesKernelRcpp(matr)
-#   communicatingClassList<-.communicatingClassesRcpp(temp$C)
-#   transientStates<-names(which(temp$v==FALSE))
-#   closedClasses<-list()
-#   transientClasses<-list()
-#   for(i in 1:length(communicatingClassList))
-#   {
-#     class2Test<-communicatingClassList[[i]]
-#     if(length(intersect(class2Test,transientStates))>0) transientClasses[[length(transientClasses)+1]]<-class2Test else closedClasses[[length(closedClasses)+1]]<-class2Test
-#   }
-#   summaryMc<-list(closedClasses=closedClasses, 
-#                   transientClasses=transientClasses)
-#   return(summaryMc)
-# }
+#' @name firstPassage
+#' @title First passage across states
+#' @description This function compute the first passage probability in states
+#' 
+#' @param object A \code{markovchain} object
+#' @param state Initial state
+#' @param n Number of rows on which compute the distribution
+#' 
+#' @details Based on Feres' Matlab listings
+#' @return A matrix of size 1:n x number of states showing the probability of the 
+#'         first time of passage in states to be exactly the number in the row.
+#'
+#' @references Renaldo Feres, Notes for Math 450 Matlab listings for Markov chains
+#' 
+#' @author Giorgio Spedicato
+#' @seealso \code{\link{conditionalDistribution}}
+#' 
+#' @examples 
+#' simpleMc <- new("markovchain", states = c("a", "b"),
+#'                  transitionMatrix = matrix(c(0.4, 0.6, .3, .7), 
+#'                                     nrow = 2, byrow = TRUE))
+#' firstPassage(simpleMc, "b", 20)
+#'
+#' @export
 
-#moved in Rcpp
-#here the kernel function to compute the first passage
-# .firstpassageKernel<-function(P,i,n){
-#   G<-P
-#   H <- matrix(NA, ncol=dim(P)[2], nrow=n) #here Thoralf suggestion
-#   H[1,]<-P[i,] #initializing the first row
-#   E<-1-diag(size(P)[2])
-#   for (m in 2:n) {
-#     G<-P%*%(G*E)
-#     #H<-rbind(H,G[i,]) #removed thanks to Thoralf 
-#     H[m,] <- G[i,] #here Thoralf suggestion
-#   }
-#   return(H)
-# }
+firstPassage <- function(object, state, n) {
+  P <- object@transitionMatrix
+  stateNames <- states(object)
+  
+  # row number
+  i <- which(stateNames == state)
 
-firstPassage<-function(object,state,n)
-{
-  P<-object@transitionMatrix
-  stateNames<-states(object)
-  i<-which(stateNames==state)
-#   outMatr<-.firstpassageKernel(P=P,i=i,n=n)
-  outMatr<-.firstpassageKernelRcpp(P=P,i=i,n=n)
-  colnames(outMatr)<-stateNames
-  rownames(outMatr)<-1:n
+  
+  outMatr <- .firstpassageKernelRcpp(P = P, i = i, n = n)
+  colnames(outMatr) <- stateNames
+  rownames(outMatr) <- 1:n
   return(outMatr)
 }
-#periodicity
 
+# return a list of communicating classes
 
-# greatest common denominator: to be moved in Rcpp
-# .gcd = function(f,s) {
-#   
-#   f <- abs(f)
-#   s <- abs(s)
-#   
-# 	n <- min(f,s)
-# 	N <- max(f,s)
-#   
-# 	if (n==0) {
-# 		g=N
-# 	}
-# 	else {
-# 		u=1
-# 		while (u!=0) {
-# 			u=N%%n
-# 			if (u==0) {
-# 				g=n
-# 			}
-# 			N=n
-# 			n=u
-# 		}
-# 	}
-# 	return(g)
-# }
+#' @name communicatingClasses
+#' @title Various function to perform structural analysis of DTMC
+#' @description These functions return absorbing and transient states of the \code{markovchain} objects.
+#' 
+#' @param object A \code{markovchain} object.
+#' 
+#' @return vector, matrix or list
+#' 
+#' @references Feres, Matlab listing for markov chain.
+#' 
+#' @author Giorgio Alfredo Spedicato
+#' 
+#' @seealso \code{\linkS4class{markovchain}}
+#' 
+#' @examples 
+#' statesNames <- c("a", "b", "c")
+#' markovB <- new("markovchain", states = statesNames, transitionMatrix =
+#'                    matrix(c(0.2, 0.5, 0.3,
+#'                               0,   1,   0,
+#'                             0.1, 0.8, 0.1), nrow = 3, byrow = TRUE, 
+#'                             dimnames = list(statesNames, statesNames)
+#'               ))
+#'               
+#' communicatingClasses(markovB)               
+#' recurrentClasses(markovB)
+#' absorbingStates(markovB)
+#' transientStates(markovB)
+#' canonicForm(markovB)
+#' 
+#' # periodicity analysis : 1
+#' E <- matrix(c(0, 1, 0, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0, 0.5, 0, 0, 1, 0), 
+#'             nrow = 4, ncol = 4, byrow = TRUE)
+#' mcE <- new("markovchain", states = c("a", "b", "c", "d"), 
+#'           transitionMatrix = E, 
+#'           name = "E")
+#'
+#' is.irreducible(mcE) #true
+#' period(mcE) #2
+#'
+#' # periodicity analysis : 2
+#' myMatr <- matrix(c(0, 0, 1/2, 1/4, 1/4, 0, 0,
+#'                    0, 0, 1/3, 0, 2/3, 0, 0,
+#'                    0, 0, 0, 0, 0, 1/3, 2/3,
+#'                    0, 0, 0, 0, 0, 1/2, 1/2,
+#'                    0, 0, 0, 0, 0, 3/4, 1/4,
+#'                    1/2, 1/2, 0, 0, 0, 0, 0,
+#'                    1/4, 3/4, 0, 0, 0, 0, 0), byrow = TRUE, ncol = 7)
+#' myMc <- new("markovchain", transitionMatrix = myMatr)
+#' period(myMc)
+#' 
+#' @rdname absorbingStates
+#' @export
 
-#moved in Rcpp
-
-#function to  get the period of a DTMC
-# period<-function(object) {
-# 	check<-is.irreducible(object)
-# 	if(check==FALSE){
-# 		warning("The matrix is not irreducible")
-# 		return(0)
-# 	} else {
-# 	P<-object@transitionMatrix
-# 	n=size(P,2)
-# 	v=zeros(1,n)
-# 	v[1,1]=1
-# 	w=numeric()
-# 	d=0
-# 	T=c(1)
-# 	m=size(T,2)
-# 	while (m>0 & d!=1) {
-# 		i <- T[1]
-# 		T <- T[-1]
-# 		w <- c(w,i)
-# 		j <- 1
-# 		while (j<=n) {
-# 			if (P[i,j]>0) {
-# 				r=c(w,T)
-# 				k=sum(r==j)
-# 				if (k>0) {
-# 					b=v[1,i]+1-v[1,j]
-# 					d=.gcdRcpp(d,b)
-# 				}
-# 				else {
-# 					T=c(T,j)
-# 					v[1,j]=v[1,i]+1
-# 				}
-# 			}
-# 			j=j+1
-# 		}
-# 		m=size(T,2)
-# 	}
-# 	v=v%%d
-# 	return(d)
-# 	}
-# }
-
-communicatingClasses<-function(object) {
-  out<-.communicatingClassesRcpp(object)
+communicatingClasses <- function(object) {
+  out <- .communicatingClassesRcpp(object)
   return(out)
 }
 
-recurrentClasses<-function(object) {
-  out<-.recurrentClassesRcpp(object)
+# A communicating class will be a recurrent class if 
+# there is no outgoing edge from this class
+# Recurrent classes are subset of communicating classes
+
+#' @rdname absorbingStates
+#' 
+#' @export
+
+recurrentClasses <- function(object) {
+  out <- .recurrentClassesRcpp(object)
   return(out)
 }
+
 
 #' @title Check if a DTMC is regular
 #' 
