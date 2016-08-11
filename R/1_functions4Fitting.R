@@ -54,7 +54,7 @@ markovchainSequence <-function (n, markovchain, t0 = sample(markovchain@states, 
   # populate the sequence
   for (i in 1:n) {
     # row probabilty corresponding to the current state
-    rowProbs <- markovchain@transitionMatrix[which(markovchain@states == state), ]
+    rowProbs <- markovchain@transitionMatrix[state, ]
     
     # select the next state
     outstate <- sample(size = 1, x = markovchain@states, prob = rowProbs)
@@ -170,7 +170,7 @@ markovchainSequence <-function (n, markovchain, t0 = sample(markovchain@states, 
 #' 
 #' 
 #' #define markovchainList object
-#' statesName = c("a", "b", "c")
+#' statesNames <- c("a", "b", "c")
 #' mcA <- new("markovchain", states = statesNames, transitionMatrix = 
 #'    matrix(c(0.2, 0.5, 0.3, 0, 0.2, 0.8, 0.1, 0.8, 0.1), nrow = 3, 
 #'    byrow = TRUE, dimnames = list(statesNames, statesNames)))
@@ -223,10 +223,12 @@ rmarkovchain <- function(n, object, what = "data.frame", useRCpp = TRUE, paralle
         
         # output in list format
         if (what == "list") {
-          outlist <- list()
-          for (i in 1:nrow(out))
-            outlist[[i]] <- out[i, ]
-          out <- outlist
+          # outlist <- list()
+          # for (i in 1:nrow(out))
+          #  outlist[[i]] <- out[i, ]
+          # out <- outlist
+          out <- as.list(data.frame(t(out), stringsAsFactors = FALSE))
+          out <- unname(out)
         }
       } 
       return(out)
@@ -262,19 +264,19 @@ rmarkovchain <- function(n, object, what = "data.frame", useRCpp = TRUE, paralle
       ncol <- length(dataList[[1]])   
       
       if(what == "matrix") {
-        out <- matrix(nrow = nrow, ncol = ncol)
-        for(i in 1:nrow) out[i, ] <- dataList[[i]]
+        out <- matrix(unlist(dataList), nrow = nrow, ncol = ncol, byrow = TRUE)
+        # for(i in 1:nrow) out[i, ] <- dataList[[i]]
         return(out)
       }
       
-      iteration <- numeric()
-      values <- character()
+      iteration <- unlist(lapply(1:nrow, rep, times = ncol))
+      values <- unlist(dataList)
       
       # if what id data frame
-      for(i in 1:nrow) {
-        iteration <- append(iteration, rep(i, ncol))
-        values <- append(values, dataList[[i]])
-      }
+      # for(i in 1:nrow) {
+        # iteration <- c(iteration, rep(i, ncol))
+        # values <- append(values, dataList[[i]])
+      # }
       
       return(data.frame(iteration = iteration, values = values))
     }
