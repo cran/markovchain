@@ -468,7 +468,7 @@ createSequenceMatrix(stringchar = myMatr,toRowProbs = TRUE)
 ### code chunk number 45: fitMcbyBootStrap
 ###################################################
 weatherFittedBOOT <- markovchainFit(data = weathersOfDays, 
-                                    method = "bootstrap", nboot = 100)
+                                    method = "bootstrap", nboot = 20)
 weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 
@@ -477,7 +477,7 @@ weatherFittedBOOT$standardError
 ### code chunk number 46: fitMcbyBootStrap (eval = FALSE)
 ###################################################
 ## weatherFittedBOOTParallel <- markovchainFit(data = weathersOfDays, 
-##                                     method = "bootstrap", nboot = 10, 
+##                                     method = "bootstrap", nboot = 20, 
 ##                                     parallel = TRUE)
 ## weatherFittedBOOTParallel$estimate
 ## weatherFittedBOOTParallel$standardError
@@ -486,7 +486,7 @@ weatherFittedBOOT$standardError
 ###################################################
 ### code chunk number 47: fitMcbyBootStrap (eval = FALSE)
 ###################################################
-## RcppParallel::setNumThreads(4)
+## RcppParallel::setNumThreads(2)
 
 
 ###################################################
@@ -853,14 +853,12 @@ as.numeric((c(1, 0)* mcP ^ 5) %*% (as.vector(c(c1, c2))))
 ### code chunk number 90: hommsales
 ###################################################
 data(sales)
-head(t(sales))
+head(sales)
 
 
 ###################################################
 ### code chunk number 91: hommcFit
 ###################################################
-data("sales")
-
 # fit 8th order multivariate markov chain
 object <- fitHighOrderMultivarMC(sales, order = 8, Norm = 2)
 
