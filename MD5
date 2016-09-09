@@ -1,7 +1,7 @@
 cb15f398ed1b2d22483753d21cc5a8a4 *ChangeLog
-57806b1b31eea3fb8af166684ecdfc57 *DESCRIPTION
+c55cdd0abcac6432d9f27f980d444ec2 *DESCRIPTION
 c054bfb929be14a5011cbe4c65e62348 *NAMESPACE
-0d933e546ea05844f39109bffa921ec6 *NEWS
+3287e24217e1dbd13bc052360494f1fe *NEWS
 deaf9450267b39019082c2d7d1db77af *R/0_classesAndMethods.R
 6fd635188f58b787a0e74f1e69b279b2 *R/0_ctmcClassesAndMethodsSAI.R
 e2afa121c178def9f2cb63b13856bc6b *R/0_higherOrder.R
@@ -11,7 +11,7 @@ e2afa121c178def9f2cb63b13856bc6b *R/0_higherOrder.R
 80fe68af88ec7e58f4359b1b4c8be89c *R/1_supplementaryPlot.R
 4b6956ffc0cebf8abc700f5f7e56ba5b *R/2_probabilistic.R
 1be2e52bac8f77df86d26dd60e263e4e *R/5_statisticalTests.R
-f3c411928b6b6abc3a551fdac76883cf *R/RcppExports.R
+398af05b4320b327579043887766657c *R/RcppExports.R
 5cc33821fa09ff5a3f439b449d9bc0f5 *R/sales.R
 b66bd47b8b44b3835c77b9d0cc48a9b0 *R/zzz.R
 886381aedd2fcd23617777b89f04f334 *README.md
@@ -31,13 +31,13 @@ fb3046e24980a921d79cba3c3ef6f3b0 *demo/extractMatrices.R
 532b89b47c86e9d2681c66df44a342ac *inst/CITATION
 89d4c84c9094bb397d3b783c625cc053 *inst/doc/an_introduction_to_markovchain_package.R
 dae3fedb2d397486f5416c82f2598d88 *inst/doc/an_introduction_to_markovchain_package.Rnw
-92144b64024441e099a52d8e8205fa5a *inst/doc/an_introduction_to_markovchain_package.pdf
+657f9f025d02c2e87673855022825f06 *inst/doc/an_introduction_to_markovchain_package.pdf
 fca18d361902463addf77096d56aee9f *inst/doc/complicateSteadyStates.R
 945895e88e399d42659d07e2f11d852a *inst/doc/complicateSteadyStates.Rmd
-1278d091dc039b7c03a93821efd1e70d *inst/doc/complicateSteadyStates.pdf
+7123705df0483326982f72ba0a364994 *inst/doc/complicateSteadyStates.pdf
 45cba3d0087cb5181fe8dbd26f11094e *inst/doc/markovchainCrashIntro.R
 737c7811676d82faa6e9dd55aac5c99f *inst/doc/markovchainCrashIntro.Rmd
-a01e2521d762423f385fcedca3b6123c *inst/doc/markovchainCrashIntro.pdf
+93f06eb01c7acaa9f1853019d3be620f *inst/doc/markovchainCrashIntro.pdf
 5144f832e2bc333248d8557d0023865b *man/HigherOrderMarkovChain-class.Rd
 528fdab63aba1219e45a0292dc575a9e *man/absorbingStates.Rd
 a614b7981f0769429639ae741fa02184 *man/blanden.Rd
@@ -83,9 +83,9 @@ c9e1a0e07b3edcefcabb95c038b9e8b5 *src/1_ctmcFunctions4Fitting.cpp
 40dccbd66dfb8da8c738394d32ca6f74 *src/1_functions4Fitting.cpp
 5ffb8baa51ee3eb6a22bdf8ee49c9837 *src/2_probabilistic.cpp
 97acda792860e003c9e624913014a1a7 *src/3_multinomCI.cpp
-9bc5aa7d4334d43640f515c9a1fd70bd *src/Makevars
-2a6f9e9e044a78154d3cfda5936d6f48 *src/Makevars.win
-3cb5efe6e676705a1ce1a593c3f22c79 *src/RcppExports.cpp
+a1e86627020c43852446a8e2c2141b3f *src/Makevars
+a1e86627020c43852446a8e2c2141b3f *src/Makevars.win
+68a5c13edc892fb88962010dfd040757 *src/RcppExports.cpp
 aa429264ce923e563e3890d67f55b56f *src/mapFitFunctionsSAI.h
 f2ccf2c863b5452b7bd6a8853136db30 *src/mathHelperFunctions.h
 85e8fd2745ae59942ed7ffbc973fde4d *src/sampler.cpp
@@ -103,8 +103,6 @@ f537150c7f9b4d601125b543a13ab11a *tests/testthat/testRecurrentClasses.R
 adc6a9519e9ef27da9244217cd1d3111 *tests/testthat/testStatesClassification.R
 ccaf0e557394030f90677bb552ac9a7c *tests/testthat/testetm.R
 b36835520dabdfc153f3a9b34bcaa3dc *tests/testthat/testmsm.R
-27b49db4225472dd533bf843ad3edb41 *vignettes/an_introduction_to_markovchain_package-mcPlot.pdf
-e2882f6a989627a1e1f41a704e71ec18 *vignettes/an_introduction_to_markovchain_package-mcPlotdiagram.pdf
 dae3fedb2d397486f5416c82f2598d88 *vignettes/an_introduction_to_markovchain_package.Rnw
 945895e88e399d42659d07e2f11d852a *vignettes/complicateSteadyStates.Rmd
 f6a96df22dd266b6436552152c4c51b6 *vignettes/markovchainBiblio.bib
