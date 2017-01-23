@@ -92,13 +92,16 @@ verifyMarkovProperty <- function(sequence, ...) {
         mat[i, 3] <- TSO[i] - SSO[i]
       }
       
+    }
+  }
+      
       # chi-squared test
       
       # between SSO and TSO-SSO
       table <- as.data.frame(mat[, c(1, 3)])
       
       # an object of class htest
-      res <- chisq.test(table, ...)
+      res <- chisq.test(table)
       
       # extract all information from htest object
       # and stored the result in the form of list
@@ -112,8 +115,7 @@ verifyMarkovProperty <- function(sequence, ...) {
       
       # store the result corresponding to present state and future state
       out[[paste0(present, future)]] <- res
-    }
-  }
+  
   
   return(out)
 }
@@ -276,51 +278,73 @@ assessStationarity <- function(sequence, nblocks) {
 #' @export
 
 
+
+
 # divergence test for the hypothesized one and an empirical transition matrix from sequence
 divergenceTest <- function(sequence, hypothetic) {
-  
   # length of sequence
   n <- length(sequence)
-  
   # frequency matrix
   empirical <- .seq2mat(sequence)
-  
   # unique states as per the sequence given
   M <- nrow(empirical)
   v <- numeric()
-  
   out <- 2 * n / .phi2(1)
   sum <- 0
   c <- 0
-  
-  for(i in 1:M) {
-    
+  for (i in 1:M) {
     sum2 <- 0
     sum3 <- 0
-    
-    for(j in 1:M) {
-      if(hypothetic[i, j] > 0) {
+    for (j in 1:M) {
+      if (hypothetic[i, j] > 0) {
         c <- c + 1
       }
-      
-      sum2 <- sum2 + hypothetic[i, j] * .phi(empirical[i, j] / hypothetic[i, j])
-      if((j > 1) && (sequence[j-1] == i)) {
-        sum3<-sum3 + 1
+      sum2 <-
+        sum2 + hypothetic[i, j] * .phi(empirical[i, j] / hypothetic[i, j])
+      for (k in 2:n) {
+        if (sequence[k - 1] == rownames(empirical)[i] &&
+            sequence[k] == rownames(empirical)[j]) {
+          sum3 <- sum3 + 1
+        }
       }
     }
-    
     v[i] <- sum3
-    sum <- v[i] / n * sum2
+    sum <- sum + ((v[i] / n) * sum2)
   }
-  
   TStat <- out * sum
-  pvalue <- 1 - pchisq(TStat, c-M)
-  
-  cat("The Divergence test statistic is: ", TStat, " the Chi-Square d.f. are: ", c-M," the p-value is: ", pvalue,"\n")
+  pvalue <- 1 - pchisq(TStat, c - M)
+  cat(
+    "The Divergence test statistic is: ",
+    TStat,
+    " the Chi-Square d.f. are: ",
+    c - M,
+    " the p-value is: ",
+    pvalue,
+    "\n"
+  )
   out <- list(statistic = TStat, p.value = pvalue)
-  
   return(out)
 }
+
+.seq2mat <- function(sequence) {
+  n <- length(sequence)
+  states <- unique(sequence)
+  nstates <- length(states)
+  
+  mat <- matlab::zeros(nstates)
+  dimnames(mat) <- list(states, states)
+  
+  for(i in 1:(n-1)) {
+    from <- sequence[i]
+    to <- sequence[i+1]
+    mat[from, to] <- mat[from, to] + 1
+  }
+  for (i in 1:nstates){
+    mat[i,] = mat[i,]/rowSums(mat)[i]
+  }
+  return (mat)
+}
+
 
 # phi function for divergence test
 .phi <- function(x) {

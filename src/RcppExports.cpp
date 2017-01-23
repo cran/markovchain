@@ -144,6 +144,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mcListFitForList
+List mcListFitForList(List data);
+RcppExport SEXP markovchain_mcListFitForList(SEXP dataSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type data(dataSEXP);
+    rcpp_result_gen = Rcpp::wrap(mcListFitForList(data));
+    return rcpp_result_gen;
+END_RCPP
+}
 // _matr2Mc
 S4 _matr2Mc(CharacterMatrix matrData, double laplacian, bool sanitize);
 RcppExport SEXP markovchain__matr2Mc(SEXP matrDataSEXP, SEXP laplacianSEXP, SEXP sanitizeSEXP) {
@@ -154,6 +165,19 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type laplacian(laplacianSEXP);
     Rcpp::traits::input_parameter< bool >::type sanitize(sanitizeSEXP);
     rcpp_result_gen = Rcpp::wrap(_matr2Mc(matrData, laplacian, sanitize));
+    return rcpp_result_gen;
+END_RCPP
+}
+// _list2Mc
+S4 _list2Mc(List data, double laplacian, bool sanitize);
+RcppExport SEXP markovchain__list2Mc(SEXP dataSEXP, SEXP laplacianSEXP, SEXP sanitizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type data(dataSEXP);
+    Rcpp::traits::input_parameter< double >::type laplacian(laplacianSEXP);
+    Rcpp::traits::input_parameter< bool >::type sanitize(sanitizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(_list2Mc(data, laplacian, sanitize));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -192,7 +192,7 @@ As a consequence, the relation between $x^{(1)}$ and $x^{(0)}$
 is $x^{(1)}=x^{(0)}P$ and, recursively, we get $x^{(2)}=x^{(0)}P^{2}$ and
 $x^{(n)}=x^{(0)}P^{n},\, n>0$.
 
-DTMC are explained in most theory books on stochastic processes, see \cite{bremaud1999discrete} and \cite{ching2006markov} for example. Valuable references online available are: \cite{konstantopoulos2009markov}, \cite{probBook} and \cite{bardPpt}.
+DTMC are explained in most theory books on stochastic processes, see \cite{bremaud1999discrete} and \cite{dobrow2016introduction} for example. Valuable references online available are: \cite{konstantopoulos2009markov}, \cite{probBook} and \cite{bardPpt}.
 
 
 \subsection{Properties and classification of states}\label{sec:properties}
@@ -1081,7 +1081,7 @@ An issue occurs when the sample contains only one realization of a state (say $X
 distribution of the transition). In this case the estimated transition matrix is
 corrected assuming $p_{\beta,j}=1/k$, being $k$ the possible states.
 
-Create sequence matrix can also be used to obtain transition matrices from a given $n*2$ matrix as the following example shows:
+Create sequence matrix can also be used to obtain raw count transition matrices from a given $n*2$ matrix as the following example shows:
 
 <<fitSequenceMatrix2, keep.source=TRUE>>=
 myMatr<-matrix(c("a","b","b","a","a","b","b","b","b","a","a","a","b","a"),ncol=2)
@@ -1178,20 +1178,45 @@ multinomialConfidenceIntervals(transitionMatrix =
 
 The functions for fitting DTMC have mostly been rewritten in \proglang{C++} using \pkg{Rcpp} \cite{RcppR} since version 0.2.\\
 
-Is is also possible to fit a DTMC or a \code{markovchainList} object 
+Is is also possible to fit a DTMC object 
 from \code{matrix} or \code{data.frame} objects as shown in following code.
 
 <<fitMclists, keep.source=TRUE>>=
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
+@
+
+The same applies for \code{markovchainList}.
+
+<<fitMclistsFit, keep.source=TRUE>>=
 mcListFit<-markovchainListFit(data=holson[,2:6],name="holson")
 mcListFit$estimate
+@
+
+Finally, given a \code{list} object, it is possible to fit a \code{markovchain} object or to obtain the raw transition matrix.
+
+<<fitMclistsFit, keep.source=TRUE>>=
+c1<-c("a","b","a","a","c","c","a")
+c2<-c("b")
+c3<-c("c","a","a","c")
+c4<-c("b","a","b","a","a","c","b")
+c5<-c("a","a","c","b")
+c6<-c("b","c","b","c","a")
+mylist<-list(c1,c2,c3,c4,c5,c6)
+mylistMc<-markovchainFit(data=mylist)
+mylistMc
+@
+
+
+The same works for \code{markovchainFitList}. 
+
+<<fitAMarkovChainListfromAlist, keep.source=TRUE>>=
+markovchainListFit(data=mylist)
 @
 
 
 
 
-The maximum a posteriori method (MAP) has been implemented using Bayesian inference \citep{sch}. For details on usage, refer to the stand-alone vignette for MAP \citep{MAPmcR}.
 
 \subsection{Prediction}
 

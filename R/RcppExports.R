@@ -48,8 +48,16 @@ createSequenceMatrix <- function(stringchar, toRowProbs = FALSE, sanitize = FALS
     .Call('markovchain_createSequenceMatrix', PACKAGE = 'markovchain', stringchar, toRowProbs, sanitize, possibleStates)
 }
 
+.mcListFitForList <- function(data) {
+    .Call('markovchain_mcListFitForList', PACKAGE = 'markovchain', data)
+}
+
 .matr2Mc <- function(matrData, laplacian = 0, sanitize = FALSE) {
     .Call('markovchain__matr2Mc', PACKAGE = 'markovchain', matrData, laplacian, sanitize)
+}
+
+.list2Mc <- function(data, laplacian = 0, sanitize = FALSE) {
+    .Call('markovchain__list2Mc', PACKAGE = 'markovchain', data, laplacian, sanitize)
 }
 
 #' @name inferHyperparam
@@ -116,7 +124,7 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #'                   default value of 1 is assigned to each parameter. This must be of size kxk 
 #'                   where k is the number of states in the chain and the values should typically 
 #'                   be non-negative integers.                        
-#' @param stringchar Equivalent to data. Either a nx2 matrix or a character vector.
+#' @param stringchar Equivalent to data. It can be a nx2 matrix or a character vector or a list
 #' @param toRowProbs converts a sequence matrix into a probability matrix
 #' @param sanitize put 1 in all rows having rowSum equal to zero
 #' @param possibleStates Possible states which are not present in the given sequence

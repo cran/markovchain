@@ -476,6 +476,53 @@ NumericMatrix _toRowProbs(NumericMatrix x, bool sanitize = false) {
 NumericMatrix createSequenceMatrix(SEXP stringchar, bool toRowProbs = false, bool sanitize = false,
                                    CharacterVector possibleStates = CharacterVector()) {
   
+  //---------------------------------------------------------------------
+  // check whether stringchar is a list or not
+  if(TYPEOF(stringchar) == VECSXP) {
+    List seqs = as<List>(stringchar);
+    CharacterVector pstates; // possiblestates
+    for(int i = 0;i < seqs.size();i++) {
+      CharacterVector tseq = unique(as<CharacterVector>(seqs[i]));
+      for(int j = 0;j < tseq.size();j++) {
+        if(tseq[j] != "NA") {
+          pstates.push_back(tseq[j]);
+        }
+      }
+    }
+    
+    for(int i = 0;i < possibleStates.size();i++) {
+      pstates.push_back(possibleStates[i]);
+    }
+    
+    pstates = unique(pstates);
+    pstates = pstates.sort();
+    int sizeMatr = pstates.size();
+    NumericMatrix freqMatrix(sizeMatr);
+    freqMatrix.attr("dimnames") = List::create(pstates, pstates);
+    
+    for(int i = 0;i < seqs.size();i++) {
+      NumericMatrix temp = createSequenceMatrix(seqs[i], false, false, pstates);
+      freqMatrix += temp;
+    }
+    
+    if(sanitize == true) {
+      for (int i = 0; i < sizeMatr; i++) {
+        double rowSum = 0;
+        for (int j = 0; j < sizeMatr; j++) 
+          rowSum += freqMatrix(i, j);
+        if(rowSum == 0)
+          for (int j = 0; j < sizeMatr; j++) 
+            freqMatrix(i, j) = 1;
+      }
+    }
+    
+    if(toRowProbs == true)
+      return _toRowProbs(freqMatrix, sanitize);
+    
+    return freqMatrix;
+  }
+  //---------------------------------------------------------------------
+  
   CharacterVector stringChar = as<CharacterVector>(stringchar);
   
   // may include missing values
@@ -574,78 +621,91 @@ double _loglikelihood(CharacterVector seq, NumericMatrix transMatr) {
   return out;
 }
 
-// Fit DTMC using MLE
-List _mcFitMle(CharacterVector stringchar, bool byrow, double confidencelevel, bool sanitize = false, 
-               CharacterVector possibleStates = CharacterVector()) {
+// [[Rcpp::export(.mcListFitForList)]]
+List mcListFitForList(List data) {
   
-  // unique states
-  CharacterVector elements = unique(union_(stringchar, possibleStates)).sort();
-  // matrix size = nrows = ncols
-  int sizeMatr = elements.size();
+  int l = data.size(); // length of list
   
-  // initial matrix = transition matrix
-  NumericMatrix initialMatr(sizeMatr);
-  // frequencey matrix 
-  NumericMatrix freqMatr(sizeMatr);
+  // pair of length and index
+  // length of sequence data[index]
+  vector<pair<int, int> > length_seq(l);
   
-  // set names of states as rows name and columns name
-  initialMatr.attr("dimnames") = List::create(elements, elements); 
-
-  // populate frequency matrix
-  int posFrom = 0, posTo = 0; 
-  for(long int i = 0; i < stringchar.size() - 1; i++) {  
-    for (int j = 0; j < sizeMatr; j++) {            
-      if(stringchar[i] == elements[j]) posFrom = j;
-      if(stringchar[i + 1] == elements[j]) posTo = j;
-    }
-    
-    freqMatr(posFrom, posTo)++;
+  for(int i = 0;i < l;i++) {
+    CharacterVector temp = as<CharacterVector>(data[i]);
+    length_seq[i] = make_pair(temp.size(), i);
   }
+  
+  // increasing order of the length of sequence in the list
+  sort(length_seq.begin(), length_seq.end());
+  
+  int i = 1; // ith transition
+  int j = 0; // start from least length sequence
+  
+  List out; // to store result
+  
+  while(j < l) {
+    int len = length_seq[j].first;
+    if(i < len) {
+      // transition from (i-1)th to ith
+      CharacterMatrix temp(l-j, 2);
+      for(int k = j;k < l;k++) {
+        temp(k-j, 0) = (as<CharacterVector>(data[length_seq[k].second]))[i-1];
+        temp(k-j, 1) = (as<CharacterVector>(data[length_seq[k].second]))[i];
+      }
+      
+      // frequency matrix
+      out.push_back(createSequenceMatrix(temp, false, true));
+      i++;
+      
+    } else {
+      j++;
+    }
+  }
+  
+  return out;
+}
 
+List generateCI(double confidencelevel, NumericMatrix freqMatr) {
+  int sizeMatr = freqMatr.nrow();
+  // transition matrix
+  NumericMatrix initialMatr(sizeMatr, sizeMatr);
+  
+  // calculation of transition matrix
   // take care of rows with all entries 0 
   for (int i = 0; i < sizeMatr; i++) {  
-  	double rowSum = 0;
-  	for (int j = 0; j < sizeMatr; j++) { 
-  	  rowSum += freqMatr(i, j);
-  	}
-  		
-  	// calculate rows probability
-  	for (int j = 0; j < sizeMatr; j++) { 
-  	  if(rowSum == 0) {
-  	    initialMatr(i, j) = (sanitize ? 1.0/sizeMatr : 0);
-  	  }
-  	  else {
-  	    initialMatr(i, j) = freqMatr(i, j)/rowSum;
-  	  }
-  	}
+    double rowSum = 0;
+    for (int j = 0; j < sizeMatr; j++) { 
+      rowSum += freqMatr(i, j);
+    }
+    
+    // calculate rows probability
+    for (int j = 0; j < sizeMatr; j++) { 
+      if(rowSum == 0) {
+        initialMatr(i, j) = 1.0/sizeMatr;
+      }
+      else {
+        initialMatr(i, j) = freqMatr(i, j)/rowSum;
+      }
+    }
   }
-
-  // transpose the matrix if byrow is false
-  if(byrow == false) {
-    initialMatr = _transpose(initialMatr); 
-  }
-
+  
+  // matrix to store end results
+  NumericMatrix lowerEndpointMatr(sizeMatr, sizeMatr);
+  NumericMatrix upperEndpointMatr(sizeMatr, sizeMatr);
+  NumericMatrix standardError(sizeMatr, sizeMatr);
+  
   // z score for given confidence interval
   double zscore = stats::qnorm_0(confidencelevel, 1.0, 0.0);
   
-  // store dimension of matrix
-  int nrows = initialMatr.nrow();
-  int ncols = initialMatr.ncol();
-  
-  // matrix to store end results
-  NumericMatrix lowerEndpointMatr(nrows, ncols);
-  NumericMatrix upperEndpointMatr(nrows, ncols);
-  NumericMatrix standardError(nrows, ncols);
-
   // populate above defined matrix 
   double marginOfError, lowerEndpoint, upperEndpoint;
-  for(int i = 0; i < nrows; i++) {
-    for(int j = 0; j < ncols; j++) {
+  for(int i = 0; i < sizeMatr; i++) {
+    for(int j = 0; j < sizeMatr; j++) {
       if(freqMatr(i, j) == 0) {
         
         // whether entire ith row is zero or not
         bool notrans = true;
-        for(int k = 0; k < ncols; k++) {
+        for(int k = 0; k < sizeMatr; k++) {
           
           // if entire ith row is not zero then set notrans to false  
           if(freqMatr(i, k) != 0) {
@@ -680,19 +740,65 @@ List _mcFitMle(CharacterVector stringchar, bool byrow, double confidencelevel, b
   
   // set the rows and columns name as states names
   standardError.attr("dimnames") = upperEndpointMatr.attr("dimnames") 
-          = lowerEndpointMatr.attr("dimnames") = List::create(elements, elements); 
+    = lowerEndpointMatr.attr("dimnames") = freqMatr.attr("dimnames");
+  
+  return List::create(_["standardError"] = standardError,
+                      _["confidenceLevel"] = confidencelevel, 
+                      _["lowerEndpointMatrix"] = lowerEndpointMatr, 
+                      _["upperEndpointMatrix"] = upperEndpointMatr);
+}
 
+// Fit DTMC using MLE
+List _mcFitMle(SEXP data, bool byrow, double confidencelevel, bool sanitize = false, 
+               CharacterVector possibleStates = CharacterVector()) {
+  
+  NumericMatrix freqMatr = createSequenceMatrix(data, false, false, possibleStates);
+  
+  // matrix size = nrows = ncols
+  int sizeMatr = freqMatr.nrow();
+  
+  // initial matrix = transition matrix
+  NumericMatrix initialMatr(sizeMatr);
+  
+  // set names of states as rows name and columns name
+  initialMatr.attr("dimnames") = freqMatr.attr("dimnames");
+
+  // take care of rows with all entries 0 
+  for (int i = 0; i < sizeMatr; i++) {  
+  	double rowSum = 0;
+  	for (int j = 0; j < sizeMatr; j++) { 
+  	  rowSum += freqMatr(i, j);
+  	}
+  		
+  	// calculate rows probability
+  	for (int j = 0; j < sizeMatr; j++) { 
+  	  if(rowSum == 0) {
+  	    initialMatr(i, j) = (sanitize ? 1.0/sizeMatr : 0);
+  	  }
+  	  else {
+  	    initialMatr(i, j) = freqMatr(i, j)/rowSum;
+  	  }
+  	}
+  }
+
+  // transpose the matrix if byrow is false
+  if(byrow == false) {
+    initialMatr = _transpose(initialMatr); 
+  }
+  
   // create markov chain object
   S4 outMc("markovchain");
   outMc.slot("transitionMatrix") = initialMatr;
   outMc.slot("name") = "MLE Fit";  
   
+  List CI = generateCI(confidencelevel, freqMatr);
+  
   // return a list of important results
   return List::create(_["estimate"] = outMc,
-                      _["standardError"] = standardError,
-		                  _["confidenceInterval"] = List::create(_["confidenceLevel"] = confidencelevel, 
-		                                                         _["lowerEndpointMatrix"] = lowerEndpointMatr, 
-		                                                         _["upperEndpointMatrix"] = upperEndpointMatr)							
+                      _["standardError"] = CI[0],
+                      _["confidenceLevel"] = CI[1],
+                      _["lowerEndpointMatrix"] = CI[2],
+                      _["upperEndpointMatrix"] = CI[3]
 	       );
 }
 
@@ -1124,6 +1230,93 @@ S4 _matr2Mc(CharacterMatrix matrData, double laplacian = 0, bool sanitize = fals
   return(outMc);
 }
 
+// convert matrix data to transition probability matrix
+// [[Rcpp::export(.list2Mc)]]
+S4 _list2Mc(List data, double laplacian = 0, bool sanitize = false) {
+  
+  // set of states
+  std::set<std::string> uniqueVals;
+  
+  // populate uniqueVals set
+  for(long int i = 0; i < data.size(); i++) {
+    CharacterVector temp = as<CharacterVector>(data[i]);
+    for(long int j = 0; j < temp.size(); j++) {
+      uniqueVals.insert((std::string)temp[j]);
+    }
+  }
+  
+  // unique states
+  int usize = uniqueVals.size();
+  
+  // matrix of dimension usize
+  NumericMatrix contingencyMatrix (usize);
+  
+  // state names as rows name and columns name
+  contingencyMatrix.attr("dimnames") = List::create(uniqueVals, uniqueVals); 
+  
+  // iterator for set of states
+  std::set<std::string>::iterator it;
+  
+  // populate contingency matrix
+  int stateBegin = 0, stateEnd = 0;
+  for(long int i = 0; i < data.size(); i ++) {
+    CharacterVector temp = as<CharacterVector>(data[i]);
+    for(long int j = 1; j < temp.size(); j ++) {
+      
+      // row and column number of begin state and end state
+      int k = 0;
+      for(it = uniqueVals.begin(); it != uniqueVals.end(); ++it, k++) {
+        if(*it == (std::string)temp[j-1]) {
+          stateBegin = k;
+        }
+        
+        if(*it == (std::string)temp[j]) {
+          stateEnd = k;
+        }
+      }
+      
+      contingencyMatrix(stateBegin,stateEnd)++;
+    }
+  }
+  
+  // add laplacian correction if needed
+  for(int i = 0; i < usize; i++) {
+    double rowSum = 0;
+    for(int j = 0; j < usize; j++) {
+      contingencyMatrix(i,j) += laplacian;
+      rowSum += contingencyMatrix(i, j);
+    }
+    
+    // get the transition matrix and a DTMC
+    for(int j = 0; j < usize; j ++) {
+      
+      if(sanitize == true) {
+        if(rowSum == 0)  {
+          contingencyMatrix(i,j) = 1.0/usize;
+        } else {
+          contingencyMatrix(i,j) /= rowSum;
+        }
+      } 
+      
+      else {
+        if(rowSum == 0) {
+          contingencyMatrix(i,j) = 0;
+        } else {
+          contingencyMatrix(i,j) /= rowSum;
+        }
+      }
+      
+    }
+    
+  }
+  
+  // markovchain object
+  S4 outMc("markovchain");
+  outMc.slot("transitionMatrix") = contingencyMatrix;
+  
+  return(outMc);
+}
+
 //' @name inferHyperparam
 //' @title Function to infer the hyperparameters for Bayesian inference from an a priori matrix or a data set
 //' @description Since the Bayesian inference approach implemented in the package is based on conjugate priors, 
@@ -1313,7 +1506,7 @@ List inferHyperparam(NumericMatrix transMatr = NumericMatrix(), NumericVector sc
 //'                   default value of 1 is assigned to each parameter. This must be of size kxk 
 //'                   where k is the number of states in the chain and the values should typically 
 //'                   be non-negative integers.                        
-//' @param stringchar Equivalent to data. Either a nx2 matrix or a character vector.
+//' @param stringchar Equivalent to data. It can be a nx2 matrix or a character vector or a list
 //' @param toRowProbs converts a sequence matrix into a probability matrix
 //' @param sanitize put 1 in all rows having rowSum equal to zero
 //' @param possibleStates Possible states which are not present in the given sequence
@@ -1385,12 +1578,23 @@ List markovchainFit(SEXP data, String method = "mle", bool byrow = true, int nbo
   	}
   	
    	S4 outMc =_matr2Mc(mat, laplacian, sanitize);
-   	out = List::create(_["estimate"] = outMc);
-  } 
-  else {
-    
+  	
+  	// convert matrix to list
+  	int nrows = mat.nrow();
+  	List manyseq(nrows);
+  	for(int i = 0;i < nrows;i++) {
+  	  manyseq[i] = mat(i,_);
+  	}
+  	
+  	out = _mcFitMle(manyseq, byrow, confidencelevel, sanitize, possibleStates);
+   	out[0] = outMc;
+  }
+  else if(TYPEOF(data) == VECSXP) { 
+    out = _mcFitMle(data, byrow, confidencelevel, sanitize, possibleStates);
+  }
+  else {    
     if(method == "mle") {
-      out = _mcFitMle(data, byrow, confidencelevel, sanitize, possibleStates); 
+      out = _mcFitMle(data, byrow, confidencelevel, sanitize, possibleStates);
     }
     
     if(method == "bootstrap") {
@@ -1416,7 +1620,7 @@ List markovchainFit(SEXP data, String method = "mle", bool byrow = true, int nbo
   NumericMatrix transMatr = estimate.slot("transitionMatrix");
   
   // data is neither data frame nor matrix
-  if(!Rf_inherits(data, "data.frame") && !Rf_isMatrix(data)) 
+  if(!Rf_inherits(data, "data.frame") && !Rf_isMatrix(data) && TYPEOF(data) != VECSXP) 
     out["logLikelihood"] = _loglikelihood(data, transMatr);
   
   estimate.slot("states") = rownames(transMatr);

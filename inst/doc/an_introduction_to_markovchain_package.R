@@ -516,64 +516,89 @@ multinomialConfidenceIntervals(transitionMatrix =
 ###################################################
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
+
+
+###################################################
+### code chunk number 52: fitMclistsFit
+###################################################
 mcListFit<-markovchainListFit(data=holson[,2:6],name="holson")
 mcListFit$estimate
 
 
 ###################################################
-### code chunk number 52: markovchainPredict
+### code chunk number 53: fitMclistsFit
+###################################################
+c1<-c("a","b","a","a","c","c","a")
+c2<-c("b")
+c3<-c("c","a","a","c")
+c4<-c("b","a","b","a","a","c","b")
+c5<-c("a","a","c","b")
+c6<-c("b","c","b","c","a")
+mylist<-list(c1,c2,c3,c4,c5,c6)
+mylistMc<-markovchainFit(data=mylist)
+mylistMc
+
+
+###################################################
+### code chunk number 54: fitAMarkovChainListfromAlist
+###################################################
+markovchainListFit(data=mylist)
+
+
+###################################################
+### code chunk number 55: markovchainPredict
 ###################################################
 predict(object = weatherFittedMLE$estimate, newdata = c("cloudy", "sunny"),
         n.ahead = 3)
 
 
 ###################################################
-### code chunk number 53: markovchainListPredict
+### code chunk number 56: markovchainListPredict
 ###################################################
 predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5)
 
 
 ###################################################
-### code chunk number 54: markovchainListPredict2
+### code chunk number 57: markovchainListPredict2
 ###################################################
 predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5, continue = TRUE)
 
 
 ###################################################
-### code chunk number 55: tests
+### code chunk number 58: tests
 ###################################################
 sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
             "b", "a", "a", "b", "b", "b", "a")
 
 
 ###################################################
-### code chunk number 56: test1
+### code chunk number 59: test1
 ###################################################
 verifyMarkovProperty(sequence)
 
 
 ###################################################
-### code chunk number 57: test2
+### code chunk number 60: test2
 ###################################################
 data(rain)
 assessOrder(rain$rain)
 
 
 ###################################################
-### code chunk number 58: test3
+### code chunk number 61: test3
 ###################################################
 assessStationarity(rain$rain, 10)
 
 
 ###################################################
-### code chunk number 59: test4
+### code chunk number 62: test4
 ###################################################
 mcFit<-markovchainFit(data=sequence,byrow=FALSE)
 divergenceTest(sequence, mcFit$estimate@transitionMatrix)
 
 
 ###################################################
-### code chunk number 60: rCtmcInit
+### code chunk number 63: rCtmcInit
 ###################################################
 energyStates <- c("sigma", "sigma_star")
 byRow <- TRUE
@@ -586,27 +611,27 @@ molecularCTMC <- new("ctmc", states = energyStates,
 
 
 ###################################################
-### code chunk number 61: rctmcRandom0
+### code chunk number 64: rctmcRandom0
 ###################################################
 statesDist <- c(0.8, 0.2)
 rctmc(n = 3, ctmc = molecularCTMC, initDist = statesDist, out.type = "df", include.T0 = FALSE)
 
 
 ###################################################
-### code chunk number 62: ctmcRandom1
+### code chunk number 65: ctmcRandom1
 ###################################################
 statesDist <- c(0.8, 0.2)
 rctmc(n = Inf, ctmc = molecularCTMC, initDist = statesDist, T = 2)
 
 
 ###################################################
-### code chunk number 63: rctmcSteadyStates
+### code chunk number 66: rctmcSteadyStates
 ###################################################
 steadyStates(molecularCTMC)
 
 
 ###################################################
-### code chunk number 64: rctmcFitting
+### code chunk number 67: rctmcFitting
 ###################################################
 data <- list(c("a", "b", "c", "a", "b", "a", "c", "b", "c"), 
              c(0, 0.8, 2.1, 2.4, 4, 5, 5.9, 8.2, 9))
@@ -614,14 +639,14 @@ ctmcFit(data)
 
 
 ###################################################
-### code chunk number 65: mcWeatherQ
+### code chunk number 68: mcWeatherQ
 ###################################################
 mcWeatherQ <- expm::logm(mcWeather@transitionMatrix,method='Eigen')
 mcWeatherQ
 
 
 ###################################################
-### code chunk number 66: mcWeatherHalfDay
+### code chunk number 69: mcWeatherHalfDay
 ###################################################
 mcWeatherHalfDayTM <- expm::expm(mcWeatherQ*.5)
 mcWeatherHalfDay <- new("markovchain",transitionMatrix=mcWeatherHalfDayTM,name="Half Day Weather Transition Matrix")
@@ -629,7 +654,7 @@ mcWeatherHalfDay
 
 
 ###################################################
-### code chunk number 67: loadAndDoExample
+### code chunk number 70: loadAndDoExample
 ###################################################
 
 weatherStates <- c("sunny", "cloudy", "rain")
@@ -646,7 +671,7 @@ weathersOfDays <- rmarkovchain(n = 365, object = mcWeather, t0 = "sunny")
 
 
 ###################################################
-### code chunk number 68: MAPFit
+### code chunk number 71: MAPFit
 ###################################################
 hyperMatrix<-matrix(c(1, 1, 2, 
                       3, 2, 1,
@@ -660,7 +685,7 @@ predictiveDistribution(weathersOfDays[1:200],
 
 
 ###################################################
-### code chunk number 69: MAPFit2
+### code chunk number 72: MAPFit2
 ###################################################
 hyperMatrix2<- hyperMatrix[c(2,3,1), c(2,3,1)]
 markovchainFit(weathersOfDays[1:200], method = "map", 
@@ -671,19 +696,19 @@ predictiveDistribution(weathersOfDays[1:200],
 
 
 ###################################################
-### code chunk number 70: inferHyperparam
+### code chunk number 73: inferHyperparam
 ###################################################
 inferHyperparam(transMatr = weatherMatrix, scale = c(10, 10, 10))
 
 
 ###################################################
-### code chunk number 71: inferHyperparam2
+### code chunk number 74: inferHyperparam2
 ###################################################
 inferHyperparam(data = weathersOfDays[1:15])
 
 
 ###################################################
-### code chunk number 72: inferHyperparam3
+### code chunk number 75: inferHyperparam3
 ###################################################
 hyperMatrix3 <- inferHyperparam(transMatr = weatherMatrix, scale = c(10, 10, 10))
 hyperMatrix3 <- hyperMatrix3$scaledInference
@@ -692,7 +717,7 @@ hyperMatrix4 <- hyperMatrix4$dataInference
 
 
 ###################################################
-### code chunk number 73: MAPandMLE
+### code chunk number 76: MAPandMLE
 ###################################################
 data(preproglucacon)
 preproglucacon <- preproglucacon[[2]]
@@ -703,7 +728,7 @@ MAPest$estimate
 
 
 ###################################################
-### code chunk number 74: higherOrder
+### code chunk number 77: higherOrder
 ###################################################
 library(Rsolnp)
 data(rain)
@@ -712,13 +737,13 @@ fitHigherOrder(rain$rain, 3)
 
 
 ###################################################
-### code chunk number 75: hommcObject
+### code chunk number 78: hommcObject
 ###################################################
 showClass("hommc")
 
 
 ###################################################
-### code chunk number 76: hommcCreate
+### code chunk number 79: hommcCreate
 ###################################################
 states <- c('a', 'b')
 P <- array(dim = c(2, 2, 4), dimnames = list(states, states))
@@ -738,7 +763,7 @@ hob
 
 
 ###################################################
-### code chunk number 77: weatPred1
+### code chunk number 80: weatPred1
 ###################################################
 
 mcWP <- new("markovchain", states = c("rainy", "nice", "snowy"),
@@ -748,7 +773,7 @@ mcWP <- new("markovchain", states = c("rainy", "nice", "snowy"),
 
 
 ###################################################
-### code chunk number 78: weatPred2
+### code chunk number 81: weatPred2
 ###################################################
 W0 <- t(as.matrix(c(0, 1, 0)))
 W1 <- W0 * mcWP; W1
@@ -759,21 +784,21 @@ W3 <- W0 * (mcWP ^ 3); W3
 
 
 ###################################################
-### code chunk number 79: weatPred3
+### code chunk number 82: weatPred3
 ###################################################
 W7 <- W0 * (mcWP ^ 7)
 W7
 
 
 ###################################################
-### code chunk number 80: weatPred4
+### code chunk number 83: weatPred4
 ###################################################
 q <- steadyStates(mcWP)
 q
 
 
 ###################################################
-### code chunk number 81: weatPred5
+### code chunk number 84: weatPred5
 ###################################################
 R0 <- t(as.matrix(c(1, 0, 0)))
 R7 <- R0 * (mcWP ^ 7); R7
@@ -783,27 +808,27 @@ S7 <- S0 * (mcWP ^ 7); S7
 
 
 ###################################################
-### code chunk number 82: Alofi1
+### code chunk number 85: Alofi1
 ###################################################
 data("rain", package = "markovchain")
 table(rain$rain)
 
 
 ###################################################
-### code chunk number 83: Alofi2
+### code chunk number 86: Alofi2
 ###################################################
 mcAlofi <- markovchainFit(data = rain$rain, name = "Alofi MC")$estimate
 mcAlofi
 
 
 ###################################################
-### code chunk number 84: Alofi3
+### code chunk number 87: Alofi3
 ###################################################
 steadyStates(mcAlofi)
 
 
 ###################################################
-### code chunk number 85: ratings1
+### code chunk number 88: ratings1
 ###################################################
 
 rc <- c("AAA", "AA", "A", "BBB", "BB", "B", "CCC", "D")
@@ -819,7 +844,7 @@ creditMatrix <- matrix(c(90.81, 8.33, 0.68, 0.06, 0.08, 0.02, 0.01, 0.01,
 
 
 ###################################################
-### code chunk number 86: ratings2
+### code chunk number 89: ratings2
 ###################################################
 creditMc <- new("markovchain", transitionMatrix = creditMatrix, 
                 name = "S&P Matrix")
@@ -827,7 +852,7 @@ absorbingStates(creditMc)
 
 
 ###################################################
-### code chunk number 87: economicAnalysis1
+### code chunk number 90: economicAnalysis1
 ###################################################
 statesNames <- c("customer", "non customer")
 P <- zeros(2); P[1, 1] <- .9; P[1, 2] <- .1; P[2, 2] <- .95; P[2, 1] <- .05;
@@ -837,34 +862,34 @@ M <- zeros(2); M[1, 1] <- -20; M[1, 2] <- -30; M[2, 1] <- -40; M[2, 2] <- 0
 
 
 ###################################################
-### code chunk number 88: economicAnalysis2
+### code chunk number 91: economicAnalysis2
 ###################################################
 c1 <- 100 + conditionalDistribution(mcP, state = "customer") %*% M[1,]
 c2 <- 0 + conditionalDistribution(mcP, state = "non customer") %*% M[2,]
 
 
 ###################################################
-### code chunk number 89: economicAnalysis3
+### code chunk number 92: economicAnalysis3
 ###################################################
 as.numeric((c(1, 0)* mcP ^ 5) %*% (as.vector(c(c1, c2))))
 
 
 ###################################################
-### code chunk number 90: hommsales
+### code chunk number 93: hommsales
 ###################################################
 data(sales)
 head(sales)
 
 
 ###################################################
-### code chunk number 91: hommcFit
+### code chunk number 94: hommcFit
 ###################################################
 # fit 8th order multivariate markov chain
 object <- fitHighOrderMultivarMC(sales, order = 8, Norm = 2)
 
 
 ###################################################
-### code chunk number 92: result
+### code chunk number 95: result
 ###################################################
 i <- c(1, 2, 2, 3, 4, 4, 4, 5, 5, 5)
 j <- c(2, 2, 2, 5, 2, 5, 5, 2, 4, 5)
@@ -893,7 +918,7 @@ for(p in 1:10) {
 
 
 ###################################################
-### code chunk number 93: bonusMalus1
+### code chunk number 96: bonusMalus1
 ###################################################
 
 getBonusMalusMarkovChain <- function(lambda)
@@ -924,20 +949,20 @@ getBonusMalusMarkovChain <- function(lambda)
 
 
 ###################################################
-### code chunk number 94: bonusMalus2
+### code chunk number 97: bonusMalus2
 ###################################################
 bmMc <- getBonusMalusMarkovChain(0.05)
 as.numeric(steadyStates(bmMc))
 
 
 ###################################################
-### code chunk number 95: bonusMalus3
+### code chunk number 98: bonusMalus3
 ###################################################
 sum(as.numeric(steadyStates(bmMc)) * c(0.5, 0.7, 0.9, 1, 1.25))
 
 
 ###################################################
-### code chunk number 96: healthIns1
+### code chunk number 99: healthIns1
 ###################################################
 
 mcHI <- new("markovchain", states = c("active", "disable", "withdrawn", 
@@ -950,7 +975,7 @@ benefitVector <- as.matrix(c(0, 0, 500, 1000))
 
 
 ###################################################
-### code chunk number 97: healthIns2
+### code chunk number 100: healthIns2
 ###################################################
 T0 <- t(as.matrix(c(1, 0, 0, 0)))
 T1 <- T0 * mcHI
@@ -959,7 +984,7 @@ T3 <- T2 * mcHI
 
 
 ###################################################
-### code chunk number 98: healthIns3
+### code chunk number 101: healthIns3
 ###################################################
 PVFB <- T0 %*% benefitVector * 1.05 ^ -0 + 
   T1 %*% benefitVector * 1.05 ^ -1+
@@ -967,13 +992,13 @@ PVFB <- T0 %*% benefitVector * 1.05 ^ -0 +
 
 
 ###################################################
-### code chunk number 99: healthIns4
+### code chunk number 102: healthIns4
 ###################################################
 P <- PVFB / (T0[1] * 1.05 ^- 0 + T1[1] * 1.05 ^ -1 + T2[1] * 1.05 ^ -2)
 
 
 ###################################################
-### code chunk number 100: healthIns5
+### code chunk number 103: healthIns5
 ###################################################
 PVFB <- T2 %*% benefitVector * 1.05 ^ -1 + T3 %*% benefitVector * 1.05 ^ -2
 PVFP <- P*(T1[1] * 1.05 ^ -0 + T2[1] * 1.05 ^ -1)
@@ -982,7 +1007,7 @@ V
 
 
 ###################################################
-### code chunk number 101: blandenEtAlii
+### code chunk number 104: blandenEtAlii
 ###################################################
 data("blanden")
 mobilityMc <- as(blanden, "markovchain")
@@ -990,26 +1015,26 @@ mobilityMc
 
 
 ###################################################
-### code chunk number 102: blandenEtAlii2
+### code chunk number 105: blandenEtAlii2
 ###################################################
 plot(mobilityMc, main = '1970 mobility',vertex.label.cex = 2,
 		layout = layout.fruchterman.reingold)
 
 
 ###################################################
-### code chunk number 103: blandenEtAlii3
+### code chunk number 106: blandenEtAlii3
 ###################################################
 round(steadyStates(mobilityMc), 2)
 
 
 ###################################################
-### code chunk number 104: preproglucacon1
+### code chunk number 107: preproglucacon1
 ###################################################
 data("preproglucacon", package = "markovchain")
 
 
 ###################################################
-### code chunk number 105: preproglucacon2
+### code chunk number 108: preproglucacon2
 ###################################################
 mcProtein <- markovchainFit(preproglucacon$preproglucacon, 
                           name = "Preproglucacon MC")$estimate
@@ -1017,7 +1042,7 @@ mcProtein
 
 
 ###################################################
-### code chunk number 106: epid1
+### code chunk number 109: epid1
 ###################################################
 craigSendiMatr <- matrix(c(682, 33, 25,
               154, 64, 47,
@@ -1032,14 +1057,14 @@ mcM6
 
 
 ###################################################
-### code chunk number 107: epid2
+### code chunk number 110: epid2
 ###################################################
 eig <- eigen(mcM6@transitionMatrix)
 D <- diag(eig$values)
 
 
 ###################################################
-### code chunk number 108: epid3
+### code chunk number 111: epid3
 ###################################################
 V <- eig$vectors 
 V %*% D %*% solve(V)
