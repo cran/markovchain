@@ -1,14 +1,14 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.6.6
-Date: 2017-01-22
+Version: 0.6.8.1
+Date: 2017-03-17
 Author: Giorgio Alfredo Spedicato [aut,cre], Tae Seung Kang [aut], Sai Bhargav
     Yalamanchi [aut], Mildenberger Thoralf [ctb], Deepak Yadav [ctb]
 Maintainer: Giorgio Alfredo Spedicato <spedicato_giorgio@yahoo.it>
 Description: Functions and S4 methods to create and manage discrete time Markov
-    chains (DTMC) more easily. In addition functions to perform statistical (fitting
-    and drawing random variates) and probabilistic (analysis of DTMC proprieties)
+    chains more easily. In addition functions to perform statistical (fitting
+    and drawing random variates) and probabilistic (analysis of their structural proprieties)
     analysis are provided.
 License: GPL-2
 Depends: R (>= 3.2.0), methods
@@ -23,8 +23,8 @@ LazyLoad: yes
 ByteCompile: yes
 BugReports: http://github.com/spedygiorgio/markovchain/issues
 URL: http://github.com/spedygiorgio/markovchain/
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2017-01-22 22:48:30 UTC; Giorgio
+Packaged: 2017-03-16 22:11:48 UTC; Giorgio
 Repository: CRAN
-Date/Publication: 2017-01-23 08:22:30
+Date/Publication: 2017-03-17 07:24:22 UTC

@@ -436,8 +436,7 @@ patientStates[1:10,]
 ###################################################
 ### code chunk number 41: fitMcbyMLE
 ###################################################
-weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",
-                                 name = "Weather MLE")
+weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",name = "Weather MLE")
 weatherFittedMLE$estimate
 weatherFittedMLE$standardError
 
@@ -565,36 +564,45 @@ predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5, continue = TRUE)
 
 
 ###################################################
-### code chunk number 58: tests
+### code chunk number 58: test1
 ###################################################
-sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
+
+sample_sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
             "b", "a", "a", "b", "b", "b", "a")
+verifyMarkovProperty(sample_sequence)
 
 
 ###################################################
-### code chunk number 59: test1
-###################################################
-verifyMarkovProperty(sequence)
-
-
-###################################################
-### code chunk number 60: test2
+### code chunk number 59: test2
 ###################################################
 data(rain)
 assessOrder(rain$rain)
 
 
 ###################################################
-### code chunk number 61: test3
+### code chunk number 60: test3
 ###################################################
 assessStationarity(rain$rain, 10)
 
 
 ###################################################
-### code chunk number 62: test4
+### code chunk number 61: divergence2
 ###################################################
-mcFit<-markovchainFit(data=sequence,byrow=FALSE)
-divergenceTest(sequence, mcFit$estimate@transitionMatrix)
+sequence<-c(0,1,2,2,1,0,0,0,0,0,0,1,2,2,2,1,0,0,1,0,0,0,0,0,0,1,1,
+2,0,0,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,1,0,
+0,2,1,0,0,0,0,0,0,1,1,1,2,2,0,0,2,1,1,1,1,2,1,1,1,1,1,1,1,1,1,0,2,
+0,1,1,0,0,0,1,2,2,0,0,0,0,0,0,2,2,2,1,1,1,1,0,1,1,1,1,0,0,2,1,1,
+0,0,0,0,0,2,2,1,1,1,1,1,2,1,2,0,0,0,1,2,2,2,0,0,0,1,1)
+mc=matrix(c(5/8,1/4,1/8,1/4,1/2,1/4,1/4,3/8,3/8),byrow=TRUE, nrow=3)
+rownames(mc)<-colnames(mc)<-0:2; theoreticalMc<-as(mc, "markovchain")
+verifyEmpiricalToTheoretical(data=sequence,object=theoreticalMc)
+
+
+###################################################
+### code chunk number 62: divergence2
+###################################################
+data(kullback)
+verifyHomogeneity(inputList=kullback,verbose=TRUE)
 
 
 ###################################################
@@ -1007,7 +1015,15 @@ V
 
 
 ###################################################
-### code chunk number 104: blandenEtAlii
+### code chunk number 104: healthIns6
+###################################################
+ltcDemoPath<-system.file("extdata", "ltdItaData.txt", package = "markovchain")
+ltcDemo<-read.table(file = ltcDemoPath, header=TRUE, sep=";",dec = ".")
+head(ltcDemo)
+
+
+###################################################
+### code chunk number 105: blandenEtAlii
 ###################################################
 data("blanden")
 mobilityMc <- as(blanden, "markovchain")
@@ -1015,26 +1031,26 @@ mobilityMc
 
 
 ###################################################
-### code chunk number 105: blandenEtAlii2
+### code chunk number 106: blandenEtAlii2
 ###################################################
 plot(mobilityMc, main = '1970 mobility',vertex.label.cex = 2,
 		layout = layout.fruchterman.reingold)
 
 
 ###################################################
-### code chunk number 106: blandenEtAlii3
+### code chunk number 107: blandenEtAlii3
 ###################################################
 round(steadyStates(mobilityMc), 2)
 
 
 ###################################################
-### code chunk number 107: preproglucacon1
+### code chunk number 108: preproglucacon1
 ###################################################
 data("preproglucacon", package = "markovchain")
 
 
 ###################################################
-### code chunk number 108: preproglucacon2
+### code chunk number 109: preproglucacon2
 ###################################################
 mcProtein <- markovchainFit(preproglucacon$preproglucacon, 
                           name = "Preproglucacon MC")$estimate
@@ -1042,7 +1058,7 @@ mcProtein
 
 
 ###################################################
-### code chunk number 109: epid1
+### code chunk number 110: epid1
 ###################################################
 craigSendiMatr <- matrix(c(682, 33, 25,
               154, 64, 47,
@@ -1057,14 +1073,14 @@ mcM6
 
 
 ###################################################
-### code chunk number 110: epid2
+### code chunk number 111: epid2
 ###################################################
 eig <- eigen(mcM6@transitionMatrix)
 D <- diag(eig$values)
 
 
 ###################################################
-### code chunk number 111: epid3
+### code chunk number 112: epid3
 ###################################################
 V <- eig$vectors 
 V %*% D %*% solve(V)

@@ -120,6 +120,7 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #' @param parallel Use parallel processing when performing Boostrap estimates.
 #' @param confidencelevel \deqn{\alpha} level for conficence intervals width. 
 #'                        Used only when \code{method} equal to "mle".
+#' @param confint a boolean to decide whether to compute Confidence Interval or not.                       
 #' @param hyperparam Hyperparameter matrix for the a priori distribution. If none is provided, 
 #'                   default value of 1 is assigned to each parameter. This must be of size kxk 
 #'                   where k is the number of states in the chain and the values should typically 
@@ -128,6 +129,9 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #' @param toRowProbs converts a sequence matrix into a probability matrix
 #' @param sanitize put 1 in all rows having rowSum equal to zero
 #' @param possibleStates Possible states which are not present in the given sequence
+#' 
+#' @details Disabling confint would lower the computation time on large datasets. If \code{data} or \code{stringchar} 
+#' contain \code{NAs}, the related \code{NA} containing transitions will be ignored.
 #' 
 #' @return A list containing an estimate, log-likelihood, and, when "bootstrap" method is used, a matrix 
 #'         of standards deviations and the bootstrap samples. When the "mle", "bootstrap" or "map" method 
@@ -157,12 +161,16 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #' mcFitMLE <- markovchainFit(data = sequence)
 #' mcFitBSP <- markovchainFit(data = sequence, method = "bootstrap", nboot = 5, name = "Bootstrap Mc")
 #'
+#' na.sequence <- c("a", NA, "a", "b")
+#' # There will be only a (a,b) transition        
+#' na.sequenceMatr <- createSequenceMatrix(na.sequence, sanitize = FALSE)
+#' mcFitMLE <- markovchainFit(data = na.sequence)
 #' @rdname markovchainFit
 #' 
 #' @export
 #' 
-markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, hyperparam = matrix(), sanitize = FALSE, possibleStates = character()) {
-    .Call('markovchain_markovchainFit', PACKAGE = 'markovchain', data, method, byrow, nboot, laplacian, name, parallel, confidencelevel, hyperparam, sanitize, possibleStates)
+markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, confint = TRUE, hyperparam = matrix(), sanitize = FALSE, possibleStates = character()) {
+    .Call('markovchain_markovchainFit', PACKAGE = 'markovchain', data, method, byrow, nboot, laplacian, name, parallel, confidencelevel, confint, hyperparam, sanitize, possibleStates)
 }
 
 .commclassesKernelRcpp <- function(P) {

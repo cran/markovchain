@@ -10,7 +10,8 @@ createSequenceMatrix(stringchar, toRowProbs = FALSE, sanitize = FALSE,
 
 markovchainFit(data, method = "mle", byrow = TRUE, nboot = 10L,
   laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95,
-  hyperparam = matrix(), sanitize = FALSE, possibleStates = character())
+  confint = TRUE, hyperparam = matrix(), sanitize = FALSE,
+  possibleStates = character())
 }
 \arguments{
 \item{stringchar}{Equivalent to data. It can be a nx2 matrix or a character vector or a list}
@@ -39,6 +40,8 @@ is chosen.}
 \item{confidencelevel}{\deqn{\alpha} level for conficence intervals width. 
 Used only when \code{method} equal to "mle".}
 
+\item{confint}{a boolean to decide whether to compute Confidence Interval or not.}
+
 \item{hyperparam}{Hyperparameter matrix for the a priori distribution. If none is provided, 
 default value of 1 is assigned to each parameter. This must be of size kxk 
 where k is the number of states in the chain and the values should typically 
@@ -56,6 +59,10 @@ Given a sequence of states arising from a stationary state,
  it fits the underlying Markov chain distribution using either MLE (also using a 
  Laplacian smoother), bootstrap or by MAP (Bayesian) inference.
 }
+\details{
+Disabling confint would lower the computation time on large datasets. If \code{data} or \code{stringchar} 
+contain \code{NAs}, the related \code{NA} containing transitions will be ignored.
+}
 \note{
 This function has been rewritten in Rcpp. Bootstrap algorithm has been defined "euristically". 
       In addition, parallel facility is not complete, involving only a part of the bootstrap process.
@@ -69,9 +76,10 @@ sequenceMatr <- createSequenceMatrix(sequence, sanitize = FALSE)
 mcFitMLE <- markovchainFit(data = sequence)
 mcFitBSP <- markovchainFit(data = sequence, method = "bootstrap", nboot = 5, name = "Bootstrap Mc")
 
-}
-\author{
-Giorgio Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi
+na.sequence <- c("a", NA, "a", "b")
+# There will be only a (a,b) transition        
+na.sequenceMatr <- createSequenceMatrix(na.sequence, sanitize = FALSE)
+mcFitMLE <- markovchainFit(data = na.sequence)
 }
 \references{
 A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
@@ -86,4 +94,6 @@ A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 \seealso{
 \code{\link{markovchainSequence}}, \code{\link{markovchainListFit}}
 }
-
+\author{
+Giorgio Spedicato, Tae Seung Kang, Sai Bhargav Yalamanchi
+}
