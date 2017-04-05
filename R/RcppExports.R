@@ -13,6 +13,10 @@
     .Call('markovchain_canonicForm', PACKAGE = 'markovchain', object)
 }
 
+.lexicographical_sort <- function(y) {
+    .Call('markovchain_lexicographicalSort', PACKAGE = 'markovchain', y)
+}
+
 generatorToTransitionMatrix <- function(gen, byrow = TRUE) {
     .Call('markovchain_generatorToTransitionMatrix', PACKAGE = 'markovchain', gen, byrow)
 }
