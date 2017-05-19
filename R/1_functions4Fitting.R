@@ -83,11 +83,6 @@ markovchainSequence <-function (n, markovchain, t0 = sample(markovchain@states, 
 ##################
 
 # check if the subsequent states are included in the previous ones
-
-# TODO: too strong contidion; should be changed by checking that
-# all states that can be reached in one step at t-1 are named  
-# in object[[t]]
-
 # check the validity of non homogeneous markovchain list
 # object is a list of markovchain object
 .checkSequence <- function(object) {
@@ -144,7 +139,7 @@ markovchainSequence <-function (n, markovchain, t0 = sample(markovchain@states, 
 #' @param ... additional parameters passed to the internal sampler
 #' 
 #' @details When a homogeneous process is assumed (\code{markovchain} object) a sequence is 
-#' sampled of size n. When an non - homogeneous process is assumed,
+#' sampled of size n. When a non - homogeneous process is assumed,
 #' n samples are taken but the process is assumed to last from the begin to the end of the 
 #' non-homogeneous markov process.
 #' 
@@ -156,7 +151,7 @@ markovchainSequence <-function (n, markovchain, t0 = sample(markovchain@states, 
 #' 
 #' @note Check the type of input
 #' 
-#' @seealso \code{\link{markovchainFit}}
+#' @seealso \code{\link{markovchainFit}}, \code{\link{markovchainSequence}}
 #' 
 #' @examples 
 #' # define the markovchain object
@@ -401,21 +396,23 @@ rmarkovchain <- function(n, object, what = "data.frame", useRCpp = TRUE, paralle
   
   if(include.t0) seq[1] <- t0
   
-  # calculate one element of sequence in each iteration
-  for (i in 1:n) {
-    stateNames <- mclist@markovchains[[i]]@states 
-    byRow <- mclist@markovchains[[i]]@byrow
-    
-    # check whether transition matrix follows row-wise or column-wise fashion
-    if(byRow) prob <- mclist@markovchains[[i]]@transitionMatrix[which(stateNames == t0), ]
-    else prob <- mclist@markovchains[[i]]@transitionMatrix[, which(stateNames == t0)]
-    
-    # initial state for the next transition matrix
-    t0 <- sample(x = stateNames, size = 1,  prob = prob)
-    
-    # populate the sequence vector
-    seq[i+vin] <- t0
+  invisible(lapply(seq_len(n),
+    function(i)
+    {
+      stateNames <<- mclist@markovchains[[i]]@states 
+        byRow <- mclist@markovchains[[i]]@byrow
+
+        # check whether transition matrix follows row-wise or column-wise fashion
+        if(byRow) prob <- mclist@markovchains[[i]]@transitionMatrix[which(stateNames == t0), ]
+        else prob <- mclist@markovchains[[i]]@transitionMatrix[, which(stateNames == t0)]
+
+        # initial state for the next transition matrix
+        t0 <<- sample(x = stateNames, size = 1,  prob = prob)
+
+        # populate the sequence vector
+        seq[i+vin] <<- t0
   }
+  ))
   
   return(seq)
 }
@@ -630,6 +627,7 @@ markovchainListFit <- function(data, byrow = TRUE, laplacian = 0, name) {
       # (i-1)th transition matrix for transition from (i-1)th state to ith state
       matrData <- data[, c(i, i+1)]
       matrData[1, ] <- as.character(matrData[1, ])
+      # checking particular data for NA values.
       validTransition <- any(apply(matrData, 1, function(x){ !any(is.na(x)) }))
       
       if(validTransition)

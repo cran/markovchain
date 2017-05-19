@@ -1,15 +1,16 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.6.9
-Date: 2017-03-25
+Version: 0.6.9.3
+Date: 2017-05-08
 Author: Giorgio Alfredo Spedicato [aut,cre], Tae Seung Kang [aut], Sai Bhargav
-    Yalamanchi [aut], Mildenberger Thoralf [ctb], Deepak Yadav [ctb]
+    Yalamanchi [aut], Mildenberger Thoralf [ctb], Deepak Yadav [ctb], Nacho Cordón
+    Castillo [ctb], Vandit Jain [ctb]
 Maintainer: Giorgio Alfredo Spedicato <spedicato_giorgio@yahoo.it>
 Description: Functions and S4 methods to create and manage discrete time Markov
     chains more easily. In addition functions to perform statistical (fitting
-    and drawing random variates) and probabilistic (analysis of their structural proprieties)
-    analysis are provided.
+    and drawing random variates) and probabilistic (analysis of their structural
+    proprieties) analysis are provided.
 License: GPL-2
 Depends: R (>= 3.2.0), methods
 Imports: igraph, Matrix, matlab, expm, stats4, parallel, Rcpp (>=
@@ -21,10 +22,11 @@ LinkingTo: Rcpp, RcppParallel, RcppArmadillo
 SystemRequirements: GNU make
 LazyLoad: yes
 ByteCompile: yes
+Encoding: latin1
 BugReports: http://github.com/spedygiorgio/markovchain/issues
 URL: http://github.com/spedygiorgio/markovchain/
 RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2017-04-05 16:24:01 UTC; LEI00010
+Packaged: 2017-05-18 22:11:52 UTC; Giorgio
 Repository: CRAN
-Date/Publication: 2017-04-05 22:09:40 UTC
+Date/Publication: 2017-05-19 06:17:49 UTC

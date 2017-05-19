@@ -19,6 +19,8 @@
 \alias{coerce,table,markovchain-method}
 \alias{coerce,markovchain,igraph-method}
 \alias{coerce,markovchain,matrix-method}
+\alias{coerce,markovchain,sparseMatrix-method}
+\alias{coerce,sparseMatrix,markovchain-method}
 \alias{coerce,matrix,markovchain-method}
 \alias{coerce,msm,markovchain-method}
 \alias{coerce,msm.est,markovchain-method}
@@ -70,8 +72,10 @@ Objects can be created by calls of the form \code{new("markovchain", states, byr
     \item{coerce}{\code{signature(from = "msm", to = "markovchain")}: coerce method from \code{msm} to \code{markovchain} }
     \item{coerce}{\code{signature(from = "msm.est", to = "markovchain")}: coerce method from \code{msm.est} (but only from a Probability Matrix) to \code{markovchain} }
     \item{coerce}{\code{signature(from = "etm", to = "markovchain")}: coerce method from \code{etm} to \code{markovchain} }
+    \item{coerce}{\code{signature(from = "sparseMatrix", to = "markovchain")}: coerce method from \code{sparseMatrix} to \code{markovchain} }
     \item{coerce}{\code{signature(from = "markovchain", to = "igraph")}: coercing to \code{igraph} objects }
     \item{coerce}{\code{signature(from = "markovchain", to = "matrix")}: coercing to \code{matrix} objects }
+    \item{coerce}{\code{signature(from = "markovchain", to = "sparseMatrix")}: coercing to \code{sparseMatrix} objects }
     \item{coerce}{\code{signature(from = "matrix", to = "markovchain")}: coercing to \code{markovchain} objects from \code{matrix} one }
     \item{dim}{\code{signature(x = "markovchain")}: method to get the size}
     \item{names}{\code{signature(x = "markovchain")}: method to get the names of states}
@@ -97,7 +101,7 @@ A First Course in Probability (8th Edition), Sheldon Ross, Prentice Hall 2010
 \note{
 \code{markovchain} object are written in S4 Classes.
 }
-\section{Warning }{Validation method is used to assess whether either columns or rows totals to one. Rounding is used up to 5th decimal. If state names are not properly defined for a probability  \code{matrix}, coercing to \code{markovhcain} object leads to overriding states name with artificial "s1", "s2", ... sequence }
+\section{Warning }{Validation method is used to assess whether either columns or rows totals to one. Rounding is used up to 5th decimal. If state names are not properly defined for a probability  \code{matrix}, coercing to \code{markovhcain} object leads to overriding states name with artificial "s1", "s2", ... sequence. In addition, operator overloading has been applied for \eqn{+,*,^,==,!=} operators. }
 \seealso{
 \code{\link{markovchainSequence}},\code{\link{markovchainFit}}
 }

@@ -262,7 +262,7 @@ setValidity("markovchain",
 			}
 			
 			
-			# check whether matrix is square amtrix or not
+			# check whether matrix is square matrix or not
 			if (nrow(object@transitionMatrix) != ncol(object@transitionMatrix)) {
 			  check <- "Error! Not squared matrix" #check if squalre matrix
 			}
@@ -393,9 +393,9 @@ setMethod("steadyStates","markovchain",
 			} else {
 				rownames(out) <- object@states
 			}
-
       return(out)
-    }
+	
+		  }
 )
 
 
@@ -408,12 +408,12 @@ setMethod("steadyStates","markovchain",
 #' @author Christope Dutang and Giorgio Spedicato
 #' @return A matrix
 .steadyStatesByRecurrentClasses<-function(object) {
-  #inizialization
+  #initialization
   M<-object@transitionMatrix
   #transpose bycol matrices
   if (object@byrow==FALSE) M <- t(M)
   namesSequence<-names(object)
-  #characterizin recurrent classes
+  #characterizing recurrent classes
   recClasses<-recurrentClasses(object)
   numRecClasses<-length(recClasses)
   recurrentClassesNames<-unlist(recClasses)
@@ -446,24 +446,20 @@ setMethod("absorbingStates", "markovchain",
 			      if(object@byrow == TRUE) {
 			        transposeYN <- TRUE
 			      }
-			      
 			      steadyStates <- .mcEigen(matr = matr, transpose = transposeYN)
 			      if(is.null(steadyStates)) {
 			        return(character(0))
 			      }
-			      
 			      # identify which states are absorbing if they are diagonally one
 			      if(transposeYN == TRUE) {
 			        maxCols <- apply(steadyStates, 2, "max")
 			      } else {
 			        maxCols <- apply(steadyStates, 1, "max")  
 			      }
-			      
 			      index <- which(maxCols == 1)
 			      if(length(index) > 0) {
 			        out <- object@states[index] 
 			      }
-			      
 			      return(out)
           } 
 )
@@ -622,7 +618,6 @@ setMethod("print", "markovchain",
 setMethod("plot", signature(x = "markovchain", y = "missing"),
 		      function(x, y, package = "igraph", ...) {
 		        switch(package,
-		         
 		         diagram = {
 		           if (requireNamespace("diagram", quietly = TRUE)) {
 		             .plotdiagram(object = x, ...)
@@ -642,12 +637,11 @@ setMethod("plot", signature(x = "markovchain", y = "missing"),
 		             plot.igraph(x = netMc, edge.label = edgeLabel, ...)
 		           }
 		         },
-		         
 		         {
 		           netMc <- .getNet(object = x,round = TRUE)
 		           edgeLabel <- round(E(netMc)$weight / 100, 2)
 		           plot.igraph(x = netMc, edge.label = edgeLabel, ...)
-		         })
+		        })
 		}
 )
 
@@ -866,7 +860,8 @@ setMethod("summary", signature(object = "markovchain"),
 	for(i in 1:nrow(matr)) {
 		for(j in 1:ncol(matr)){
 			if(!(.isProbRcpp(matr[i, j]))) {
-				if(verbose) stop("Error! Non probabilities")
+			  myMessage<-paste("Error!","Element",i,j,"is not a probability")
+				if(verbose) stop(myMessage)
 				  return(FALSE)
 			}
 		}
@@ -912,8 +907,8 @@ setMethod("summary", signature(object = "markovchain"),
 		if(!checkByCols) {
 		  #error could be either in rows or in cols
 		  if (any(colSums(from)!=1)) cat("columns sums not equal to one are:",which(colSums(from)!=1),"\n")
-		  if (any(rowSums(from)!=1)) cat("columns sums not equal to one are:",which(rowSums(from)!=1),"\n")
-		  stop("Error! Not a probability matrix")	
+		  if (any(rowSums(from)!=1)) cat("row sums not equal to one are:",which(rowSums(from)!=1),"\n")
+		  stop("Error! Not a transition matrix")	
 		}
 	}
 	
@@ -1155,6 +1150,25 @@ setAs(from = "msm.est", to = "markovchain", def = .msmest2Mc)
 
 # coerce etm object to markovchain object
 setAs(from = "etm", to = "markovchain", def = .etm2Mc)
+
+
+#sparse matrix from Matrix package
+.sparseMatrix2markovchain<-function(from){
+  temp<-as(from,"matrix")
+  out <- as(temp, "markovchain")
+  return(out)
+}
+
+.markovchain2sparseMatrix<-function(from){
+  temp<-as(from,"matrix")
+  out <- as(temp, "sparseMatrix")
+  return(out)
+}
+
+
+setAs(from = "sparseMatrix", to = "markovchain", def = .sparseMatrix2markovchain)
+setAs(from = "markovchain", to = "sparseMatrix", def = .markovchain2sparseMatrix)
+
 
 
 # functions and methods to return a matrix
@@ -1474,9 +1488,11 @@ setMethod("sort", signature(x="markovchain"), function(x, decreasing=FALSE){
   matr_sorted<-matr2besorted[sort_index,sort_index]
   states_sorted<-states2besorted[sort_index]
   
-  x@transitionMatrix<-matr_sorted
-  x@states<-states_sorted
+  out<-x
   
-  return(x)
+  out@transitionMatrix<-matr_sorted
+  out@states<-states_sorted
+  
+  return(out)
 }
 )

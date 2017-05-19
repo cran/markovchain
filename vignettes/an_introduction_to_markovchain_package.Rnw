@@ -421,6 +421,7 @@ manipulate \code{markovchain} objects.
 \code{plot} & \code{plot} method for \code{markovchain} objects.\\
 \code{print} & \code{print} method for \code{markovchain} objects.\\
 \code{show} & \code{show} method for \code{markovchain} objects.\\
+\code{sort} & \code{sort} method for \code{markovchain} objects.\\
   \code{states} & Name of the transition states.\\
   \code{t} & Transposition operator (which switches byrow slot value and modifies \\
  &  the transition matrix coherently).\\
@@ -488,6 +489,13 @@ name(mcWeather)
 name(mcWeather) <- "New Name"
 name(mcWeather)
 @
+
+Also it is possible to alphabetically sort the transition matrix:
+
+<<sortMethod, keep.source=TRUE>>=
+markovchain:::sort(mcWeather)
+@
+
 
 A direct access to transition probabilities is provided both by \code{transitionProbability} method and "[" method.
 
@@ -585,7 +593,9 @@ etm2mc
 \begin{center}
 <<importExportPlot,fig=TRUE,echo=FALSE>>=
 library(igraph)
-importExportGraph<-graph.formula(dataframe++markovchain,markovchain-+igraph,markovchain++matrix,table-+markovchain,msm-+markovchain,etm-+markovchain)
+importExportGraph<-graph.formula(dataframe++markovchain,markovchain-+igraph,
+                                 markovchain++matrix,table-+markovchain,msm-+markovchain,etm-+markovchain,
+                                 markovchain++sparseMatrix)
 plot(importExportGraph,main="Import - Export from and to markovchain objects")
 @
 \caption{The \pkg{markovchain} methods for import and export.}
@@ -1067,9 +1077,7 @@ weatherFittedLAPLACE$estimate
 
 (NOTE: The Confidence Interval option is enabled by default. Remove this option to fasten computations.)
 Both MLE and Laplace approach are based on the \code{createSequenceMatrix}
-functions that converts a data (character) sequence into a contingency table,
-showing the $\left( X_{t}=i, X_{t+1}=j\right)$ distribution within the sample,
-as code below shows.
+functions that returns the raw counts transition matrix.
 
 <<fitSequenceMatrix, keep.source=TRUE>>=
 createSequenceMatrix(stringchar = weathersOfDays)
@@ -1118,7 +1126,7 @@ The bootstrapping process can be done in parallel thanks to \pkg{RcppParallel} p
 
 <<fitMcbyBootStrap, keep.source=TRUE, eval=FALSE>>=
 weatherFittedBOOTParallel <- markovchainFit(data = weathersOfDays, 
-                                    method = "bootstrap", nboot = 20, 
+                                    method = "bootstrap", nboot = 200, 
                                     parallel = TRUE)
 weatherFittedBOOTParallel$estimate
 weatherFittedBOOTParallel$standardError
@@ -1200,7 +1208,7 @@ c1<-c("a","b","a","a","c","c","a")
 c2<-c("b")
 c3<-c("c","a","a","c")
 c4<-c("b","a","b","a","a","c","b")
-c5<-c("a","a","c","b")
+c5<-c("a","a","c",NA)
 c6<-c("b","c","b","c","a")
 mylist<-list(c1,c2,c3,c4,c5,c6)
 mylistMc<-markovchainFit(data=mylist)
@@ -1215,7 +1223,7 @@ markovchainListFit(data=mylist)
 @
 
 
-If any transition contains \code{NA}, it will be ignored in the results.
+If any transition contains \code{NA}, it will be ignored in the results as the above example showed.
 
 
 
@@ -1341,6 +1349,7 @@ This section discusses tests developed to verify whether:
 1. An empirical transition matrix is consistent with a theoretical one.  
 2. Two or more empirical transition matrices belongs to the same DTMC. 
 
+
 The first test is implemented by the \code{verifyEmpiricalToTheoretical} function. Bein $f_{ij}$ the raw transition count, \cite{kullback1962tests} shows that $2*\sum_{i=1}^{r}\sum_{j=1}^{r}f_{ij}\ln\frac{f_{ij}}{f_{i.}P\left( E_j | E_i\right)} \sim \chi^2\left ( r*(r-1) \right )$. The following example is taken from \cite{kullback1962tests}:
 
 <<divergence2, keep.source=TRUE>>=
@@ -1356,7 +1365,7 @@ verifyEmpiricalToTheoretical(data=sequence,object=theoreticalMc)
 
 
 
-The second one is implemented by the \code{verifyHomogeneity} function. Assuming that $i=1,2, \ldots, s$ DTMC samples are available and that the cardinality of the state space is $r$ it verifies whether the $s$ chains belongs to the same unknown one. \cite{kullback1962tests} shows that its test statistics follows a chi-square law, $2*\sum_{i=1}^{s}\sum_{j=1}^{r}\sum_{k=1}^{r}f_{ijk}\ln\frac{n*f_{ijk}}{f_{i..}f_{.jk}} \sim \chi^2\left ( r*(r-1) \right )$. Also the following example is taken from \cite{kullback1962tests}:
+The second one is implemented by the \code{verifyHomogeneity} function, inspired by \cite[section~9]{kullback1962tests}. Assuming that $i=1,2, \ldots, s$ DTMC samples are available and that the cardinality of the state space is $r$ it verifies whether the $s$ chains belongs to the same unknown one. \cite{kullback1962tests} shows that its test statistics follows a chi-square law, $2*\sum_{i=1}^{s}\sum_{j=1}^{r}\sum_{k=1}^{r}f_{ijk}\ln\frac{n*f_{ijk}}{f_{i..}f_{.jk}} \sim \chi^2\left ( r*(r-1) \right )$. Also the following example is taken from \cite{kullback1962tests}:
 
 
 <<divergence2, keep.source=TRUE>>=
@@ -1896,8 +1905,6 @@ almost halves in the long run.
 
 \subsubsection{Health insurance example}\label{sec:hi}
 
-TO BE COMPLETED
-
 Actuaries quantify the risk inherent in insurance contracts evaluating the premium of insurance contract to be sold (therefore covering future risk) and evaluating the actuarial reserves of existing portfolios (the liabilities in terms of benefits or claims payments due to policyholder arising from previously sold contracts), see \cite{deshmukh2012multiple} for details.
 
 An applied example can be performed using the data from \cite{de2016assicurazioni} that has been saved
@@ -1943,7 +1950,7 @@ getMc4Age<-function(age) {
 }
 @
 
-Cause transitions are not homogeneous across ages, we use a \code{markovchainList} object to describe the transition probabilities for a guy starting at age 89.
+Cause transitions are not homogeneous across ages, we use a \code{markovchainList} object to describe the transition probabilities for a guy starting at age 100.
 
 
 <<healthIns8, keep.source=TRUE>>=
@@ -1959,13 +1966,32 @@ getFullTransitionTable<-function(age){
   myMarkovChainList<-new("markovchainList",markovchains=myList,name=paste("TransitionsSinceAge",age,sep=""))
   return(myMarkovChainList)
 }
-transitionsSince89<-getFullTransitionTable(age=89)
+transitionsSince100<-getFullTransitionTable(age=100)
 @
 
-We can use such transition for simulating a life trajectory:
+We can use such transition for simulating ten life trajectories for a guy that begins "active" (A) aged 100:
 
-<<healthIns, keep.source=TRUE>>=
-as.character(rmarkovchain(n=1, object=transitionsSince89,what="matrix"),t0="A")
+<<healthIns9, keep.source=TRUE>>=
+rmarkovchain(n=10, object=transitionsSince100,what="matrix",t0="A",include.t0=TRUE)
+@
+
+
+Lets consider 1000 simulated live trajectories, for a healty guy aged 80. We can compute the expected time a guy will be disabled starting active at age 100.
+
+
+<<healthIns10, keep.source=TRUE>>=
+transitionsSince80<-getFullTransitionTable(age=80)
+lifeTrajectories<-rmarkovchain(n=1e3, object=transitionsSince80,what="matrix",t0="A",include.t0=TRUE)
+temp<-matrix(0,nrow=nrow(lifeTrajectories),ncol = ncol(lifeTrajectories))
+temp[lifeTrajectories=="I"]<-1
+expected_period_disabled<-mean(rowSums((temp)))
+expected_period_disabled
+@
+
+Assuming that the health insurance will pay a benefit of 12000 per year disabled and that the real interest rate is 0.02, we can compute the lump sum premium at 80.
+
+<<healthIns11,keep.source=TRUE>>=
+mean(rowMeans(12000*temp%*%( matrix((1+0.02)^-seq(from=0, to=ncol(temp)-1)))))
 @
 
 
