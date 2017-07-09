@@ -142,3 +142,152 @@ setMethod("steadyStates","ctmc",
           }
 )
 
+
+
+# internal function for plotting ctmc object using igraph
+.getNetctmc <- function(object, round = FALSE) {
+  
+  # function to get the graph adjacency object to plot and export to igraph
+  #
+  # Args: 
+  # object: a ctmc object
+  # round: boolean to round
+  #
+  # Returns:
+  #
+  # a graph adjacency
+  
+  if (object@byrow == FALSE) {
+    object <- t(object)
+  }
+  
+  #gets the generator matrix
+  matr <- object@generator*100
+  if(round == TRUE) {
+    matr <- round(matr, 2)
+  }
+  
+  net <- graph.adjacency(adjmatrix = matr, weighted = TRUE, mode = "directed")
+  return(net)
+}
+
+
+setMethod("plot",signature(x="ctmc",y="missing"),
+          function(x,y,package = "igraph",...){
+            switch(package,
+                   diagram = {
+                     if (requireNamespace("diagram", quietly = TRUE)) {
+                       .plotdiagram(object = x, ...)
+                     } else {
+                       netMc <- .getNetctmc(object = x, round = TRUE)
+                       edgeLabel <- round(E(netMc)$weight / 100, 2)
+                       plot.igraph(x = netMc, edge.label = edgeLabel, ...)
+                     }
+                   },
+                   
+                   DiagrammeR = {
+                     if (requireNamespace("DiagrammeR", quietly = TRUE)) {
+                       .plotDiagrammeR(object = x, ...)
+                     } else {
+                       netMc <- .getNetctmc(object = x, round = TRUE)
+                       edgeLabel <- round(E(netMc)$weight / 100, 2)
+                       plot.igraph(x = netMc, edge.label = edgeLabel, ...)
+                     }
+                   },
+                   {
+                     netMc <- .getNetctmc(object = x,round = TRUE)
+                     edgeLabel <- round(E(netMc)$weight / 100, 2)
+                     plot.igraph(x = netMc, edge.label = edgeLabel, ...)
+                   })
+          }
+          )
+
+
+
+#' An S4 class for representing Imprecise Continuous Time Markovchains
+#' 
+#' @slot states a vector of states present in the ICTMC model
+#' @slot Q matrix representing the generator demonstrated in the form of variables
+#' @slot range a matrix that stores values of range of variables
+#' @slot name name given to ICTMC
+#' 
+ictmc <- setClass("ictmc",
+                  slots = list(states = "character", Q = "matrix",
+                               range = "matrix", name = "character")
+                  )
+
+
+
+
+setMethod("initialize",
+          signature(.Object = "ictmc"),
+          function (.Object, states, Q, range,name,...) {
+            
+            
+            if(missing(Q)) Q=matrix(data=c(-1,1,1,-1), #create a naive matrix
+                                                    nrow=2,
+                                                    byrow=TRUE, 
+                                                    dimnames=list(c("n","y"), c("n","y"))
+            )
+            
+            
+            if(missing(range)) range = matrix(c(1/52,3/52,1/2,2),
+                                              nrow = 2,
+                                              byrow = 2)
+            
+            if(all(is.null(rownames(Q)), is.null(colnames(Q)))==TRUE) { #if all names are missing it initializes them to "1", "2",...
+              if(missing(states)) {
+                nr=nrow(Q)
+                stateNames<-as.character(seq(1:nr))
+              } else {stateNames=states}
+              
+              rownames(Q)=stateNames
+              colnames(Q)=stateNames
+            } else if(is.null(rownames(Q))) { #fix when rownames null
+              rownames(Q)=colnames(Q)
+            } else if(is.null(colnames(Q))) { #fix when colnames null
+              colnames(Q)=rownames(Q)
+            } else if(!setequal(rownames(Q),colnames(Q)))  colnames(Q)=rownames(Q) #fix when different
+            if(missing(states)) states=rownames(Q) #assign
+            
+            if(missing(name)) name="Unnamed imprecise CTMC"  #generic name to the object
+            callNextMethod(.Object, states = states, Q = Q, range=range,name=name,...)
+          }
+          
+)
+
+
+
+
+setValidity("ictmc",
+            function(object) {
+              check<-NULL
+              # performs a set of check whose results are saved in check
+              if (.isGenRcpp(object@Q)==FALSE) check <- "Error! Not a generator matrix" 
+              if(any(round(rowSums(object@Q),5)!=0)) check <- "Error! Row sums not equal to zero"
+              if (nrow(object@Q)!=ncol(object@Q)) check <- "Error! Not squared matrix" #check if square matrix
+              if (!setequal(colnames(object@Q),object@states)) check <- "Error! Colnames <> states" 
+              if (!setequal(rownames(object@Q),object@states)) check <- "Error! Rownames <> states"
+              
+              
+              if(nrow(object@range)!=nrow(object@Q) && ncol(object@range)!=2) check <- "Error! dimension of range matrix not correct."
+              for(i in 1:nrow(object@Q)){
+                if(object@range[i,1] > object@range[i,2]){
+                  check <- "Error, improper values set in range matrix."
+                }
+                  
+              }
+              if(min(object@range) < 0){
+                check <- "Error, values in the range matrix should be greater than zero."
+              }
+              
+              
+              if ( is.null(check) ) return(TRUE) else return(check)
+            }
+)
+
+
+
+
+
+

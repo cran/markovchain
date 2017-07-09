@@ -511,6 +511,7 @@ can be plotted by the use of \code{plot} method (as shown in Figure~\ref{fig:mcP
 \code{plot.igraph} for \code{igraph} S4 objects defined within the \pkg{igraph} package. 
 Additional parameters can be passed to \code{plot} function to control the network graph layout.
 There are also \pkg{diagram} and \pkg{DiagrammeR} ways available for plotting as shown in Figure~\ref{fig:mcPlotdiagram}.
+The \code{plot} function also uses \code{communicatingClasses} function to separate out states of different communicating classes. All states that belong to one class have same colour.
 
 <<printAndShow, keep.source=TRUE>>=
 print(mcWeather)
@@ -1439,6 +1440,24 @@ Let $n(j|i)$ denote the number of $i$->$j$ transitions in $D$, and $n(i)$ the nu
 Then the MLEs are given by
 $\hat{\lambda(s)} = \frac{n(s)}{t(s)},\hat{Pr(j|i)}=\frac{n(j|i)}{n(i)}$
 
+
+\subsubsection{Expected Hitting Time}
+The package provides a function \code{ExpectedTime} to calculate average hitting time from one state to another. Let the final state be j, then for every state $i \in I$, where $I$ is the set of all states and holding time $q_{i} > 0$ for every $i \neq j$. Assuming the conditions to be true, expected hitting time is equal to minimal non-negative solution vector $p$ to the system of linear equations:
+\begin{equation}
+\begin{cases}
+      p_{k} = 0 & k = j \\
+      -\sum_{l \in I} q_{kl}p_{k} = 1 & k \neq j
+\end{cases}
+\label{eq:EHT}
+\end{equation}
+
+
+\subsubsection{Probability at time t}
+The package provides a function \code{probabilityatT} to calculate probability of every state according to given \code{ctmc} object. Here we use Kolmogorov's backward equation $P(t) = P(0)e^{tQ}$ for $t \geq 0$ and $P(0) = I$. Here $P(t)$ is the transition function at time t. The value $P(t)[i][j]$ at time $P(t)$ describes the probability of the state at time $t$ to be eqaul to j if it was equal to i at time $t=0$.
+It takes care of the case when \code{ctmc} object has a generator represented by columns.
+If inital state is not provided, the function returns the whole transition matrix $P(t)$.
+
+
 \subsubsection{Examples}
 
 To create a CTMC object, you need to provide a valid generator matrix, say $Q$. The CTMC object has the following slots - states, generator, byrow, name (look at the documentation object for further details). Consider the following example in which we aim to model the transition of a molecule from the $\sigma$ state to the $\sigma^*$ state. When in the former state, if it absorbs sufficient energy, it can make the jump to the latter state and remains there for some time before transitioning back to the original state. Let us model this by a CTMC:
@@ -1494,6 +1513,78 @@ mcWeatherHalfDayTM <- expm::expm(mcWeatherQ*.5)
 mcWeatherHalfDay <- new("markovchain",transitionMatrix=mcWeatherHalfDayTM,name="Half Day Weather Transition Matrix")
 mcWeatherHalfDay
 @
+
+
+\subsection{Pseudo - Bayesian Estimation}
+
+\cite{Hu2002} shows an empirical quasi-bayesian method to estimate transition matrices, given an empirical $\hat{P}$ transition matrix (estimated using the classical approach) and an a - priori estimate $Q$. In particular, each row of the matrix is estimated using the linear combination $\alpha*Q+\left(1-1alpha\right)*P$, where $\alpha$ is defined for each row as Equation~\ref{eq:pseudobayes} shows
+
+\begin{equation}
+\left\{\begin{matrix}
+\hat{\alpha_i}=\frac{\hat{K_i}}{v\left(i \right )+\hat{K_i}}\\ 
+\hat{K_i}=\frac{v\left(i \right)^2 - \sum_{j}Y_{ij}^2}{\sum_{j}(Y_{ij}-v\left(i \right)*q_{ij})^2}
+\end{matrix}\right.
+\label{eq:pseudobayes}
+\end{equation}
+
+The following code returns the pseudo bayesian estimate of the transition matrix:
+
+<<pseudobayes, keep.source=TRUE>>=
+
+pseudoBayesEstimator <- function(raw, apriori){
+  v_i <- rowSums(raw) 
+  K_i <- numeric(nrow(raw))
+  sumSquaredY <- rowSums(raw^2)
+  #get numerator
+  K_i_num <- v_i^2-sumSquaredY
+  #get denominator
+  VQ <- matrix(0,nrow= nrow(apriori),ncol=ncol(apriori))
+  for (i in 1:nrow(VQ)) {
+    VQ[i,]<-v_i[i]*apriori[i,]
+  }
+  
+  K_i_den<-rowSums((raw - VQ)^2)
+  
+  K_i <- K_i_num/K_i_den
+  
+  #get the alpha vector
+  alpha <- K_i / (v_i+K_i)
+  
+  #empirical transition matrix
+  Emp<-raw/rowSums(raw)
+  
+  #get the estimate
+  out<-matrix(0, nrow= nrow(raw),ncol=ncol(raw))
+  for (i in 1:nrow(out)) {
+    out[i,]<-alpha[i]*apriori[i,]+(1-alpha[i])*Emp[i,]
+  }
+  return(out)
+}
+@
+
+We then apply it to the weather example:
+
+<<pseudobayes2, keep.source=TRUE>>=
+
+trueMc<-as(matrix(c(0.1, .9,.7,.3),nrow = 2, byrow = 2),"markovchain")
+aprioriMc<-as(matrix(c(0.5, .5,.5,.5),nrow = 2, byrow = 2),"markovchain")
+
+smallSample<-rmarkovchain(n=20,object = trueMc)
+smallSampleRawTransitions<-createSequenceMatrix(stringchar = smallSample)
+pseudoBayesEstimator(raw = smallSampleRawTransitions,apriori = aprioriMc@transitionMatrix)-trueMc@transitionMatrix
+
+biggerSample<-rmarkovchain(n=100,object = trueMc)
+biggerSampleRawTransitions<-createSequenceMatrix(stringchar = biggerSample)
+pseudoBayesEstimator(raw = biggerSampleRawTransitions,apriori = aprioriMc@transitionMatrix)-trueMc@transitionMatrix
+
+bigSample<-rmarkovchain(n=1000,object = trueMc)
+bigSampleRawTransitions<-createSequenceMatrix(stringchar = bigSample)
+pseudoBayesEstimator(raw = bigSampleRawTransitions,apriori = aprioriMc@transitionMatrix)-trueMc@transitionMatrix
+
+
+@
+
+
 
 \subsection{Bayesian Estimation}
 

@@ -76,6 +76,44 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ExpectedTimeRcpp
+NumericVector ExpectedTimeRcpp(NumericMatrix x, NumericVector y);
+RcppExport SEXP markovchain_ExpectedTimeRcpp(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(ExpectedTimeRcpp(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// probabilityatTRCpp
+NumericMatrix probabilityatTRCpp(NumericMatrix y);
+RcppExport SEXP markovchain_probabilityatTRCpp(SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(probabilityatTRCpp(y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// impreciseProbabilityatTRCpp
+NumericVector impreciseProbabilityatTRCpp(S4 C, int i, int t, int s, double error);
+RcppExport SEXP markovchain_impreciseProbabilityatTRCpp(SEXP CSEXP, SEXP iSEXP, SEXP tSEXP, SEXP sSEXP, SEXP errorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< S4 >::type C(CSEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    Rcpp::traits::input_parameter< int >::type t(tSEXP);
+    Rcpp::traits::input_parameter< int >::type s(sSEXP);
+    Rcpp::traits::input_parameter< double >::type error(errorSEXP);
+    rcpp_result_gen = Rcpp::wrap(impreciseProbabilityatTRCpp(C, i, t, s, error));
+    return rcpp_result_gen;
+END_RCPP
+}
 // seq2freqProb
 NumericVector seq2freqProb(CharacterVector sequence);
 RcppExport SEXP markovchain_seq2freqProb(SEXP sequenceSEXP) {
@@ -228,6 +266,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// noofVisitsDistRCpp
+NumericVector noofVisitsDistRCpp(NumericMatrix matrix, int i, int N);
+RcppExport SEXP markovchain_noofVisitsDistRCpp(SEXP matrixSEXP, SEXP iSEXP, SEXP NSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type matrix(matrixSEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    rcpp_result_gen = Rcpp::wrap(noofVisitsDistRCpp(matrix, i, N));
+    return rcpp_result_gen;
+END_RCPP
+}
 // commclassesKernel
 SEXP commclassesKernel(NumericMatrix P);
 RcppExport SEXP markovchain_commclassesKernel(SEXP PSEXP) {
@@ -293,6 +344,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type i(iSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
     rcpp_result_gen = Rcpp::wrap(firstpassageKernel(P, i, n));
+    return rcpp_result_gen;
+END_RCPP
+}
+// firstPassageMultipleRCpp
+NumericVector firstPassageMultipleRCpp(NumericMatrix P, int i, NumericVector setno, int n);
+RcppExport SEXP markovchain_firstPassageMultipleRCpp(SEXP PSEXP, SEXP iSEXP, SEXP setnoSEXP, SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type P(PSEXP);
+    Rcpp::traits::input_parameter< int >::type i(iSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type setno(setnoSEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(firstPassageMultipleRCpp(P, i, setno, n));
     return rcpp_result_gen;
 END_RCPP
 }

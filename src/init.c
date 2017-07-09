@@ -16,9 +16,12 @@ extern SEXP markovchain_commStatesFinder(SEXP);
 extern SEXP markovchain_communicatingClasses(SEXP);
 extern SEXP markovchain_createSequenceMatrix(SEXP, SEXP, SEXP, SEXP);
 extern SEXP markovchain_ctmcFit(SEXP, SEXP, SEXP, SEXP);
+extern SEXP markovchain_ExpectedTimeRcpp(SEXP,SEXP);
 extern SEXP markovchain_firstpassageKernel(SEXP, SEXP, SEXP);
+extern SEXP markovchain_firstPassageMultipleRCpp(SEXP,SEXP,SEXP,SEXP);
 extern SEXP markovchain_gcd(SEXP, SEXP);
 extern SEXP markovchain_generatorToTransitionMatrix(SEXP, SEXP);
+extern SEXP markovchain_impreciseProbabilityatTRCpp(SEXP,SEXP,SEXP,SEXP,SEXP);
 extern SEXP markovchain_inferHyperparam(SEXP, SEXP, SEXP);
 extern SEXP markovchain_isGen(SEXP);
 extern SEXP markovchain_isProb(SEXP);
@@ -29,9 +32,11 @@ extern SEXP markovchain_markovchainSequenceRcpp(SEXP, SEXP, SEXP, SEXP);
 extern SEXP markovchain_mcListFitForList(SEXP);
 extern SEXP markovchain_multinomCI(SEXP, SEXP, SEXP);
 extern SEXP markovchain_multinomialCIForRow(SEXP, SEXP);
+extern SEXP markovchain_noofVisitsDistRCpp(SEXP,SEXP,SEXP);
 extern SEXP markovchain_period(SEXP);
 extern SEXP markovchain_predictiveDistribution(SEXP, SEXP, SEXP);
 extern SEXP markovchain_priorDistribution(SEXP, SEXP);
+extern SEXP markovchain_probabilityatTRCpp(SEXP);
 extern SEXP markovchain_recurrentClasses(SEXP);
 extern SEXP markovchain_seq2freqProb(SEXP);
 extern SEXP markovchain_seq2matHigh(SEXP, SEXP);
@@ -47,9 +52,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"markovchain_communicatingClasses",            (DL_FUNC) &markovchain_communicatingClasses,             1},
     {"markovchain_createSequenceMatrix",            (DL_FUNC) &markovchain_createSequenceMatrix,             4},
     {"markovchain_ctmcFit",                         (DL_FUNC) &markovchain_ctmcFit,                          4},
+    {"markovchain_ExpectedTimeRcpp",                (DL_FUNC) &markovchain_ExpectedTimeRcpp,                 2},
     {"markovchain_firstpassageKernel",              (DL_FUNC) &markovchain_firstpassageKernel,               3},
+    {"markovchain_firstPassageMultipleRCpp",        (DL_FUNC) &markovchain_firstPassageMultipleRCpp,         4},
     {"markovchain_gcd",                             (DL_FUNC) &markovchain_gcd,                              2},
     {"markovchain_generatorToTransitionMatrix",     (DL_FUNC) &markovchain_generatorToTransitionMatrix,      2},
+    {"markovchain_impreciseProbabilityatTRCpp",     (DL_FUNC) &markovchain_impreciseProbabilityatTRCpp,      5},
     {"markovchain_inferHyperparam",                 (DL_FUNC) &markovchain_inferHyperparam,                  3},
     {"markovchain_isGen",                           (DL_FUNC) &markovchain_isGen,                            1},
     {"markovchain_isProb",                          (DL_FUNC) &markovchain_isProb,                           1},
@@ -60,9 +68,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"markovchain_mcListFitForList",                (DL_FUNC) &markovchain_mcListFitForList,                 1},
     {"markovchain_multinomCI",                      (DL_FUNC) &markovchain_multinomCI,                       3},
     {"markovchain_multinomialCIForRow",             (DL_FUNC) &markovchain_multinomialCIForRow,              2},
+    {"markovchain_noofVisitsDistRCpp",              (DL_FUNC) &markovchain_noofVisitsDistRCpp,               3},
     {"markovchain_period",                          (DL_FUNC) &markovchain_period,                           1},
     {"markovchain_predictiveDistribution",          (DL_FUNC) &markovchain_predictiveDistribution,           3},
     {"markovchain_priorDistribution",               (DL_FUNC) &markovchain_priorDistribution,                2},
+    {"markovchain_probabilityatTRCpp",              (DL_FUNC) &markovchain_probabilityatTRCpp,               1},
     {"markovchain_recurrentClasses",                (DL_FUNC) &markovchain_recurrentClasses,                 1},
     {"markovchain_seq2freqProb",                    (DL_FUNC) &markovchain_seq2freqProb,                     1},
     {"markovchain_seq2matHigh",                     (DL_FUNC) &markovchain_seq2matHigh,                      2},
