@@ -1,79 +1,88 @@
 # define Markov Chain class
 setClass("markovchain", # class name
-         
-         # Define the slots
-         slots = list(states = "character", byrow = "logical",
-                      transitionMatrix = "matrix", name = "character"),
-         
-         # Set the default values for the slots
-         prototype = list(states = c("a","b"), byrow = TRUE, 
-                          transitionMatrix = matrix(data = c(0,1,1,0),
-                                                    nrow = 2, byrow = TRUE, 
-                                                    dimnames = list(c("a","b"), c("a","b"))),  
-                          name = "Unnamed Markov chain")
+  # Define the slots
+  slots = list(states = "character", byrow = "logical",
+  transitionMatrix = "matrix", name = "character"),
+  # Set the default values for the slots
+  prototype = list(states = c("a", "b"), byrow = TRUE,
+  transitionMatrix = matrix(data = c(0, 1, 1, 0),
+  nrow = 2, byrow = TRUE, dimnames = list(c("a", "b"), c("a", "b"))), name = "Unnamed Markov chain")
 )
 
 # initializing method for markovchain objects
 setMethod("initialize",
-          signature(.Object = "markovchain"),
-          function (.Object, states, byrow, transitionMatrix, name, ...) {
-            
-            # put the standard markovchain 
-            if(missing(transitionMatrix)) {
-              transitionMatrix <- matrix(data = c(0, 1, 1, 0),
-                                         nrow = 2,
-                                         byrow = TRUE, 
-                                         dimnames = list(c("a","b"), c("a","b"))
-              ) 
+  signature(.Object = "markovchain"),
+  function (.Object,
+  states,
+  byrow,
+  transitionMatrix,
+  name, ...) {
+  # put the standard markovchain
+  if (missing(transitionMatrix)) {
+    transitionMatrix <- matrix(
+    data = c(0, 1, 1, 0),
+    nrow = 2,
+    byrow = TRUE,
+    dimnames = list(c("a", "b"), c("a", "b")))
             }
-            
+
             # check names of transition matrix
             # if all names are missing it initializes them to "1", "2", ....
             
-            if(all(is.null(rownames(transitionMatrix)), is.null(colnames(transitionMatrix))) == TRUE) { 
-              
-              if(missing(states)) {
+            if (all(is.null(rownames(transitionMatrix)), is.null(colnames(transitionMatrix))) == TRUE) {
+              if (missing(states)) {
                 nr <- nrow(transitionMatrix)
                 stateNames <- as.character(seq(1:nr))
-              } else {stateNames <- states}
+              } else {
+                stateNames <- states
+              }
               
               rownames(transitionMatrix) <- stateNames
               colnames(transitionMatrix) <- stateNames
               
-            } else if(is.null(rownames(transitionMatrix))) { # fix when rownames null
+            } else if (is.null(rownames(transitionMatrix))) {
+              # fix when rownames null
               
-              rownames(transitionMatrix) <- colnames(transitionMatrix)
+              rownames(transitionMatrix) <-
+                colnames(transitionMatrix)
               
-            } else if(is.null(colnames(transitionMatrix))) { # fix when colnames null
+            } else if (is.null(colnames(transitionMatrix))) {
+              # fix when colnames null
               
-              colnames(transitionMatrix) <- rownames(transitionMatrix)
+              colnames(transitionMatrix) <-
+                rownames(transitionMatrix)
               
-            } else if(!setequal(rownames(transitionMatrix), colnames(transitionMatrix)))  {
-              
-              colnames(transitionMatrix) <- rownames(transitionMatrix) # fix when different
+            } else if (!setequal(rownames(transitionMatrix), colnames(transitionMatrix)))  {
+              colnames(transitionMatrix) <-
+                rownames(transitionMatrix) # fix when different
               
             }
             
-            if(missing(states)) {
+            if (missing(states)) {
               states <- rownames(transitionMatrix)
             }
             
-            if(missing(byrow)) {
+            if (missing(byrow)) {
               byrow <- TRUE
             }
             
-            if(missing(name)) {
-              name <- "Unnamed Markov chain" 
+            if (missing(name)) {
+              name <- "Unnamed Markov chain"
             }
             
-            callNextMethod(.Object, states = states, byrow = byrow, 
-                           transitionMatrix = transitionMatrix, name = name, ...)
-          }
-)
+            callNextMethod(
+              .Object,
+              states = states,
+              byrow = byrow,
+              transitionMatrix = transitionMatrix,
+              name = name,
+              ...
+            )
+          })
 
 # define Markov Chain List class
-setClass("markovchainList", 
-         slots = list(markovchains = "list", 
+setClass("markovchainList",
+         slots = list(markovchains = "list",
 		                  name = "character")
 )
 
@@ -83,11 +92,11 @@ setValidity("markovchainList",
 		           check <- FALSE 
 		           for(i in 1:length(object@markovchains)) {
 			            if(class(object@markovchains[[i]]) != "markovchain") {
-			              # All elements in the list should be a markovchain object 
-			              check <- "Error! All elements should be of class 'markovchain'" 
+			              # All elements in the list should be a markovchain object
+			              check <- "Error! All elements should be of class 'markovchain'"
 			            }
 		           }
-		           
+
 		           if(check == FALSE) check <- TRUE
 		           return(check)
 	           }
@@ -406,7 +415,6 @@ setMethod("steadyStates","markovchain",
   M<-object@transitionMatrix
   #transpose bycol matrices
   if (object@byrow==FALSE) M <- t(M)
-  namesSequence<-names(object)
   #characterizing recurrent classes
   recClasses<-recurrentClasses(object)
   numRecClasses<-length(recClasses)
@@ -606,7 +614,6 @@ setMethod("print", "markovchain",
 }
 
 getColorVector <- function(object){
-  mat <- object@transitionMatrix
   list <- .communicatingClassesRcpp(object)
   sections <- length(list)
   colorList <- grDevices::colors()

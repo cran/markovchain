@@ -52,7 +52,9 @@ hommc <- setClass("hommc",
   
   for(i in 1:s) {
     for(j in 1:s) {
-      t <- n*s*(i-1) + (j-1)*n
+      # t is the index of transition matrix for transition from i sequence to j sequence
+      # order of transition matrices in P is P1{1,1},P2{1,1}..Pn{1,1},P1{1,2}....Pn{s,s}
+      t <- n * s * (i-1) + (j-1) * n 
       for(k in 1:n) {
         cat("Lambda", k, "(", i, ",", j, ") : ", object@Lambda[t+k],"\n", sep = "")
         cat("P", k, "(", i, ",", j, ") : \n", sep = "")
@@ -100,8 +102,9 @@ setMethod("show", "hommc",
       # jumps
       for(h in 1:n) {
         # column wise
-        allTmat[ , , t] <- t(createSequenceMatrix(matrix(c(x[1:(lseq-h)], y[-(1:h)]), ncol = 2, byrow = FALSE), 
-                                                  toRowProbs = TRUE, possibleStates = uelement, sanitize = TRUE))
+        allTmat[ , , t] <- t(createSequenceMatrix(matrix(c(x[1:(lseq-h)], y[-(1:h)]),
+                            ncol = 2, byrow = FALSE), toRowProbs = TRUE, 
+                            possibleStates = uelement, sanitize = TRUE))
         t <- t + 1
       }
     }
@@ -252,11 +255,124 @@ fitHighOrderMultivarMC <- function(seqMat, order = 2, Norm = 2) {
   
   lmbda <- rep(1 / (n * s), n * s * s)
   
-  fit <- Rsolnp::solnp(pars = lmbda, fun =  .fn3, eqfun = .eqn3, eqB = rep(1, s), LB = rep(0, n * s * s), 
-                       control = list(trace = 0), allTmat = allTmat, freqMat = freqMat, n = n, m = m,
-                       s = s, Norm = Norm)
-  
+  fit <- Rsolnp::solnp(pars = lmbda, fun =  .fn3, eqfun = .eqn3, eqB = rep(1, s),
+                       LB = rep(0, n * s * s), control = list(trace = 0), 
+                       allTmat = allTmat, freqMat = freqMat, n = n, m = m, s = s, Norm = Norm)
   
   
   return(new("hommc", order = order, Lambda = fit$pars, P = allTmat, states = uelement, byrow = FALSE))
 }
+
+
+#' Simulate a higher order multivariate markovchain
+#' 
+#' @description 
+#' This function provides a prediction of states for a higher order 
+#' multivariate markovchain object
+#' 
+#' @usage predictHommc(hommc,t,init)
+#' 
+#' @param hommc a hommc-class object
+#' @param t no of iterations to predict
+#' @param init matrix of previous states size of which depends on hommc
+#' 
+#' @details 
+#' The user is required to provide a matrix of giving n previous coressponding
+#' every categorical sequence. Dimensions of the init are s X n, where s is 
+#' number of categorical sequences and n is order of the homc.
+#' 
+#' @return 
+#' The function returns a matrix of size s X t displaying t predicted states 
+#' in each row coressponding to every categorical sequence. 
+#' 
+#' @author Vandit Jain
+#' 
+#' 
+#' @export
+predictHommc <- function(hommc, t, init) {
+  ## order of markovchain 
+  n <- hommc@order
+  
+  ## number of categorical sequences
+  s <- sqrt((dim(hommc@P))[3]/n)
+  
+  ## list of states
+  states <- hommc@states
+  
+  ## size of set of all possible states
+  m <- length(states)
+  
+  ## if initial states not provided take statndard example
+  if(missing(init)) {
+    init <- matrix(rep(states[1],s*n),nrow = s,byrow = TRUE)
+  }
+  
+  if(!all(dim(init) == c(s,n))){
+    stop("Please provide sufficient number of previous states")
+  }
+  
+  if(class(hommc)!= "hommc") {
+    stop("Please provide a valid hommc-class object")
+  }
+  
+  if(t <=0)
+    stop("T should be a positive integer")
+  
+  for(i in 1:s)
+  {
+    for(j in 1:n)
+    {
+      if(!(init[i,j] %in% states))
+        stop("invalid states in provided state matrix init")
+    }
+  }
+  
+  ## initialize result matrix
+  result <- matrix(NA,nrow = s,ncol = t)
+  
+  ## runs loop according to hommc class structure
+  for(i in 1:t)
+  {
+    for(j in 1:s)
+    {
+      ## initialises probability according
+      rowProbs <- rep(0,m)
+      
+      ## probability for current sequence depends all sequence
+      for(k in 1:s)
+      {
+        ## gets index of coressponding in the 3-D array P 
+        # index is the index of transition matrix for transition from i sequence to j sequence
+        # order of transition matrices in P is P1{1,1},P2{1,1}..Pn{1,1},P1{1,2}....Pn{s,s}
+        index <- n * s * (j-1) + n * (k-1)
+        
+        ## iterates for all order 1 to n
+        for(h in 1:n)
+        {
+          prev <- init[j,n-h+1]
+          label <- which(prev == states)
+          rowProbs <- rowProbs + hommc@Lambda[h + index] * hommc@P[label, ,h + index]
+        }
+      }
+      
+      ## uses sample function from base package
+      curr <- sample(size = 1, x = states, prob = rowProbs)
+      
+      ## changes init for next t iteration
+      for(temp in 2:n)
+      {
+        if(temp <= n)
+        init[j,temp-1] = init[j,temp]
+      }
+      init[j,n] = curr;
+      result[j,i] = curr;
+    }
+  }
+  
+  ## returns result
+  return(result)
+}
+
+
+
+

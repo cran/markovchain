@@ -4,6 +4,7 @@
 #include <math.h>
 
 using namespace Rcpp;
+using namespace std;
 
 template <typename T>
 T sortByDimNames(const T m);
@@ -340,6 +341,65 @@ NumericVector firstPassageMultipleRCpp(NumericMatrix P,int i, NumericVector setn
   NumericVector R = wrap(H);
   return R;
 }
+
+// [[Rcpp::export(.expectedRewardsRCpp)]]
+NumericVector expectedRewardsRCpp(NumericMatrix matrix, int n, NumericVector rewards)
+{
+  // initialises output vector
+  NumericVector out;
+  
+  // gets no of states
+  int no_of_states = matrix.ncol(); 
+  
+  
+  // initialises armadillo matrices and vectors
+  arma::vec temp = arma::zeros(no_of_states);
+  arma::mat matr = as<arma::mat>(matrix);
+  arma::vec v = arma::zeros(no_of_states);
+  
+  
+  // initialses the vector for the base case of dynamic programming expression
+  for(int i=0;i<no_of_states;i++)
+  {
+    temp[i] = rewards[i];
+    v[i] = rewards[i];
+  }
+  
+  // v(n, u) = r + [P]v(n−1, u);
+  for(int i=0;i<n;i++)
+  {
+    temp = v + matr*temp;
+  }
+  
+  // gets output in form of NumericVector
+  out = wrap(temp);
+  return out;
+}
+
+// [[Rcpp::export(.expectedRewardsforARCpp)]]
+double expectedRewardsforARCpp(NumericMatrix matrix,int s0,
+                               NumericVector rewards, int n )
+{
+  float result = 0.0;
+  int size = rewards.size();
+  arma::mat matr = as<arma::mat>(matrix);
+  arma::mat temp = as<arma::mat>(matrix);
+  arma::vec r = as<arma::vec>(rewards);
+  arma::mat I = arma::zeros(1,size);
+  
+  
+  I(0,s0-1) = 1;
+  
+  for(int j=0;j<n;j++)
+  {
+    arma::mat res = I*(temp*r);
+    result = result + res(0,0);
+    temp = temp*matr;
+  }
+  return result;
+}
+  
+
 
 // greatest common denominator
 // [[Rcpp::export(.gcdRcpp)]]

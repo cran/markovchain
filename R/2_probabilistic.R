@@ -141,16 +141,17 @@ firstPassage <- function(object, state, n) {
 
 
 
-#' returns first passage probabilities for a set of state given initial state
+#' function to calculate first passage probabilities
 #' 
-#' @description The function calculates first passage probability given an initial state
+#' @description The function calculates first passage probability for a subset of
+#' states given an initial state.
 #' 
 #' @param object a markovchain-class object
 #' @param state intital state of the process (charactervector)
 #' @param set set of states A, first passage of which is to be calculated
 #' @param n Number of rows on which compute the distribution
 #' 
-#' @return A vector of size n showing the first time proability 
+#' @return A vector of size n showing the first time proabilities
 #' @references
 #' Renaldo Feres, Notes for Math 450 Matlab listings for Markov chains;
 #' MIT OCW, course - 6.262, Discrete Stochastic Processes, course-notes, chap -05
@@ -166,21 +167,35 @@ firstPassage <- function(object, state, n) {
 #'          0.1, 0.8, 0.1), nrow = 3, byrow = TRUE,
 #'        dimnames = list(statesNames, statesNames)
 #' ))
-#'  
+#' firstPassageMultiple(markovB,"a",c("b","c"),4)  
+#' 
 #' @export 
 firstPassageMultiple <- function(object,state,set, n){
+  
+  # gets the transition matrix
   P <- object@transitionMatrix
+  
+  # character vector of states of the markovchain
   stateNames <- states(object)
   
+  k <- -1
   k <- which(stateNames == state)
+  if(k==-1)
+    stop("please provide a valid initial state")
   
+  # gets the set in numeric vector
   setno <- rep(0,length(set))
   for(i in 1:length(set))
   {
     setno[i] = which(set[i] == stateNames)
+    if(setno[i] == 0)
+      stop("please provide proper set of states")
   }
   
+  # calls Rcpp implementation
   outMatr <- .firstPassageMultipleRCpp(P,k,setno,n)
+  
+  #sets column and row names of output
   colnames(outMatr) <- "set"
   rownames(outMatr) <- 1:n
   return(outMatr)
@@ -329,6 +344,7 @@ committorAB <- function(object,A,B,p=1) {
   A_size = length(A)
   B_size = length(B)
   
+  # sets the matrix according to the provided states
   for(i in 1:A_size)
   {
     for(j in 1:noofstates)
@@ -340,6 +356,7 @@ committorAB <- function(object,A,B,p=1) {
     }
   }
   
+  # sets the matrix according to the provided states
   for(i in 1:B_size)
   {
     for(j in 1:noofstates)
@@ -351,6 +368,7 @@ committorAB <- function(object,A,B,p=1) {
     }
   }
   
+  # initialises b in the equation the system of equation AX =b
   b <- rep(0,noofstates)
   
   
@@ -359,7 +377,9 @@ committorAB <- function(object,A,B,p=1) {
     b[A[i]] = 1
   }
   
+  # solve AX = b according using solve function from base package
   out <- solve(matrix,b)
+  
   
   if(missing(p))
     return(out)
@@ -368,7 +388,114 @@ committorAB <- function(object,A,B,p=1) {
 }
 
 
+#' Expected Rewards for a markovchain
+#' 
+#' @description Given a markovchain object and reward values for every state,
+#' function calculates expected reward value after n steps.
+#' 
+#' @usage expectedRewards(markovchain,n,rewards)
+#' 
+#' @param markovchain the markovchain-class object
+#' @param n no of steps of the process
+#' @param rewards vector depicting rewards coressponding to states
+#' 
+#' @details the function uses a dynamic programming approach to solve a 
+#' recursive equation described in reference.
+#' 
+#' @return
+#' returns a vector of expected rewards for different initial states
+#' 
+#' @author Vandit Jain
+#' 
+#' @references Stochastic Processes: Theory for Applications, Robert G. Gallager,
+#' Cambridge University Press
+#' 
+#' @examples 
+#' transMatr<-matrix(c(0.99,0.01,0.01,0.99),nrow=2,byrow=TRUE)
+#' simpleMc<-new("markovchain", states=c("a","b"),
+#'              transitionMatrix=transMatr)
+#' expectedRewards(simpleMc,1,c(0,1))
+#' @export
+expectedRewards <- function(markovchain, n, rewards) {
+  
+  # gets the transition matrix
+  matrix <- markovchain@transitionMatrix
+  
+  # Rcpp implementation of the function
+  out <- .expectedRewardsRCpp(matrix,n, rewards)
+  
+  noofStates <- length(states(markovchain))
+  
+  result <- rep(0,noofStates)
+  
+  for(i in 1:noofStates)
+    result[i] = out[i]
+  
+  #names(result) <- states(markovchain)
+  return(result)
+}
 
+#' Expected first passage Rewards for a set of states in a markovchain
+#' 
+#' @description Given a markovchain object and reward values for every state,
+#' function calculates expected reward value for a set A of states after n 
+#' steps. 
+#'  
+#' @usage expectedRewardsforA(markovchain, A, state, rewards, n)
+#'  
+#' @param markovchain the markovchain-class object
+#' @param A set of states for first passage expected reward
+#' @param state initial state
+#' @param rewards vector depicting rewards coressponding to states
+#' @param n no of steps of the process
+#'  
+#' @details The function returns the value of expected first passage 
+#' rewards given rewards coressponding to every state, an initial state
+#' and number of steps.
+#'  
+#' @return returns a expected reward (numerical value) as described above
+#'  
+#' @author Sai Bhargav Yalamanchi, Vandit Jain
+#'  
+#' @export
+expectedRewardsforA <- function(markovchain, A, state, rewards, n) {
+  
+  ## gets the markovchain matrix
+  matrix <- markovchain@transitionMatrix
+  
+  # gets the names of states
+  stateNames <- states(markovchain)
+  
+  # no of states
+  S <- length(stateNames)
+  
+  # vectors for states in S-A
+  SAno <- rep(0,S-length(A))
+  rewardsSA <- rep(0,S-length(A))
+  
+  # for initialisation for set S-A 
+  i=1
+  ini = -1
+  for(j in 1:length(stateNames))
+  {
+    if(!(stateNames[j] %in% A)){
+      SAno[i] = j
+      rewardsSA[i] = rewards[j]
+      if(stateNames[j] == state)
+        ini = i
+      i = i+1
+    }
+  }
+  
+  ## get the matrix coressponding to S-A
+  matrix <- matrix[SAno,SAno]
+  
+  ## cals the cpp implementation
+  out <- .expectedRewardsforARCpp(matrix, ini, rewardsSA, n)
+  
+  return(out)
+  
+}
 
 
 

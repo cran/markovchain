@@ -1,3 +1,3 @@
-10-07-2017
-Added empirical bayesian estimate
-Various additions from GSOC 2017 (see the new vignette)
+14-08-2017
+Added is.TimeReversible function
+added gm_to_markovchain example
