@@ -250,13 +250,15 @@ The probabilites we get are with an error of $10^{-3}$
 
 # Continuous time markovchain generator using frequency Matrix
 
-The package provides `freq2Generator` function. It takes in a matrix representing relative frequency values along with time taken to provide a continuous time markovchain generator matrix. The function also allows to chose among three methods for calculation of the generator matrix.
+The package provides `freq2Generator` function. It takes in a matrix representing relative frequency values along with time taken to provide a continuous time markovchain generator matrix. Here, frequency matrix is a 2-D matrix of dimensions equal to relative number of possible states describing the number of transitions from a state $i$ to $j$ in time $t$, which is another parameter to be provided to the function. The function also allows to chose among three methods for calculation of the generator matrix.[@freqArticle]
 
 Three methods are as follows:
 
 1. Quasi Optimisation - "QO" 
 2. Diagonal Adjustment - "DA"
 3. Weighted Adjustment - "WA"
+
+See reference for details about the methods.
 
 
 Here is an example matrix on which `freq2Generator` function is run:
@@ -353,7 +355,7 @@ expectedRewards(simpleMc,1,c(0,1))
 
 ## Expected Rewards for a set of states in a markovchain process
 
-The package provides a function `expectedRewardsforA` that returns the value of expected first passage rewards $E$ given rewards coressponding to every state, an initial state. This means the function returns expected reward for given initial state $s_{0}$, number of transitions $n$ and for a set of states $A$ with a constraint such that the process does not hit any of the states that belong to state $A$. $S$ is the set of all possible states.
+The package provides a function `expectedRewardsBeforeHittingA` that returns the value of expected first passage rewards $E$ given rewards coressponding to every state, an initial state. This means the function returns expected reward for given initial state $s_{0}$, number of transitions $n$ and for a set of states $A$ with a constraint such that the process does not hit any of the states that belong to state $A$. $S$ is the set of all possible states.
 
 The function uses an equation which is as follows:
 

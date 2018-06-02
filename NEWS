@@ -1,3 +1,4 @@
-14-08-2017
-Added is.TimeReversible function
-added gm_to_markovchain example
+01-06-2018 0.6.9.10
+Fix Valgrid Error
+Fixed typo in vignette
+MAP method now works also with lists (issue #141)
