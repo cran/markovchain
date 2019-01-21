@@ -1,33 +1,20 @@
-### R code from vignette source 'higher_order_markov_chains.Rnw'
-### Encoding: ISO8859-1
+## ----global_options, include=FALSE---------------------------------------
+knitr::opts_chunk$set(fig.width=8.5, fig.height=6, out.width = "70%")
+set.seed(123)
 
-###################################################
-### code chunk number 1: setup
-###################################################
-	options(prompt = "R> ", continue = "+  ", 
-			width = 70, useFancyQuotes = FALSE)
-	set.seed(123)
-
-
-###################################################
-### code chunk number 2: higherOrder
-###################################################
+## ----load, results='hide', warning=FALSE, message=FALSE------------------
 require(markovchain)
 library(Rsolnp)
+
+## ----higherOrder---------------------------------------------------------
 data(rain)
 fitHigherOrder(rain$rain, 2)
 fitHigherOrder(rain$rain, 3)
 
-
-###################################################
-### code chunk number 3: hommcObject
-###################################################
+## ----hommcObject---------------------------------------------------------
 showClass("hommc")
 
-
-###################################################
-### code chunk number 4: hommcCreate
-###################################################
+## ----hommcCreate---------------------------------------------------------
 states <- c('a', 'b')
 P <- array(dim = c(2, 2, 4), dimnames = list(states, states))
 P[ , , 1] <- matrix(c(1/3, 2/3, 1, 0), byrow = FALSE, nrow = 2, ncol = 2)
@@ -44,24 +31,15 @@ hob <- new("hommc", order = 1, Lambda = Lambda, P = P, states = states,
            byrow = FALSE, name = "FOMMC")
 hob
 
-
-###################################################
-### code chunk number 5: hommsales
-###################################################
+## ----hommsales-----------------------------------------------------------
 data(sales)
 head(sales)
 
-
-###################################################
-### code chunk number 6: hommcFit
-###################################################
+## ----hommcFit, warning = FALSE, message = FALSE--------------------------
 # fit 8th order multivariate markov chain
 object <- fitHighOrderMultivarMC(sales, order = 8, Norm = 2)
 
-
-###################################################
-### code chunk number 7: result
-###################################################
+## ----result, echo = FALSE------------------------------------------------
 i <- c(1, 2, 2, 3, 4, 4, 4, 5, 5, 5)
 j <- c(2, 2, 2, 5, 2, 5, 5, 2, 4, 5)
 k <- c(1, 1, 3, 1, 8, 1, 2, 8, 1, 2)
@@ -84,7 +62,5 @@ for(p in 1:10) {
   cat("P", k[p], "(", i[p], ",", j[p], ") : \n", sep = "")
   print(object@P[, , t+k[p]])
   cat("\n")
-}  
-  
-
+}
 
