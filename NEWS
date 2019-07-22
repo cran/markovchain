@@ -1,5 +1,3 @@
-18-01-2019 0.6.9.13
-Added plot from MmgraphR
-Added meanFirstPassageTime (thanks to Toni Giorgino)
-Add orcid
-Add more warning to Statistical Inference Functions
+2019-07-21 0.6.9.15
+Fixed confidence interval calculation: true confidence intervals are now 1-(1-confidence_interval)/2
+Various code refactoring

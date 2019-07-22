@@ -2,6 +2,7 @@
 knitr::opts_chunk$set(fig.width=8.5, fig.height=6, out.width = "70%")
 set.seed(123)
 
+
 ## ---- load, results='hide', message=FALSE--------------------------------
 library("markovchain")
 
@@ -194,7 +195,7 @@ absorbingStates(mcGR4)
 absorbingStates(mcWeather)
 
 ## ----commclassKernel-----------------------------------------------------
-.commclassesKernel <- function(P){
+.commClassesKernel <- function(P){
   m <- ncol(P)
 	stateNames <- rownames(P)
 	T <- zeros(m) 
@@ -245,7 +246,7 @@ rownames(P) <- letters[1:10]
 colnames(P) <- letters[1:10]
 probMc <- new("markovchain", transitionMatrix = P, 
               name = "Probability MC")
-.commclassesKernel(P)
+.commClassesKernel(P)
 summary(probMc)
 
 ## ----transientStates-----------------------------------------------------
@@ -320,6 +321,22 @@ sum(firstPassagePdF.long[,"rain"] * 1:100)
 
 ## ------------------------------------------------------------------------
 committorAB(mcWeather,3,1)
+
+## ----hitting-data--------------------------------------------------------
+M <- matlab::zeros(5, 5)
+M[1,1] <- M[5,5] <- 1
+M[2,1] <- M[2,3] <- 1/2
+M[3,2] <- M[3,4] <- 1/2
+M[4,2] <- M[4,5] <- 1/2
+
+hittingTest <- new("markovchain", transitionMatrix = M)
+hittingProbabilities(hittingTest)
+
+## ----hitting-probabilities-----------------------------------------------
+hittingProbabilities(hittingTest)
+
+## ----hitting-weather-----------------------------------------------------
+hittingProbabilities(mcWeather)
 
 ## ----simulatingAMarkovChain----------------------------------------------
 weathersOfDays <- rmarkovchain(n = 365, object = mcWeather, t0 = "sunny")
