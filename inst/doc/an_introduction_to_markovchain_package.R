@@ -6,6 +6,9 @@ set.seed(123)
 ## ---- load, results='hide', message=FALSE--------------------------------
 library("markovchain")
 
+## ---- load-aux, echo=FALSE, results='hide'-------------------------------
+library("matlab")
+
 ## ---- showClass, echo=FALSE----------------------------------------------
 showClass("markovchain")
 showClass("markovchainList")
@@ -86,7 +89,7 @@ show(mcWeather)
 
 ## ----mcPlot, echo=FALSE, fig.cap="Weather example. Markov chain plot"----
 library("igraph")
-plot(mcWeather,layout = layout.fruchterman.reingold,main="Weather transition matrix")
+plot(mcWeather,layout = layout.fruchterman.reingold)
 
 ## ----mcPlotdiagram, echo=FALSE, fig.cap="Weather example. Markov chain plot with diagram"----
 plot(mcWeather, package="diagram", box.size = 0.04)
@@ -173,18 +176,18 @@ steadyStates(mcWeather)
 
 ## ----gamblerRuin---------------------------------------------------------
 gamblerRuinMarkovChain <- function(moneyMax, prob = 0.5) {
-  require(matlab)
-  matr <- zeros(moneyMax + 1)
-  states <- as.character(seq(from = 0, to = moneyMax, by = 1))
-  rownames(matr) = states; colnames(matr) = states
-  matr[1,1] = 1; matr[moneyMax + 1,moneyMax + 1] = 1
-  for(i in 2:moneyMax)
-  { matr[i,i-1] = 1 - prob; matr[i, i + 1] = prob   }
-  out <- new("markovchain",  
-           transitionMatrix = matr, 
-           name = paste("Gambler ruin", moneyMax, "dim", sep = " ")
-           )
-  return(out)
+  m <- matlab::zeros(moneyMax + 1)
+  m[1,1] <- m[moneyMax + 1,moneyMax + 1] <- 1
+  states <- as.character(0:moneyMax)
+  rownames(m) <- colnames(m) <- states
+  
+  for(i in 2:moneyMax){ 
+    m[i,i-1] <- 1 - prob
+    m[i, i + 1] <- prob   
+  }
+  
+  new("markovchain", transitionMatrix = m, 
+      name = paste("Gambler ruin", moneyMax, "dim", sep = " "))
 }
 
 mcGR4 <- gamblerRuinMarkovChain(moneyMax = 4, prob = 0.5)
@@ -318,6 +321,35 @@ meanFirstPassageTime(mcWeather,"rain")
 ## ----mfpt3---------------------------------------------------------------
 firstPassagePdF.long <- firstPassage(object = mcWeather, state = "sunny",  n = 100)
 sum(firstPassagePdF.long[,"rain"] * 1:100)
+
+## ----mrt-weather---------------------------------------------------------
+meanRecurrenceTime(mcWeather)
+
+## ----mrt-probMc----------------------------------------------------------
+recurrentStates(probMc)
+meanRecurrenceTime(probMc)
+
+## ----data-drunkard-------------------------------------------------------
+drunkProbs <- matlab::zeros(5, 5)
+drunkProbs[1,1] <- drunkProbs[5,5] <- 1
+drunkProbs[2,1] <- drunkProbs[2,3] <- 1/2
+drunkProbs[3,2] <- drunkProbs[3,4] <- 1/2
+drunkProbs[4,3] <- drunkProbs[4,5] <- 1/2
+
+drunkMc <- new("markovchain", transitionMatrix = drunkProbs)
+drunkMc
+
+## ----rs-drunkard---------------------------------------------------------
+recurrentStates(drunkMc)
+
+## ----ts-drunkard---------------------------------------------------------
+transientStates(drunkMc)
+
+## ----ap-drunkard---------------------------------------------------------
+absorptionProbabilities(drunkMc)
+
+## ----at-drunkard---------------------------------------------------------
+meanAbsorptionTime(drunkMc)
 
 ## ------------------------------------------------------------------------
 committorAB(mcWeather,3,1)

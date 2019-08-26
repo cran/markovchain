@@ -492,7 +492,7 @@ rmarkovchain <- function(n, object, what = "data.frame", useRCpp = TRUE, paralle
   outMc <- new("markovchain", transitionMatrix = transMatr, name = "Laplacian Smooth Fit")
 
   # transpose the transition matrix
-  if (byrow == FALSE) {
+  if (!byrow) {
     outMc@transitionMatrix <- t(outMc@transitionMatrix)
     outMc@byrow <- FALSE
   }
@@ -593,7 +593,7 @@ rmarkovchain <- function(n, object, what = "data.frame", useRCpp = TRUE, paralle
 #' singleMc <- markovchainFit(data = holson[,2:12])
 #' # fitting a markovchainList
 #' mclistFit <- markovchainListFit(data = holson[, 2:12], name = "holsonMcList")
-
+#' @export
 markovchainListFit <- function(data, byrow = TRUE, laplacian = 0, name) {
   
   # check the format of input data
@@ -683,13 +683,13 @@ markovchainListFit <- function(data, byrow = TRUE, laplacian = 0, name) {
 #' @references Constructing two-sided simultaneous confidence intervals 
 #' for multinomial proportions for small counts in a large number of cells. 
 #' Journal of Statistical Software 5(6) (2000)
-#'
-#' @seealso \code{\link{markovchain}}
+#' 
 #' @examples 
 #' seq<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", "b", "a", "a", "b", "b", "b", "a")
 #' mcfit<-markovchainFit(data=seq,byrow=TRUE)
 #' seqmat<-createSequenceMatrix(seq)
 #' multinomialConfidenceIntervals(mcfit$estimate@transitionMatrix, seqmat, 0.95)
+#' @export
 multinomialConfidenceIntervals<-function(transitionMatrix, countsTransitionMatrix, confidencelevel=0.95) {
   
   out<-.multinomialCIRcpp(transMat=transitionMatrix, seqMat=countsTransitionMatrix,confidencelevel=confidencelevel)
