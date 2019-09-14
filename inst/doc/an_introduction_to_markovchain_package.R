@@ -94,10 +94,10 @@ plot(mcWeather,layout = layout.fruchterman.reingold)
 ## ----mcPlotdiagram, echo=FALSE, fig.cap="Weather example. Markov chain plot with diagram"----
 plot(mcWeather, package="diagram", box.size = 0.04)
 
-## ----MmgraphR_plot, echo=TRUE--------------------------------------------
+## ----MmgraphR_plot, echo=TRUE, warning=FALSE, message=FALSE--------------
 library("MmgraphR")
-stochastic_matrix_to_plot <- as(mcWeather,"matrix")
-trmatplot(stochastic_matrix_to_plot,main="Weather MC plot using MmgraphR")
+stochastic_matrix_to_plot <- as(mcWeather, "matrix")
+trmatplot(stochastic_matrix_to_plot, main = "Weather MC plot using MmgraphR", rowconstraint = FALSE)
 
 ## ----exportImport1-------------------------------------------------------
 mcDf <- as(mcWeather, "data.frame")
@@ -197,42 +197,6 @@ steadyStates(mcGR4)
 absorbingStates(mcGR4)
 absorbingStates(mcWeather)
 
-## ----commclassKernel-----------------------------------------------------
-.commClassesKernel <- function(P){
-  m <- ncol(P)
-	stateNames <- rownames(P)
-	T <- zeros(m) 
-	i <- 1
-	while (i <= m) { 
-		a <- i 
-		b <- zeros(1,m)
-		b[1,i] <- 1
-		old <- 1
-		new <- 0
-		while (old != new) {
-			old <- sum(find(b > 0))
-			n <- size(a)[2]
-			matr <- matrix(as.numeric(P[a,]), ncol = m, 
-                     nrow = n)
-			c <- colSums(matr)
-			d <- find(c)
-			n <- size(d)[2]
-			b[1,d] <- ones(1,n)
-			new <- sum(find(b>0))
-			a <- d
-		}
-		T[i,] <- b
-		i <- i+1 }
-	F <- t(T)  
-	C <- (T > 0)&(F > 0)
-	v <- (apply(t(C) == t(T), 2, sum) == m)
-	colnames(C) <- stateNames
-	rownames(C) <- stateNames
-	names(v) <- stateNames
-	out <- list(C = C, v = v)
-	return(out)
-}
-
 ## ----renaldoMatrix1------------------------------------------------------
 P <- matlab::zeros(10)
 P[1, c(1, 3)] <- 1/2;
@@ -249,7 +213,6 @@ rownames(P) <- letters[1:10]
 colnames(P) <- letters[1:10]
 probMc <- new("markovchain", transitionMatrix = P, 
               name = "Probability MC")
-.commClassesKernel(P)
 summary(probMc)
 
 ## ----transientStates-----------------------------------------------------
