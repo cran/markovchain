@@ -1,8 +1,8 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.8.0
-Date: 2019-09-13
+Version: 0.8.1
+Date: 2019-12-10
 Authors@R: c(
     person("Giorgio Alfredo", "Spedicato", role = c("aut", "cre"),
       email = "spedicato_giorgio@yahoo.it",comment = c(ORCID = "0000-0002-0315-8888")),
@@ -20,7 +20,7 @@ Description: Functions and S4 methods to create and manage discrete time Markov
     and drawing random variates) and probabilistic (analysis of their structural
     proprieties) analysis are provided.
 License: GPL-2
-Depends: R (>= 3.5.0), methods
+Depends: R (>= 3.6.0), methods
 Imports: igraph, Matrix, matlab, expm, stats4, parallel, Rcpp (>=
         1.0.2), RcppParallel, utils, stats, grDevices
 Suggests: knitr, testthat, diagram, DiagrammeR, msm, etm, Rsolnp,
@@ -33,9 +33,9 @@ ByteCompile: yes
 Encoding: UTF-8
 BugReports: http://github.com/spedygiorgio/markovchain/issues
 URL: http://github.com/spedygiorgio/markovchain/
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 NeedsCompilation: yes
-Packaged: 2019-09-13 18:42:42 UTC; giorg
+Packaged: 2019-12-16 22:02:20 UTC; Giorgio
 Author: Giorgio Alfredo Spedicato [aut, cre]
     (<https://orcid.org/0000-0002-0315-8888>),
   Tae Seung Kang [aut],
@@ -46,4 +46,4 @@ Author: Giorgio Alfredo Spedicato [aut, cre]
   Vandit Jain [ctb],
   Toni Giorgino [ctb] (<https://orcid.org/0000-0001-6449-0596>)
 Repository: CRAN
-Date/Publication: 2019-09-14 21:30:08 UTC
+Date/Publication: 2019-12-16 23:00:02 UTC
