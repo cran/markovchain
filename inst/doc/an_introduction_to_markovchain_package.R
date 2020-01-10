@@ -7,7 +7,7 @@ set.seed(123)
 library("markovchain")
 
 ## ---- load-aux, echo=FALSE, results='hide'------------------------------------
-library("matlab")
+require("matlab")
 
 ## ---- showClass, echo=FALSE---------------------------------------------------
 showClass("markovchain")
@@ -88,16 +88,20 @@ print(mcWeather)
 show(mcWeather)
 
 ## ----mcPlot, echo=FALSE, fig.cap="Weather example. Markov chain plot"---------
-library("igraph")
-plot(mcWeather,layout = layout.fruchterman.reingold)
+if (requireNamespace("igraph", quietly = TRUE)) {
+  library(igraph)
+  plot(mcWeather,layout = layout.fruchterman.reingold)
+  } else {
+  message("igraph unavailable")
+  }
 
 ## ----mcPlotdiagram, echo=FALSE, fig.cap="Weather example. Markov chain plot with diagram"----
-plot(mcWeather, package="diagram", box.size = 0.04)
-
-## ----MmgraphR_plot, echo=TRUE, warning=FALSE, message=FALSE-------------------
-suppressPackageStartupMessages(library("MmgraphR"))
-stochastic_matrix_to_plot <- as(mcWeather, "matrix")
-trmatplot(stochastic_matrix_to_plot, main = "Weather MC plot using MmgraphR", rowconstraint = FALSE)
+if (requireNamespace("diagram", quietly = TRUE)) {
+  library(diagram)
+  plot(mcWeather, package="diagram", box.size = 0.04)
+  } else {
+  message("diagram unavailable")
+  }
 
 ## ----exportImport1------------------------------------------------------------
 mcDf <- as(mcWeather, "data.frame")
@@ -106,6 +110,7 @@ mcDf
 mcIgraph <- as(mcWeather, "igraph")
 
 ## ----exportImport2------------------------------------------------------------
+if (requireNamespace("msm", quietly = TRUE)) {
 require(msm)
 Q <- rbind ( c(0, 0.25, 0, 0.25),
              c(0.166, 0, 0.166, 0.166),
@@ -114,8 +119,12 @@ Q <- rbind ( c(0, 0.25, 0, 0.25),
 cavmsm <- msm(state ~ years, subject = PTNUM, data = cav, qmatrix = Q, death = 4)
 msmMc <- as(cavmsm, "markovchain")
 msmMc
+  } else {
+  message("msm unavailable")
+  }
 
 ## ----exporImport3-------------------------------------------------------------
+if (requireNamespace("etm", quietly = TRUE)) {
 library(etm)
 data(sir.cont)
 sir.cont <- sir.cont[order(sir.cont$id, sir.cont$time), ]
@@ -133,6 +142,9 @@ tr.prob <- etm(sir.cont, c("0", "1", "2"), tra, "cens", 1)
 tr.prob
 etm2mc<-as(tr.prob, "markovchain")
 etm2mc
+  } else {
+  message("etm unavailable")
+}
 
 ## ----fromAndTo, echo=FALSE, fig.cap="The markovchain methods for import and export"----
 library(igraph)
