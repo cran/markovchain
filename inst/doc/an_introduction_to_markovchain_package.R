@@ -1,7 +1,27 @@
 ## ----global_options, include=FALSE--------------------------------------------
 knitr::opts_chunk$set(fig.width=8.5, fig.height=6, out.width = "70%")
 set.seed(123)
-
+library(knitr)
+hook_output <- knit_hooks$get("output")
+knit_hooks$set(output = function(x, options) {
+   lines <- options$output.lines
+   if (is.null(lines)) {
+     return(hook_output(x, options))  # pass to default hook
+   }
+   x <- unlist(strsplit(x, "\n"))
+   more <- "..."
+   if (length(lines)==1) {        # first n lines
+     if (length(x) > lines) {
+       # truncate the output, but add ....
+       x <- c(head(x, lines), more)
+     }
+   } else {
+     x <- c(more, x[lines], more)
+   }
+   # paste these lines together
+   x <- paste(c(x, ""), collapse = "\n")
+   hook_output(x, options)
+ })
 
 ## ---- load, results='hide', message=FALSE-------------------------------------
 library("markovchain")
@@ -405,7 +425,7 @@ multinomialConfidenceIntervals(transitionMatrix =
 data(holson)
 singleMc<-markovchainFit(data=holson[,2:12],name="holson")
 
-## ----fitMclistsFit1-----------------------------------------------------------
+## ----fitMclistsFit1, output.lines=20------------------------------------------
 mcListFit<-markovchainListFit(data=holson[,2:6],name="holson")
 mcListFit$estimate
 
@@ -420,7 +440,7 @@ mylist<-list(c1,c2,c3,c4,c5,c6)
 mylistMc<-markovchainFit(data=mylist)
 mylistMc
 
-## ----fitAMarkovChainListfromAlist---------------------------------------------
+## ----fitAMarkovChainListfromAlist, output.lines=15----------------------------
 markovchainListFit(data=mylist)
 
 ## ----markovchainPredict-------------------------------------------------------
