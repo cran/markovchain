@@ -1,7 +1,7 @@
-111909a189ffef16e3281a6586d2f0d3 *ChangeLog
-2a799c34e273f18b9a9c363c5777fb04 *DESCRIPTION
+6a3e529bb79ccd54a7a93d60927ff47b *ChangeLog
+d48c5773c23ccdbfe63c79c3c9ac4c9c *DESCRIPTION
 bbe9b1c32931766aa31d250e79e2801a *NAMESPACE
-34131305bb046a6664094a3fe9bf0f2d *NEWS
+5b81662b6b904bde81a6808ae88f99d8 *NEWS
 49cefb5f5f768b88c6093cb5e1c2f65d *R/RcppExports.R
 abae5a7e44f15f51a153439c9641b67d *R/classesAndMethods.R
 de2bd558f0b4120acaaf8872ca2299f2 *R/ctmcClassesAndMethods.R
@@ -13,7 +13,7 @@ de2bd558f0b4120acaaf8872ca2299f2 *R/ctmcClassesAndMethods.R
 279cd2b8ad81d99b8a4e5b46e94a0cd7 *R/markovchain.R
 e5862947a4f397c501f11a3fd04ced09 *R/probabilistic.R
 8c90c159a9489b0f5dfb8ce08e0495e8 *R/random.R
-9cfb2d3bec515dcd806f4a8ebaccb586 *R/statisticalTests.R
+d7514b8ba733a4957e6af779266878d5 *R/statisticalTests.R
 d63c96e3a20af5a1096a32ec9952f85d *R/supplementaryPlot.R
 0884484a346f26d6a72c4b985663d518 *R/sysdata.rda
 39b735feac8bc2ead976b8f9d61db649 *R/utils.R
@@ -39,14 +39,14 @@ fb3046e24980a921d79cba3c3ef6f3b0 *demo/extractMatrices.R
 9b61f7557c1e6c863affd1bc5f07480e *demo/reliability.R
 4412e3c1ae45e06dc3dc41779424a939 *inst/CITATION
 7f118fc657862f6a1db560584aeb490e *inst/doc/an_introduction_to_markovchain_package.R
-b6605d47d32082a4d7c568d828c411d3 *inst/doc/an_introduction_to_markovchain_package.Rmd
-9bde2da8c872b15ed889ff246756b6d8 *inst/doc/an_introduction_to_markovchain_package.pdf
+a187d426c37479da171b2325b36bcf5e *inst/doc/an_introduction_to_markovchain_package.Rmd
+cc1a08d031934dfbc4ae5ee9804df925 *inst/doc/an_introduction_to_markovchain_package.pdf
 4b3b3806c112ae0147a4662161165b24 *inst/doc/gsoc_2017_additions.R
 263029ac4cc9bc8b12ab1d8c7dffd3df *inst/doc/gsoc_2017_additions.Rmd
-ad4f9ad7aeda86910e33e8af403abd57 *inst/doc/gsoc_2017_additions.pdf
+5c9ca16d3af716530dfd4892f893f026 *inst/doc/gsoc_2017_additions.pdf
 e70605cb8e702fa464278f845ad14bc8 *inst/doc/higher_order_markov_chains.R
 6039ddc13e6d4e61f10f3eddb0fbbe9f *inst/doc/higher_order_markov_chains.Rmd
-b9702b3c9dcc3fec5fa46a54816a369f *inst/doc/higher_order_markov_chains.pdf
+2e98dc143e524f2a9c24f6c9ff61b6a0 *inst/doc/higher_order_markov_chains.pdf
 730fbb92cced04056c80f883f3566252 *inst/extdata/ltdItaData.txt
 75bf84bd1d2c1ad2c18b97199443d27f *man/ExpectedTime.Rd
 3a7587d2c12ba2a1652ad7e38cc69443 *man/HigherOrderMarkovChain-class.Rd
@@ -142,7 +142,7 @@ addba15f1b859a975faace21a0f59995 *tests/testthat/testPlot.R
 201a49d2650e0f94a431772ac391da40 *tests/testthat/testctmc.R
 8aaa782563b2c0c60e2573ca4dd55a8d *tests/testthat/testetm.R
 6375e9a45d7975e9de0cf04b2a6a68fd *tests/testthat/testmsm.R
-b6605d47d32082a4d7c568d828c411d3 *vignettes/an_introduction_to_markovchain_package.Rmd
+a187d426c37479da171b2325b36bcf5e *vignettes/an_introduction_to_markovchain_package.Rmd
 263029ac4cc9bc8b12ab1d8c7dffd3df *vignettes/gsoc_2017_additions.Rmd
 6039ddc13e6d4e61f10f3eddb0fbbe9f *vignettes/higher_order_markov_chains.Rmd
 c19f024e4ed601bd7796030986ef807b *vignettes/markovchainBiblio.bib

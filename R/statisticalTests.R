@@ -55,7 +55,8 @@
 
 # check if the sequence holds the Markov property
 verifyMarkovProperty <- function(sequence, verbose = TRUE) {
-  warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")
+  #warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")
+  
   #fitting the markovchain
   
   transMatrix <- markovchainFit(data = sequence)$estimate@transitionMatrix
@@ -88,8 +89,20 @@ verifyMarkovProperty <- function(sequence, verbose = TRUE) {
   #return value of the test statistic and test at confience level 95% and 99%
   
   #dof
+  #Steps : No. of df = No. of triplets - No. of doubles + No. of observations - 1
+
+#Creating vector of doubles/pairs
+doubles = numeric(length(sequence)-1)
+for(i in 1:(length(doubles))) {doubles[i] = paste(sequence[i], sequence[i+1], sep="", collapse = NULL)}
+
+#Creating vector of triplets
+triples = numeric(length(sequence)-2)
+for(i in 1:(length(triples))) {triples[i] = paste(sequence[i], sequence[i+1], sequence[i+2], sep="", collapse = NULL)}
+
+#Hence no. of df is---
+dof = length(unique(triples)) - length(unique(doubles)) + length(unique(sequence)) - 1 
+
   
-  dof = length(unique(sequence))^3
   
   
   pvalue <- 1-pchisq(q = statistic,df = dof)
@@ -377,13 +390,13 @@ assessStationarity <- function(sequence, nblocks, verbose = TRUE) {
 #' 
 
 verifyEmpiricalToTheoretical <- function(data, object, verbose = TRUE) {
-  warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")  
+  #warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")  
   if (!class(object) == 'markovchain') stop("Error! Object should belong to the markovchain class")
   if (missing(data) | missing(object)) stop("Error! Required inputs missing")
-  if (!(class(data) %in% c("matrix","character","numeric"))) stop("Error! Data should be either a raw transition matrix or 
+  if (!(class(data) == "numeric" || class(data) == "character" || is.matrix(data))) stop("Error! Data should be either a raw transition matrix or 
                                                                   either a character or a numeric element")
   
-  if (class(data) %in% c("character","numeric")) data<-createSequenceMatrix(stringchar = data)
+  if ((class(data) == "numeric" || class(data) == "character")) data<-createSequenceMatrix(stringchar = data, possibleStates = states(object))
   
   if (length(setdiff(names(data),names(object))) > 0) stop("Error! Empirical and theoretical tm have different support")
   
