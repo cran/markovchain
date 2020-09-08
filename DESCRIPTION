@@ -1,8 +1,8 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.8.5
-Date: 2020-05-21
+Version: 0.8.5-2
+Date: 2020-09-07
 Authors@R: c(
     person("Giorgio Alfredo", "Spedicato", role = c("aut", "cre"),
       email = "spedicato_giorgio@yahoo.it",comment = c(ORCID = "0000-0002-0315-8888")),
@@ -26,19 +26,20 @@ License: GPL-2
 Depends: R (>= 3.6.0), methods
 Imports: igraph, Matrix, matlab, expm, stats4, parallel, Rcpp (>=
         1.0.2), RcppParallel, utils, stats, grDevices
-Suggests: knitr, testthat, diagram, DiagrammeR, msm, etm, Rsolnp,
+Suggests: knitr, testthat, diagram, DiagrammeR, msm, Rsolnp,
         knitcitations, rmarkdown, ctmcd, bookdown, rticles
+Enhances: etm
 VignetteBuilder: utils, knitr
 LinkingTo: Rcpp, RcppParallel, RcppArmadillo (>= 0.9.600.4.0)
 SystemRequirements: GNU make
 LazyLoad: yes
 ByteCompile: yes
 Encoding: UTF-8
-BugReports: http://github.com/spedygiorgio/markovchain/issues
-URL: http://github.com/spedygiorgio/markovchain/
-RoxygenNote: 7.1.0
+BugReports: https://github.com/spedygiorgio/markovchain/issues
+URL: https://github.com/spedygiorgio/markovchain/
+RoxygenNote: 7.1.1
 NeedsCompilation: yes
-Packaged: 2020-05-20 22:04:38 UTC; giorgio
+Packaged: 2020-09-08 20:02:13 UTC; giorg
 Author: Giorgio Alfredo Spedicato [aut, cre]
     (<https://orcid.org/0000-0002-0315-8888>),
   Tae Seung Kang [aut],
@@ -52,4 +53,4 @@ Author: Giorgio Alfredo Spedicato [aut, cre]
   Daniel Ebbert [ctb] (<https://orcid.org/0000-0003-3666-7205>),
   Shreyash Maheshwari [ctb]
 Repository: CRAN
-Date/Publication: 2020-05-21 05:10:03 UTC
+Date/Publication: 2020-09-08 21:00:02 UTC

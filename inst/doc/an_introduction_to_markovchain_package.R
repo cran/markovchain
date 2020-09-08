@@ -158,7 +158,7 @@ for (i in 2:nrow(sir.cont)) {
 tra <- matrix(ncol=3,nrow=3,FALSE)
 tra[1, 2:3] <- TRUE
 tra[2, c(1, 3)] <- TRUE
-tr.prob <- etm(sir.cont, c("0", "1", "2"), tra, "cens", 1)
+tr.prob <- etm::etm(sir.cont, c("0", "1", "2"), tra, "cens", 1)
 tr.prob
 etm2mc<-as(tr.prob, "markovchain")
 etm2mc
