@@ -489,7 +489,7 @@ msmMc
   }
 ```
 
-from the \pkg{etm} package (now archived in CRAN archives as of September 2020):
+from etm (now archived as of September 2020):
 
 ```{r exporImport3}
 if (requireNamespace("etm", quietly = TRUE)) {
