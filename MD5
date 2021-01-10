@@ -1,5 +1,5 @@
 eb5d22436bfbf05c732ef5715acc8d92 *ChangeLog
-e716757164df4633518dfb166f88df69 *DESCRIPTION
+f220fe0447d1cdcacaa94914e3192098 *DESCRIPTION
 bbe9b1c32931766aa31d250e79e2801a *NAMESPACE
 fe5e7fa62d25b43f7e478f4f72dd1817 *NEWS
 49cefb5f5f768b88c6093cb5e1c2f65d *R/RcppExports.R
@@ -40,13 +40,13 @@ fb3046e24980a921d79cba3c3ef6f3b0 *demo/extractMatrices.R
 4412e3c1ae45e06dc3dc41779424a939 *inst/CITATION
 7996566b5427ce5888d4c2fc0770c2cd *inst/doc/an_introduction_to_markovchain_package.R
 93595962cbd87e8c8a06077e60f219cb *inst/doc/an_introduction_to_markovchain_package.Rmd
-c895a429940b1e05d995116751f578da *inst/doc/an_introduction_to_markovchain_package.pdf
+4a04173bef3bb18a9a71384d6c0cd763 *inst/doc/an_introduction_to_markovchain_package.pdf
 4b3b3806c112ae0147a4662161165b24 *inst/doc/gsoc_2017_additions.R
 263029ac4cc9bc8b12ab1d8c7dffd3df *inst/doc/gsoc_2017_additions.Rmd
-65d026f2142c85159866e9737b400654 *inst/doc/gsoc_2017_additions.pdf
+b9d47b743e3b3ad1ededcc1108c1e24b *inst/doc/gsoc_2017_additions.pdf
 e70605cb8e702fa464278f845ad14bc8 *inst/doc/higher_order_markov_chains.R
 6039ddc13e6d4e61f10f3eddb0fbbe9f *inst/doc/higher_order_markov_chains.Rmd
-e092f80c310714e36d0e27cd87334f3d *inst/doc/higher_order_markov_chains.pdf
+91a8d64d52b394f649950af72c2a2f38 *inst/doc/higher_order_markov_chains.pdf
 730fbb92cced04056c80f883f3566252 *inst/extdata/ltdItaData.txt
 75bf84bd1d2c1ad2c18b97199443d27f *man/ExpectedTime.Rd
 3a7587d2c12ba2a1652ad7e38cc69443 *man/HigherOrderMarkovChain-class.Rd
@@ -124,7 +124,6 @@ d99e875a963f6fbaf1734b3470ca67fb *src/fitHigherOrder.cpp
 4a38fa670e4b93231f64daacb833f761 *src/probabilistic.cpp
 773eb441814453a5543ba24b0330fe69 *src/utils.cpp
 9ca86bdb9770b1d4f09faaccd4b207c0 *tests/testthat.R
-6fe50b592d974502ee61f170d24c210e *tests/testthat/Rplots.pdf
 0943379b6c3cc4843f3254625135c8e7 *tests/testthat/setupData.R
 f42016766cd79e46169152f54e8ce181 *tests/testthat/testBasic.R
 08ec2d61a98f5f86cdd462e67abb5b96 *tests/testthat/testCommClasses.R
