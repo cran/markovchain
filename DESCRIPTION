@@ -1,8 +1,8 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.8.5-4
-Date: 2021-01-07
+Version: 0.8.6
+Date: 2021-05-17
 Authors@R: c(
     person("Giorgio Alfredo", "Spedicato", role = c("aut", "cre"),
       email = "spedicato_giorgio@yahoo.it",comment = c(ORCID = "0000-0002-0315-8888")),
@@ -39,7 +39,7 @@ BugReports: https://github.com/spedygiorgio/markovchain/issues
 URL: https://github.com/spedygiorgio/markovchain/
 RoxygenNote: 7.1.1
 NeedsCompilation: yes
-Packaged: 2021-01-09 15:49:09 UTC; giorgio
+Packaged: 2021-05-17 16:17:53 UTC; giorgio
 Author: Giorgio Alfredo Spedicato [aut, cre]
     (<https://orcid.org/0000-0002-0315-8888>),
   Tae Seung Kang [aut],
@@ -53,4 +53,4 @@ Author: Giorgio Alfredo Spedicato [aut, cre]
   Daniel Ebbert [ctb] (<https://orcid.org/0000-0003-3666-7205>),
   Shreyash Maheshwari [ctb]
 Repository: CRAN
-Date/Publication: 2021-01-10 17:10:20 UTC
+Date/Publication: 2021-05-17 17:40:02 UTC
