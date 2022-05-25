@@ -26,9 +26,6 @@ knit_hooks$set(output = function(x, options) {
 ## ---- load, results='hide', message=FALSE-------------------------------------
 library("markovchain")
 
-## ---- load-aux, echo=FALSE, results='hide'------------------------------------
-require("matlab")
-
 ## ---- showClass, echo=FALSE---------------------------------------------------
 showClass("markovchain")
 showClass("markovchainList")
@@ -208,7 +205,7 @@ steadyStates(mcWeather)
 
 ## ----gamblerRuin--------------------------------------------------------------
 gamblerRuinMarkovChain <- function(moneyMax, prob = 0.5) {
-  m <- matlab::zeros(moneyMax + 1)
+  m <- markovchain:::zeros(moneyMax + 1)
   m[1,1] <- m[moneyMax + 1,moneyMax + 1] <- 1
   states <- as.character(0:moneyMax)
   rownames(m) <- colnames(m) <- states
@@ -230,7 +227,7 @@ absorbingStates(mcGR4)
 absorbingStates(mcWeather)
 
 ## ----renaldoMatrix1-----------------------------------------------------------
-P <- matlab::zeros(10)
+P <- markovchain:::zeros(10)
 P[1, c(1, 3)] <- 1/2;
 P[2, 2] <- 1/3; P[2,7] <- 2/3;
 P[3, 1] <- 1;
@@ -273,8 +270,7 @@ is.irreducible(mcE)
 period(mcE)
 
 ## ----mathematica9Mc-----------------------------------------------------------
-require(matlab)
-mathematicaMatr <- zeros(5)
+mathematicaMatr <- markovchain:::zeros(5)
 mathematicaMatr[1,] <- c(0, 1/3, 0, 2/3, 0)
 mathematicaMatr[2,] <- c(1/2, 0, 0, 0, 1/2)
 mathematicaMatr[3,] <- c(0, 0, 1/2, 1/2, 0)
@@ -325,7 +321,7 @@ recurrentStates(probMc)
 meanRecurrenceTime(probMc)
 
 ## ----data-drunkard------------------------------------------------------------
-drunkProbs <- matlab::zeros(5, 5)
+drunkProbs <- markovchain:::zeros(5)
 drunkProbs[1,1] <- drunkProbs[5,5] <- 1
 drunkProbs[2,1] <- drunkProbs[2,3] <- 1/2
 drunkProbs[3,2] <- drunkProbs[3,4] <- 1/2
@@ -350,7 +346,7 @@ meanAbsorptionTime(drunkMc)
 committorAB(mcWeather,3,1)
 
 ## ----hitting-data-------------------------------------------------------------
-M <- matlab::zeros(5, 5)
+M <- markovchain:::zeros(5)
 M[1,1] <- M[5,5] <- 1
 M[2,1] <- M[2,3] <- 1/2
 M[3,2] <- M[3,4] <- 1/2
@@ -706,10 +702,10 @@ absorbingStates(creditMc)
 
 ## ----economicAnalysis1--------------------------------------------------------
 statesNames <- c("customer", "non customer")
-P <- zeros(2); P[1, 1] <- .9; P[1, 2] <- .1; P[2, 2] <- .95; P[2, 1] <- .05;
+P <- markovchain:::zeros(2); P[1, 1] <- .9; P[1, 2] <- .1; P[2, 2] <- .95; P[2, 1] <- .05;
 rownames(P) <- statesNames; colnames(P) <- statesNames
 mcP <- new("markovchain", transitionMatrix = P, name = "Telephone company")
-M <- zeros(2); M[1, 1] <- -20; M[1, 2] <- -30; M[2, 1] <- -40; M[2, 2] <- 0
+M <- markovchain:::zeros(2); M[1, 1] <- -20; M[1, 2] <- -30; M[2, 1] <- -40; M[2, 2] <- 0
 
 ## ----economicAnalysis2--------------------------------------------------------
 c1 <- 100 + conditionalDistribution(mcP, state = "customer") %*% M[1,]
@@ -721,7 +717,7 @@ as.numeric((c(1, 0)* mcP ^ 5) %*% (as.vector(c(c1, c2))))
 ## ----bonusMalus1--------------------------------------------------------------
 
 getBonusMalusMarkovChain <- function(lambda) {
-	bmMatr <- zeros(5)
+	bmMatr <- markovchain:::zeros(5)
 	bmMatr[1, 1] <- dpois(x = 0, lambda)
 	bmMatr[1, 3] <- dpois(x = 1, lambda)
 	bmMatr[1, 5] <- 1 - ppois(q = 1, lambda)

@@ -803,7 +803,7 @@ setAs(from = "markovchain", to = "data.frame", def = .mc2Df)
 	for(i in 1:ncol(df)) {
 	    
 	  # when found the first numeric and probability col
-			if((class(df[, i]) == "numeric") & (all(sapply(df[, i], .isProbability) == TRUE))) {
+			if((is(df[, i], "numeric")) & (all(sapply(df[, i], .isProbability) == TRUE))) {
 					out <- i
 					break
 			}
@@ -935,7 +935,7 @@ setAs(from = "msm.est", to = "markovchain", def = .msmest2Mc)
   nelements <- length(elements)
   
   # temporary t-matrix
-  prMatr <- matlab::zeros(nelements)
+  prMatr <- zeros(nelements)
   dimnames(prMatr) <- list(elements, elements)
   
   # populate t-matrix

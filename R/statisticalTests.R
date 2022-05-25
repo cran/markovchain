@@ -109,87 +109,7 @@ dof = length(unique(triples)) - length(unique(doubles)) + length(unique(sequence
   
   out <- list(statistic = statistic,dof = dof,p.value = pvalue)
   
-  # previous version
-  # n <- length(sequence)
-  # u <- unique(sequence)
-  # stateNames <- u
-  # nelements <- length(stateNames)
-  # mat <- matlab::zeros(nrow = nelements, ncol = 3)
-  # 
-  # # SSO: state sequence occurrences
-  # # TSO: two state occurences
-  # dimnames(mat) <- list(stateNames, c("SSO", "TSO", "TSO-SSO"))
-  # 
-  # # numeric vector initialized with zero for all states
-  # SSO <- numeric()
-  # for(i in 1:nelements) {
-  #   sname <- stateNames[i]
-  #   SSO[sname] <- 0
-  # }
-  # 
-  # # numeric vector initialized with zero for all states
-  # TSO <- SSO
-  # 
-  # # store the output to be returned
-  # out <- list()
-  # 
-  # for(present in stateNames) {
-  #   for(future in stateNames) {
-  #     
-  #     for(i in 1:nelements) {
-  #       TSO[i] <- SSO[i] <- 0  
-  #     }
-  #     
-  #     # populate TSO and SSO vector
-  #     for(i in 1:(n-1)) {
-  #       # let the ith state as past state
-  #       past <- sequence[i]
-  #       
-  #       # if next state in the sequence is present state
-  #       if(sequence[i+1] == present) {
-  #         TSO[past] <- TSO[past] + 1
-  #         
-  #         # if next to next state in the sequence is future state
-  #         if((i < n - 1) && (sequence[i+2] == future)) {
-  #           SSO[past] <- SSO[past] + 1
-  #         }
-  #       }
-  #     }
-  #     
-  #     # populate the matrix
-  #     # first column corresponds to SSO, second to TSO and
-  #     # third to their difference
-  #     
-  #     for(i in 1:(length(SSO))) {
-  #       mat[i, 1] <- SSO[i]
-  #       mat[i, 2] <- TSO[i]
-  #       mat[i, 3] <- TSO[i] - SSO[i]
-  #     }
-  #     
-  #   }
-  # }
-  #     
-  #     # chi-squared test
-  #     
-  #     # between SSO and TSO-SSO
-  #     table <- as.data.frame(mat[, c(1, 3)])
-  #     
-  #     # an object of class htest
-  #     res <- chisq.test(table)
-  #     
-  #     # extract all information from htest object
-  #     # and stored the result in the form of list
-  #     res <- c(res)
-  #     
-  #     # SSO and TSO
-  #     table <- as.data.frame(mat[ , c(1, 2)])
-  #     
-  #     # stored the table in the list
-  #     res[["table"]] <- table
-  #     
-  #     # store the result corresponding to present state and future state
-  #     out[[paste0(present, future)]] <- res
-  
+
   if (verbose == TRUE) {
     cat("Testing markovianity property on given data sequence\n")
     cat("Chi - square statistic is:", statistic, "\n")
@@ -220,7 +140,7 @@ assessOrder <- function(sequence, verbose = TRUE) {
   TStat <- 0
   for(present in states) {
     # going to be a transition matrix 
-    mat <- matlab::zeros(nelements)
+    mat <- zeros(nelements)
     dimnames(mat) <- list(states, states)
     
     # populate transition matrix
@@ -277,7 +197,7 @@ assessStationarity <- function(sequence, nblocks, verbose = TRUE) {
   for(i in states) {
     
     # init matrix
-    mat <- matlab :: zeros(nblocks, nstates)
+    mat <- matrix(0,nblocks, nstates)
     dimnames(mat) <- list(1:nblocks, states)
     
     # compute the transition matrix from sequence
@@ -343,7 +263,7 @@ assessStationarity <- function(sequence, nblocks, verbose = TRUE) {
   nstates <- length(states)
   
   # create transition matrix
-  mat <- matlab::zeros(nstates)
+  mat <- zeros(nstates)
   dimnames(mat) <- list(states, states)
   
   # populate transition matrix
@@ -393,12 +313,12 @@ assessStationarity <- function(sequence, nblocks, verbose = TRUE) {
 
 verifyEmpiricalToTheoretical <- function(data, object, verbose = TRUE) {
   #warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")  
-  if (!class(object) == 'markovchain') stop("Error! Object should belong to the markovchain class")
+  if (!is(object,'markovchain')  ) stop("Error! Object should belong to the markovchain class")
   if (missing(data) | missing(object)) stop("Error! Required inputs missing")
-  if (!(class(data) == "numeric" || class(data) == "character" || is.matrix(data))) stop("Error! Data should be either a raw transition matrix or 
+  if (  !is.numeric(data) || is.character(data) || is.matrix(data)) stop("Error! Data should be either a raw transition matrix or 
                                                                   either a character or a numeric element")
   
-  if ((class(data) == "numeric" || class(data) == "character")) data<-createSequenceMatrix(stringchar = data, possibleStates = states(object))
+  if (is.numeric(data)  || is.character(data) ) data<-createSequenceMatrix(stringchar = data, possibleStates = states(object))
   
   if (length(setdiff(names(data),names(object))) > 0) stop("Error! Empirical and theoretical tm have different support")
   
@@ -506,7 +426,7 @@ verifyEmpiricalToTheoretical <- function(data, object, verbose = TRUE) {
 #' 
 verifyHomogeneity<-function(inputList, verbose = TRUE) {
   warning("The accuracy of the statistical inference functions has been questioned. It will be thoroughly investigated in future versions of the package.")  
-  if (class(inputList) != "list") stop("Error! inputList should be a string")
+  if (!is.list(inputList) ) stop("Error! inputList should be a string")
   if (length(inputList) < 2) stop("Error! inputList length lower than 2")
   
   #checks whether all inputs can be put as transition matrices
