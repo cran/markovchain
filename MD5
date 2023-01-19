@@ -1,7 +1,6 @@
-a7df563a2cf13fdce35d83e02ffa49cc *ChangeLog
-7d9c931f19cb8f1fb7152f7ab17e0126 *DESCRIPTION
+de5223a3b3915b7dfcbde740e4dad377 *DESCRIPTION
 3ab103442e49de45ffeee91e4f7294bf *NAMESPACE
-fcdf167f42d7f7f9449e33bb5ddfc764 *NEWS
+c8c16b713ca3af5a0d9e5b2d3367a012 *NEWS.md
 49cefb5f5f768b88c6093cb5e1c2f65d *R/RcppExports.R
 881db11bf8365eec94ae2c9ddac949fa *R/classesAndMethods.R
 de2bd558f0b4120acaaf8872ca2299f2 *R/ctmcClassesAndMethods.R
@@ -19,7 +18,7 @@ e410e126a607f82b722bf9db2558980a *R/supplementaryPlot.R
 f71c145460e7fe6f0fba2fc172079109 *R/sysdata.rda
 39b735feac8bc2ead976b8f9d61db649 *R/utils.R
 db74c50b2544eddf346897e1a7a1e11d *R/zzz.R
-67f2907492ff767274d15244f36dd1db *README.md
+e2c9fc2f3dc6fc68efe5c992e9319d4b *README.md
 abe7b0869468869a6daa35950e1f6563 *build/vignette.rds
 80a869791cc3637d493c5454a9190cdb *data/blanden.rda
 7a5ade8f78b95ee114dc2baad3a25546 *data/craigsendi.rda
@@ -41,13 +40,13 @@ fb3046e24980a921d79cba3c3ef6f3b0 *demo/extractMatrices.R
 4412e3c1ae45e06dc3dc41779424a939 *inst/CITATION
 632f364e57455c2fefa03a63d7815b2e *inst/doc/an_introduction_to_markovchain_package.R
 8a11333984962f003ab0d0806f8da8a1 *inst/doc/an_introduction_to_markovchain_package.Rmd
-ecb61f8eb8caee8e8942bb716946ca39 *inst/doc/an_introduction_to_markovchain_package.pdf
+04e53720849468b5982b549e7be4a3a0 *inst/doc/an_introduction_to_markovchain_package.pdf
 4b3b3806c112ae0147a4662161165b24 *inst/doc/gsoc_2017_additions.R
 263029ac4cc9bc8b12ab1d8c7dffd3df *inst/doc/gsoc_2017_additions.Rmd
-2aaba58a567c8087889bd3af21ba8906 *inst/doc/gsoc_2017_additions.pdf
+7e89d622f891fa4faf4fe4a3e622389b *inst/doc/gsoc_2017_additions.pdf
 e70605cb8e702fa464278f845ad14bc8 *inst/doc/higher_order_markov_chains.R
 6039ddc13e6d4e61f10f3eddb0fbbe9f *inst/doc/higher_order_markov_chains.Rmd
-a056e34220b9012a7709214958ff694e *inst/doc/higher_order_markov_chains.pdf
+abdc9f1413161cabb541453d75797190 *inst/doc/higher_order_markov_chains.pdf
 730fbb92cced04056c80f883f3566252 *inst/extdata/ltdItaData.txt
 75bf84bd1d2c1ad2c18b97199443d27f *man/ExpectedTime.Rd
 3a7587d2c12ba2a1652ad7e38cc69443 *man/HigherOrderMarkovChain-class.Rd
