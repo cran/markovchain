@@ -4,12 +4,15 @@ set.seed(123)
 
 ## ----load, results='hide', warning=FALSE, message=FALSE-----------------------
 require(markovchain)
-library(Rsolnp)
+
 
 ## ----higherOrder--------------------------------------------------------------
+if (requireNamespace("Rsolnp", quietly = TRUE)) {
+library(Rsolnp)
 data(rain)
 fitHigherOrder(rain$rain, 2)
 fitHigherOrder(rain$rain, 3)
+}
 
 ## ----hommcObject--------------------------------------------------------------
 showClass("hommc")
@@ -37,9 +40,12 @@ head(sales)
 
 ## ----hommcFit, warning = FALSE, message = FALSE-------------------------------
 # fit 8th order multivariate markov chain
+if (requireNamespace("Rsolnp", quietly = TRUE)) {
 object <- fitHighOrderMultivarMC(sales, order = 8, Norm = 2)
+}
 
 ## ----result, echo = FALSE-----------------------------------------------------
+if (requireNamespace("Rsolnp", quietly = TRUE)) {
 i <- c(1, 2, 2, 3, 4, 4, 4, 5, 5, 5)
 j <- c(2, 2, 2, 5, 2, 5, 5, 2, 4, 5)
 k <- c(1, 1, 3, 1, 8, 1, 2, 8, 1, 2)
@@ -62,5 +68,8 @@ for(p in 1:10) {
   cat("P", k[p], "(", i[p], ",", j[p], ") : \n", sep = "")
   print(object@P[, , t+k[p]])
   cat("\n")
+}
+} else {
+  print("package Rsolnp unavailable")
 }
 

@@ -5,6 +5,16 @@ editor_options:
 title: News
 ---
 
+# News for version 0.9.3
+
+-   Generalized application of requireNamespace(..., quietly = TRUE)
+-   Other fixes to comply to newer CRAN requirements
+-   Move to MIT license
+
+# News for version 0.9.2
+
+-   Add RcppParallel flags to PKG_LIBS
+
 # News for version 0.9.1
 
 ## Current changes

@@ -511,6 +511,7 @@ mcWeatherHalfDay <- new("markovchain",transitionMatrix=mcWeatherHalfDayTM,name="
 mcWeatherHalfDay
 
 ## ----ctmcd1-------------------------------------------------------------------
+if(requireNamespace(package='ctmcd', quietly = TRUE)) {
 require(ctmcd)
 require(expm)
 #defines a function to transform a GM into a TM
@@ -532,6 +533,9 @@ diag(gm0)=-rowSums(gm0)
 gm0[8,]=0
 gmem=gm(tm_abs,te=1,method="EM",gmguess=gm0) #estimating GM
 mc_at_2=gm_to_markovchain(object=gmem, t=2) #converting to TM at time 2
+} else {
+  warning('package ctmcd unavailable')
+}
 
 ## ----pseudobayes--------------------------------------------------------------
 pseudoBayesEstimator <- function(raw, apriori){

@@ -1,8 +1,7 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.9.1
-Date: 2023-01-20
+Version: 0.9.3
 Authors@R: c(
     person("Giorgio Alfredo", "Spedicato", role = c("aut", "cre"),
       email = "spedicato_giorgio@yahoo.it",comment = c(ORCID = "0000-0002-0315-8888")),
@@ -22,14 +21,16 @@ Description: Functions and S4 methods to create and manage discrete time Markov
     chains more easily. In addition functions to perform statistical (fitting
     and drawing random variates) and probabilistic (analysis of their structural
     proprieties) analysis are provided. See Spedicato (2017) <doi:10.32614/RJ-2017-036>.
-License: GPL-2
-Depends: R (>= 4.0.0), methods
+    Some functions for continuous times Markov chains depends on the suggested ctmcd package, that, 
+    as May 2023, can be retrieved from <https://cran.r-project.org/src/contrib/Archive/ctmcd/ctmcd_1.4.2.tar.gz>.
+License: MIT + file LICENSE
+Depends: R (>= 4.3.0), methods
 Imports: igraph, Matrix (>= 1.5-0), expm, stats4, parallel, Rcpp (>=
         1.0.2), RcppParallel, utils, stats, grDevices
 Suggests: knitr, testthat, diagram, DiagrammeR, msm, Rsolnp, rmarkdown,
         ctmcd, bookdown, rticles
 Enhances: etm
-VignetteBuilder: utils, knitr
+VignetteBuilder: rmarkdown, knitr, bookdown, rticles
 LinkingTo: Rcpp, RcppParallel, RcppArmadillo (>= 0.9.600.4.0)
 SystemRequirements: GNU make
 LazyLoad: yes
@@ -39,7 +40,7 @@ BugReports: https://github.com/spedygiorgio/markovchain/issues
 URL: https://github.com/spedygiorgio/markovchain/
 RoxygenNote: 7.2.3
 NeedsCompilation: yes
-Packaged: 2023-01-19 20:22:06 UTC; giorgio
+Packaged: 2023-05-17 18:25:20 UTC; giorgio
 Author: Giorgio Alfredo Spedicato [aut, cre]
     (<https://orcid.org/0000-0002-0315-8888>),
   Tae Seung Kang [aut],
@@ -53,4 +54,4 @@ Author: Giorgio Alfredo Spedicato [aut, cre]
   Daniel Ebbert [ctb] (<https://orcid.org/0000-0003-3666-7205>),
   Shreyash Maheshwari [ctb]
 Repository: CRAN
-Date/Publication: 2023-01-19 21:00:02 UTC
+Date/Publication: 2023-05-18 10:50:02 UTC
