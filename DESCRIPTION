@@ -1,7 +1,7 @@
 Package: markovchain
 Type: Package
 Title: Easy Handling Discrete Time Markov Chains
-Version: 0.9.4
+Version: 0.9.5
 Authors@R: c(
     person("Giorgio Alfredo", "Spedicato", role = c("aut", "cre"),
       email = "spedicato_giorgio@yahoo.it",comment = c(ORCID = "0000-0002-0315-8888")),
@@ -24,7 +24,7 @@ Description: Functions and S4 methods to create and manage discrete time Markov
     Some functions for continuous times Markov chains depends on the suggested ctmcd package, that, 
     as May 2023, can be retrieved from <https://cran.r-project.org/src/contrib/Archive/ctmcd/ctmcd_1.4.2.tar.gz>.
 License: MIT + file LICENSE
-Depends: R (>= 4.3.0), methods
+Depends: R (>= 4.2.0), methods
 Imports: igraph, Matrix (>= 1.5-0), expm, stats4, parallel, Rcpp (>=
         1.0.2), RcppParallel, utils, stats, grDevices
 Suggests: knitr, testthat, diagram, DiagrammeR, msm, Rsolnp, rmarkdown,
@@ -40,7 +40,7 @@ BugReports: https://github.com/spedygiorgio/markovchain/issues
 URL: https://github.com/spedygiorgio/markovchain/
 RoxygenNote: 7.2.3
 NeedsCompilation: yes
-Packaged: 2023-08-27 21:40:59 UTC; giorgio
+Packaged: 2023-09-24 08:41:22 UTC; giorgio
 Author: Giorgio Alfredo Spedicato [aut, cre]
     (<https://orcid.org/0000-0002-0315-8888>),
   Tae Seung Kang [aut],
@@ -54,4 +54,4 @@ Author: Giorgio Alfredo Spedicato [aut, cre]
   Daniel Ebbert [ctb] (<https://orcid.org/0000-0003-3666-7205>),
   Shreyash Maheshwari [ctb]
 Repository: CRAN
-Date/Publication: 2023-08-31 10:30:02 UTC
+Date/Publication: 2023-09-24 09:20:02 UTC

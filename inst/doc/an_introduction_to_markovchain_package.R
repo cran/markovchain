@@ -23,10 +23,10 @@ knit_hooks$set(output = function(x, options) {
    hook_output(x, options)
  })
 
-## ---- load, results='hide', message=FALSE-------------------------------------
+## ----load, results='hide', message=FALSE--------------------------------------
 library("markovchain")
 
-## ---- showClass, echo=FALSE---------------------------------------------------
+## ----showClass, echo=FALSE----------------------------------------------------
 showClass("markovchain")
 showClass("markovchainList")
 
