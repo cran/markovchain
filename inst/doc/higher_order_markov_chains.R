@@ -2,9 +2,13 @@
 knitr::opts_chunk$set(fig.width=8.5, fig.height=6, out.width = "70%")
 set.seed(123)
 
-## ----load, results='hide', warning=FALSE, message=FALSE-----------------------
-require(markovchain)
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE,
+                      collapse = TRUE,
+                      comment = "#>")
 
+## ----setup_2, include=FALSE, message=FALSE, echo=FALSE------------------------
+require(markovchain)
 
 ## ----higherOrder--------------------------------------------------------------
 if (requireNamespace("Rsolnp", quietly = TRUE)) {

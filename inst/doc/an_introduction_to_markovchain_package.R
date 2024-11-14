@@ -287,16 +287,16 @@ plot(mathematicaMc, layout = layout.fruchterman.reingold)
 summary(mathematicaMc)
 
 ## ----fpTime1, eval=FALSE------------------------------------------------------
-#  .firstpassageKernel <- function(P, i, n){
-#    G <- P
-#    H <- P[i,]
-#    E <- 1 - diag(size(P)[2])
-#    for (m in 2:n) {
-#      G <- P %*% (G * E)
-#      H <- rbind(H, G[i,])
-#    }
-#    return(H)
-#  }
+# .firstpassageKernel <- function(P, i, n){
+#   G <- P
+#   H <- P[i,]
+#   E <- 1 - diag(size(P)[2])
+#   for (m in 2:n) {
+#     G <- P %*% (G * E)
+#     H <- rbind(H, G[i,])
+#   }
+#   return(H)
+# }
 
 ## ----fpTime2------------------------------------------------------------------
 firstPassagePdF <- firstPassage(object = mcWeather, state = "sunny", 
@@ -395,14 +395,14 @@ weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 
 ## ----fitMcbyBootStrap2, eval=FALSE--------------------------------------------
-#  weatherFittedBOOTParallel <- markovchainFit(data = weathersOfDays,
-#                                      method = "bootstrap", nboot = 200,
-#                                      parallel = TRUE)
-#  weatherFittedBOOTParallel$estimate
-#  weatherFittedBOOTParallel$standardError
+# weatherFittedBOOTParallel <- markovchainFit(data = weathersOfDays,
+#                                     method = "bootstrap", nboot = 200,
+#                                     parallel = TRUE)
+# weatherFittedBOOTParallel$estimate
+# weatherFittedBOOTParallel$standardError
 
 ## ----fitMcbyBootStrap3, eval=FALSE--------------------------------------------
-#  RcppParallel::setNumThreads(2)
+# RcppParallel::setNumThreads(2)
 
 ## ----fitMcbyMLE1--------------------------------------------------------------
 weatherFittedMLE$logLikelihood

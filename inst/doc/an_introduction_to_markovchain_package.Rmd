@@ -46,7 +46,7 @@ preamble: >
   \usepackage{amsfonts}
 abstract: |
   The \pkg{markovchain} package aims to fill a gap within the \proglang{R} framework providing S4 classes and methods for easily handling discrete time Markov chains, homogeneous and simple inhomogeneous ones as well as continuous time Markov chains. The S4 classes for handling and analysing discrete and continuous time Markov chains are presented, as well as functions and method for performing probabilistic and statistical analysis. Finally, some examples in which the package's functions are applied to Economics, Finance and Natural Sciences topics are shown.
-output: if (rmarkdown::pandoc_version() < "2.2") function(...) { rmarkdown::pdf_document(template = "./template.tex", ...) } else function(...) { bookdown::pdf_book(base_format = rticles::jss_article, ...) }
+output: if (rmarkdown::pandoc_version() < "2.7") function(...) { rmarkdown::pdf_document(template = "./template.tex", ...) } else function(...) { bookdown::pdf_book(base_format = rticles::jss_article, ...) } 
 vignette: >
   %\VignetteIndexEntry{An introduction to markovchain package} 
   %\VignetteEngine{knitr::rmarkdown}
@@ -325,7 +325,7 @@ defaultMc <- new("markovchain")
 
 The quicker way to create `markovchain` objects is made possible thanks to the implemented `initialize` S4 method that checks that:
 
-  * the `transitionMatrix` to be a transition matrix, i.e., all entries to be probabilities and either all rows or all columns to sum up to one.
+  * the `transitionMatrix`, either of class matrix or Matrix, to be a transition matrix, i.e., all entries to be probabilities and either all rows or all columns to sum up to one.
   * the columns and rows names of `transitionMatrix` to be defined and to coincide with `states` vector slot. 
 
 The `markovchain` objects can be collected in a list within `markovchainList` S4 objects as following example shows.

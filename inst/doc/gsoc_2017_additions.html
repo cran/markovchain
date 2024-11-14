@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Vandit Jain" />
+
+
+<title>Google Summer of Code 2017 Additions</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+margin-bottom: 0em;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Google Summer of Code 2017 Additions</h1>
+<h4 class="author">Vandit Jain</h4>
+<h4 class="date">August 2017</h4>
+
+
+
+<div id="expected-hitting-time-using-ctmc" class="section level1">
+<h1>Expected Hitting Time using CTMC</h1>
+<p>The package provides <code>ExpectedTime</code> function to calculate
+average hitting time from one state to another. Let the final state be
+j, then for every state <span class="math inline">\(i \in I\)</span>,
+where <span class="math inline">\(I\)</span> is the set of all possible
+states and holding time <span class="math inline">\(q_{i} &gt;
+0\)</span> for every <span class="math inline">\(i \neq j\)</span>.
+Assuming the conditions to be true, expected hitting time is equal to
+minimal non-negative solution vector <span class="math inline">\(p\)</span> to the system of linear equations <span class="citation">(Norris 1998)</span>: <span class="math display">\[\begin{equation}
+\begin{array}{lcr}
+      p_{k} = 0 &amp; k = j \\
+      -\sum_{l \in I} q_{kl}p_{k} = 1 &amp; k \neq j
+\end{array}
+\label{eq:EHT}
+\end{equation}\]</span></p>
+<p>For example, consider the continuous time markovchain which is as
+follows:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(markovchain)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>states <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>byRow <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>gen <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">0</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span>, <span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>),</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="at">nrow =</span> <span class="dv">4</span>,<span class="at">byrow =</span> byRow, <span class="at">dimnames =</span> <span class="fu">list</span>(states,states))</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>ctmc <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;ctmc&quot;</span>,<span class="at">states =</span> states, <span class="at">byrow =</span> byRow, <span class="at">generator =</span> gen, <span class="at">name =</span> <span class="st">&quot;testctmc&quot;</span>)</span></code></pre></div>
+<p>The generator matrix of the ctmc is: <span class="math display">\[
+M = \left(\begin{array}{cccc}
+-1  &amp;  1/2 &amp; 1/2  &amp; 0\\
+1/4 &amp; -1/2 &amp; 1/4  &amp; 1/6\\
+1/6 &amp;   0  &amp; -1/3 &amp; 1/6\\
+0   &amp;   0  &amp; 0    &amp; 0
+\end{array}\right)
+\]</span></p>
+<p>Now if we have to calculate expected hitting time the process will
+take to hit state <span class="math inline">\(d\)</span> if we start
+from <span class="math inline">\(a\)</span>, we apply the <span class="math inline">\(ExpectedTime\)</span> function. <span class="math inline">\(ExpectedTime\)</span> function takes four inputs
+namely a <span class="math inline">\(ctmc\)</span> class object, initial
+state <span class="math inline">\(i\)</span>, the final state <span class="math inline">\(j\)</span> that we have to calculate expected
+hitting time and a logical parameter whether to use RCpp implementation.
+By default, the function uses RCpp as it is faster and takes lesser
+time.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">ExpectedTime</span>(ctmc,<span class="dv">1</span>,<span class="dv">4</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; [1] 7</span></span></code></pre></div>
+<p>We find that the expected hitting time for process to be hit state
+<span class="math inline">\(d\)</span> is 7 units in this case.</p>
+</div>
+<div id="calculating-probability-at-time-t-using-ctmc" class="section level1">
+<h1>Calculating Probability at time T using ctmc</h1>
+<p>The package provides a function <code>probabilityatT</code> to
+calculate probability of every state according to given
+<code>ctmc</code> object. The Kolmogorov’s backward equation gives us a
+relation between transition matrix at any time t with the generator
+matrix<span class="citation">(Dobrow 2016)</span>:</p>
+<p><span class="math display">\[\begin{equation}
+P&#39;(t) = QP(t)
+\end{equation}\]</span></p>
+<p>Here we use the solution of this differential equation <span class="math inline">\(P(t) = P(0)e^{tQ}\)</span> for <span class="math inline">\(t \geq 0\)</span> and <span class="math inline">\(P(0) = I\)</span>. In this equation, <span class="math inline">\(P(t)\)</span> is the transition function at time
+t. The value <span class="math inline">\(P(t)[i][j]\)</span> at time
+<span class="math inline">\(P(t)\)</span> describes the conditional
+probability of the state at time <span class="math inline">\(t\)</span>
+to be equal to j if it was equal to i at time <span class="math inline">\(t=0\)</span>. It takes care of the case when
+<code>ctmc</code> object has a generator represented by columns. If
+initial state is not provided, the function returns the whole transition
+matrix <span class="math inline">\(P(t)\)</span>.</p>
+<p>Also to mention is that the function is also implemented using RCpp
+and can be used used to lessen the time of computation. It is used by
+default. Next, We consider both examples where initial state is given
+and case where initial state is not given.</p>
+<p>In the first case, the function takes two inputs, first of them is an
+object of the S4 class ‘ctmc’ and second is the final time <span class="math inline">\(t\)</span>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">probabilityatT</span>(ctmc,<span class="dv">1</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt;            a          b         c          d</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; a 0.41546882 0.24714119 0.2703605 0.06702946</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; b 0.12357060 0.63939068 0.0348290 0.20220972</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; c 0.09012017 0.02321933 0.7411205 0.14553997</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; d 0.00000000 0.00000000 0.0000000 1.00000000</span></span></code></pre></div>
+<p>Here we get an output in the form of a transition matrix.</p>
+<p>If we take the second case i.e. considering some initial input:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">probabilityatT</span>(ctmc,<span class="dv">1</span>,<span class="dv">1</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; [1] 0.41546882 0.24714119 0.27036052 0.06702946</span></span></code></pre></div>
+<p>In this case we get the probabilities corresponding to every state.
+this also includes probability that the process hits the same state
+<span class="math inline">\(a\)</span> after time <span class="math inline">\(t=1\)</span>.</p>
+</div>
+<div id="plotting-generator-matrix-of-continuous-time-markovchains" class="section level1">
+<h1>Plotting generator matrix of continuous-time markovchains</h1>
+<p>The package provides a <code>plot</code> function for plotting a
+generator matrix <span class="math inline">\(Q\)</span> in the form of a
+directed graph where every possible state is assigned a node. Edges
+connecting these nodes are weighted. Weight of the edge going from a
+state <span class="math inline">\(i\)</span> to state <span class="math inline">\(j\)</span> is equal to the value <span class="math inline">\(Q_{ij}\)</span>. This gives a picture of the
+generator matrix.</p>
+<p>For example, we build a ctmc-class object to plot it.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>energyStates <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;sigma_star&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>byRow <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>gen <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>                       <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>              <span class="at">byrow =</span> byRow, <span class="at">dimnames =</span> <span class="fu">list</span>(energyStates, energyStates))</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>molecularCTMC <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;ctmc&quot;</span>, <span class="at">states =</span> energyStates, </span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>                 <span class="at">byrow =</span> byRow, <span class="at">generator =</span> gen, </span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>                 <span class="at">name =</span> <span class="st">&quot;Molecular Transition Model&quot;</span>)    </span></code></pre></div>
+<p>Now if we plot this function we get the following graph:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">plot</span>(molecularCTMC)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; Warning: Non-positive edge weight found, ignoring all weights during graph</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; layout.</span></span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>The figure shown is built using the <span class="math inline">\(igraph\)</span> package. The package also provides
+options of plotting graph using <span class="math inline">\(diagram\)</span> and <span class="math inline">\(DiagrameR\)</span> package. Plot using these
+packages can be built using these commands:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">requireNamespace</span>(<span class="at">package=</span><span class="st">&#39;ctmcd&#39;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">plot</span>(molecularCTMC,<span class="at">package =</span> <span class="st">&quot;diagram&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;diagram package unavailable&quot;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>Similarly, one can easily replace <span class="math inline">\(diagram\)</span> package with <span class="math inline">\(DiagrammeR\)</span>.</p>
+</div>
+<div id="imprecise-continuous-time-markov-chains" class="section level1">
+<h1>Imprecise Continuous-Time Markov chains</h1>
+<p>Continuous-time Markov chains are mathematical models that are used
+to describe the state-evolution of dynamical systems under stochastic
+uncertainty. However, building models using continuous time markovchains
+take in consideration a number of assumptions which may not be realistic
+for the domain of application; in particular; the ability to provide
+exact numerical parameter assessments, and the applicability of
+time-homogeneity and the eponymous Markov property. Hence we take ICTMC
+into consideration.</p>
+<p>More technically, an ICTMC is a set of “precise” continuous-time
+finite-state stochastic processes, and rather than computing expected
+values of functions, we seek to compute lower expectations, which are
+tight lower bounds on the expectations that correspond to such a set of
+“precise” models.</p>
+<div id="types-of-ictmcs" class="section level2">
+<h2>Types of ICTMCs</h2>
+<p>For any non-empty bounded set of rate matrices <span class="math inline">\(L\)</span>, and any non-empty set <span class="math inline">\(M\)</span> of probability mass functions on <span class="math inline">\(X\)</span>, we define the following three sets of
+stochastic processes that are jointly consistent with <span class="math inline">\(L\)</span> and <span class="math inline">\(M\)</span>:</p>
+<ul>
+<li><span class="math inline">\(P^{W}_{L,M}\)</span> is the consistent
+set of all well-behaved stochastic processes;</li>
+<li><span class="math inline">\(P^{WM}_{L,M}\)</span> is the consistent
+set of all well-behaved Markov chains;</li>
+<li><span class="math inline">\(P^{WHM}_{L,M}\)</span> is the consistent
+set of all well-behaved homogeneous Markov chains<span class="citation">(Thomas Krak 2017)</span>.</li>
+</ul>
+<p>From a practical point of view, after having specified a (precise)
+stochastic process, one is typically interested in the expected value of
+some function of interest, or the probability of some event. Similarly,
+in this work, our main objects of consideration will be the lower
+probabilities that correspond to the ICTMCs.</p>
+</div>
+<div id="lower-transition-rate-operators-for-ictmcs" class="section level2">
+<h2>Lower Transition Rate Operators for ICTMCs</h2>
+<p>A map <span class="math inline">\(Q_{l}\)</span> from <span class="math inline">\(L(X)\)</span> to <span class="math inline">\(L(X)\)</span> is called a lower transition rate
+operator if, for all <span class="math inline">\(f,g \in L(X)\)</span>,
+all <span class="math inline">\(\lambda \in R_{\geq 0}\)</span>, all
+<span class="math inline">\(\mu \in L(X)\)</span>, and all <span class="math inline">\(x \in X\)</span><span class="citation">(Thomas
+Krak 2017)</span>:</p>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\([Q_{l}m](x) = 0\)</span></li>
+<li><span class="math inline">\([Q_{l}I](x) \geq 0 \forall y \in
+X\)</span> such that <span class="math inline">\(x \neq y\)</span></li>
+<li><span class="math inline">\([Q_{l}(f + g)](x)\geq [Q_{l}f](x) +
+[Q_{l}g](x)\)</span></li>
+<li><span class="math inline">\([Q_{l}(l f)](x) = \lambda
+Q_{l}f[(x)]\)</span></li>
+</ol>
+</div>
+<div id="lower-transition-operators" class="section level2">
+<h2>Lower Transition Operators</h2>
+<p>A map <span class="math inline">\(T_{l}\)</span> from <span class="math inline">\(L (X )\)</span> to <span class="math inline">\(L
+(X )\)</span> is called a lower transition operator if, for all <span class="math inline">\(f,g \in L(X)\)</span>, all <span class="math inline">\(\lambda \in R_{\geq 0}\)</span>, all <span class="math inline">\(\mu \in L(X)\)</span>, and all <span class="math inline">\(x \in X\)</span><span class="citation">(Thomas
+Krak 2017)</span>:</p>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\([T_{l} f](x) \geq min(f(y) : y \in
+L)\)</span></li>
+<li><span class="math inline">\([T_{l}(f +g)](x) \geq [T_{l}
+f](x)+[T_{l}g](x)\)</span></li>
+<li><span class="math inline">\([T_{l}(\lambda f)](x) = l [T_{l}
+f](x)\)</span></li>
+</ol>
+</div>
+<div id="impreciseprobabilityatt-function" class="section level2">
+<h2>ImpreciseprobabilityatT function</h2>
+<p>Now I would like to come onto the practical purpose of using ICTMC
+classes. ICTMC classes in these package are defined to represent a
+generator that is defined in such a way that every row of the generator
+corresponding to every state in the process is governed by a separate
+variable. As defined earlier, an imprecise continuous time markovchain
+is a set of many precise CTMCs. Hence this representation of set of
+precise CTMCs can be used to calulate transition probability at some
+time in future. This can be seen as an analogy with
+<code>probabilityatT</code> function. It is used to calculate the
+transition function at some later time t using generatoe matrix.</p>
+<p>For every generator matrix, we have a corresponding transition
+function. Similarly, for every Lower Transition rate operator of an
+ICTMC, we have a corresponding lower transition operator denoted by
+<span class="math inline">\(L_{t}^{s}\)</span>. Here <span class="math inline">\(t\)</span> is the initial time and <span class="math inline">\(s\)</span> is the final time.</p>
+<p>Now we mention a proposition<span class="citation">(Thomas Krak
+2017)</span> which states that: Let <span class="math inline">\(Q_{l}\)</span> be a lower transition rate
+operator, choose any time <span class="math inline">\(t\)</span> and
+<span class="math inline">\(s\)</span> both greater than 0 such that
+<span class="math inline">\(t \leq s\)</span>, and let <span class="math inline">\(L_{t}^{s}\)</span> be the lower transition
+operator corresponding to <span class="math inline">\(Q_{l}\)</span>.
+Then for any <span class="math inline">\(f \in L(X)\)</span> and <span class="math inline">\(\epsilon \in R_{&gt;0}\)</span>, if we choose any
+<span class="math inline">\(n \in N\)</span> such that:</p>
+<p><span class="math display">\[n \geq
+max((s-t)*||Q||,\frac{1}{2\epsilon}(s-t)^{2}||Q||^{2}||f||_v)\]</span></p>
+<p>with <span class="math inline">\(||f||_{v}\)</span> := max <span class="math inline">\(f\)</span> - min <span class="math inline">\(f\)</span>, we are guaranteed that<span class="citation">(Thomas Krak 2017)</span></p>
+<p><span class="math display">\[ ||L_{t}^{s} - \prod_{i=1}^{n}(I +
+\Delta Q_{l}) || \leq \epsilon \]</span></p>
+<p>with <span class="math inline">\(\Delta := \frac{s-t}{n}\)</span></p>
+<p>Simple put this equation tells us that, using <span class="math inline">\(Q_{l}g\)</span> for all <span class="math inline">\(g \in L(X)\)</span> then we can also approximate
+the quantity <span class="math inline">\(L_{t}^{s}\)</span> to arbitrary
+precision, for any given <span class="math inline">\(f \in
+L(X)\)</span>.</p>
+<p>To explain this approximate calculation, I would take a detailed
+example of a process containing two states healthy and sick, hence <span class="math inline">\(X = (healthy,sick)\)</span>. If we represent in
+form of an ICTMC, we get:</p>
+<p><span class="math display">\[
+Q = \left(\begin{array}{cc}
+-a &amp; a \\
+b &amp; -b
+\end{array}\right)
+\]</span></p>
+<p>for some <span class="math inline">\(a,b \in R_{\geq 0}\)</span>. The
+parameter <span class="math inline">\(a\)</span> here is the rate at
+which a healthy person becomes sick. Technically, this means that if a
+person is healthy at time <span class="math inline">\(t\)</span>, the
+probability that he or she will be sick at time <span class="math inline">\(t +\Delta\)</span>, for small <span class="math inline">\(\Delta\)</span>, is very close to <span class="math inline">\(\Delta a\)</span>. More intuitively, if we take
+the time unit to be one week, it means that he or she will, on average,
+become sick after <span class="math inline">\(\frac{1}{a}\)</span>
+weeks. The parameter <span class="math inline">\(b\)</span> is the rate
+at which a sick person becomes healthy again, and has a similar
+interpretation.</p>
+<p>Now to completely represent the ICTMC we take an example and write
+the generator as:</p>
+<p><span class="math display">\[
+Q = \left(\begin{array}{cc}
+-a &amp; a \\
+b &amp; -b
+\end{array}\right)
+: a \in [\frac{1}{52},\frac{3}{52}],b \in [\frac{1}{2},2]
+\]</span></p>
+<p>Now suppose we know the initial state of the patient to be sick,
+hence this is represented in the form of a function by: <span class="math display">\[
+I_{s} = \left(\begin{matrix}
+0 \\
+1
+\end{matrix}\right)
+\]</span> We observe that the <span class="math inline">\(||I_{s}|| =
+1\)</span>. Now to use the proposition mentioned above, we use the
+definition to calculate the lower transition operator <span class="math inline">\(Q_{l}\)</span> Next we calculate the norm of the
+lower transition rate operator and use it in the preposition. Also we
+take value of <span class="math inline">\(\epsilon\)</span> to be
+0.001.</p>
+<p>Using the preposition we can come up to an algorithm for calculating
+the probability at any time <span class="math inline">\(s\)</span> given
+state at initial time <span class="math inline">\(t\)</span> and a ICTMC
+generator<span class="citation">(Thomas Krak 2017)</span>.</p>
+<p>The algorithm is as follows:</p>
+<p><strong>Input</strong>: A lower transition rate operator <span class="math inline">\(Q\)</span>, two time points <span class="math inline">\(t,s\)</span> such that <span class="math inline">\(t \leq s\)</span>, a function <span class="math inline">\(f \in L(X )\)</span> and a maximum numerical error
+<span class="math inline">\(\epsilon \in R_{&gt;0}\)</span>.</p>
+<p><strong>Algorithm</strong>:</p>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\(n =
+max((s-t)||Q||,\frac{1}{2\epsilon}(s-t)^{2}||Q||^{2}||f||_v)\)</span></li>
+<li><span class="math inline">\(\Delta = \frac{s-t}{n}\)</span></li>
+<li><span class="math inline">\(g_{0} = I_{s}\)</span></li>
+<li>for <span class="math inline">\(i \in (1,.....,n)\)</span> do <span class="math inline">\(g_{i} = g_{i-1} + \Delta
+Q_{l}g_{i-1}\)</span></li>
+<li>end for</li>
+<li>return <span class="math inline">\(g_{n}\)</span></li>
+</ol>
+<p><strong>Output</strong>:</p>
+<p>The conditional probability vector after time <span class="math inline">\(t\)</span> with error <span class="math inline">\(\epsilon\)</span>. Hence, after applying the
+algorithm on above example we get the following result:</p>
+<p>$ g_{n} = 0.0083$ if final state is <span class="math inline">\(healthy\)</span> and <span class="math inline">\(g_{n} = 0.141\)</span> if the final state is <span class="math inline">\(sick\)</span>. The probability calculated is with
+an error equal to <span class="math inline">\(\epsilon\)</span>
+i.e. <span class="math inline">\(0.001\)</span>.</p>
+<p>Now we run the algorithm on the example through R code.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>states <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;n&quot;</span>,<span class="st">&quot;y&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>Q <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="sc">-</span><span class="dv">1</span>),<span class="at">nrow =</span> <span class="dv">2</span>,<span class="at">byrow =</span> <span class="cn">TRUE</span>,<span class="at">dimnames =</span> <span class="fu">list</span>(states,states))</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>range <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">52</span>,<span class="dv">3</span><span class="sc">/</span><span class="dv">52</span>,<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>,<span class="dv">2</span>),<span class="at">nrow =</span> <span class="dv">2</span>,<span class="at">byrow =</span> <span class="dv">2</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>name <span class="ot">&lt;-</span> <span class="st">&quot;testictmc&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>ictmc <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;ictmc&quot;</span>,<span class="at">states =</span> states,<span class="at">Q =</span> Q,<span class="at">range =</span> range,<span class="at">name =</span> name)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">impreciseProbabilityatT</span>(ictmc,<span class="dv">2</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">10</span><span class="sc">^-</span><span class="dv">3</span>,<span class="cn">TRUE</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; [1] 0.008259774 0.140983476</span></span></code></pre></div>
+<p>The probabilities we get are with an error of <span class="math inline">\(10^{-3}\)</span></p>
+</div>
+</div>
+<div id="continuous-time-markovchain-generator-using-frequency-matrix" class="section level1">
+<h1>Continuous time markovchain generator using frequency Matrix</h1>
+<p>The package provides <code>freq2Generator</code> function. It takes
+in a matrix representing relative frequency values along with time taken
+to provide a continuous time markovchain generator matrix. Here,
+frequency matrix is a 2-D matrix of dimensions equal to relative number
+of possible states describing the number of transitions from a state
+<span class="math inline">\(i\)</span> to <span class="math inline">\(j\)</span> in time <span class="math inline">\(t\)</span>, which is another parameter to be
+provided to the function. The function also allows to chose among three
+methods for calculation of the generator matrix <span class="citation">(Alexander Kreinin 2001)</span>. It requires the <span class="citation">(Pfeuffer 2017)</span> package.</p>
+<p>Three methods are as follows:</p>
+<ol style="list-style-type: decimal">
+<li>Quasi Optimization - “QO”</li>
+<li>Diagonal Adjustment - “DA”</li>
+<li>Weighted Adjustment - “WA”</li>
+</ol>
+<p>See reference for details about the methods.</p>
+<p>Here is an example matrix on which <code>freq2Generator</code>
+function is run:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="cf">if</span>(<span class="fu">requireNamespace</span>(<span class="at">package=</span><span class="st">&#39;ctmcd&#39;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">150</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">200</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">175</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">150</span>),<span class="at">nrow =</span> <span class="dv">4</span>,<span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>sample_rel <span class="ot">=</span> <span class="fu">rbind</span>((sample<span class="sc">/</span><span class="fu">rowSums</span>(sample))[<span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(sample)[<span class="dv">1</span>]<span class="sc">-</span><span class="dv">1</span>,],<span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>,<span class="fu">dim</span>(sample)[<span class="dv">1</span>]<span class="sc">-</span><span class="dv">1</span>),<span class="dv">1</span>)) </span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="fu">freq2Generator</span>(sample_rel,<span class="dv">1</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&#39;ctmcd unavailable&#39;</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>}</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;              [,1]        [,2]         [,3] [,4]</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; [1,] -0.024212164  0.01544797  0.008764198    0</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; [2,]  0.006594821 -0.01822834  0.011633520    0</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; [3,]  0.013302567  0.00749703 -0.020799597    0</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; [4,]  0.000000000  0.00000000  0.000000000    0</span></span></code></pre></div>
+</div>
+<div id="committor-of-a-markovchain" class="section level1">
+<h1>Committor of a markovchain</h1>
+<p>Consider set of states A,B comprising of states from a markovchain
+with transition matrix P. The committor vector of a markovchain with
+respect to sets A and B gives the probability that the process will hit
+a state from set A before any state from set B.</p>
+<p>Committor vector u can be calculated by solving the following system
+of linear equations<span class="citation">(StackOverflow
+2015)</span>:</p>
+<p><span class="math display">\[
+  \begin{array}{l}
+  Lu(x) = 0,  x \notin A \cup B \\
+  u(x) = 1,   x \in A \\
+  u(x) = 0,   x \in B
+  \end{array}
+\]</span> where <span class="math inline">\(L = P -I\)</span>.</p>
+<p>Now we apply the method to an example:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>transMatr <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>,<span class="fl">0.5</span>,<span class="fl">0.5</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="fl">0.5</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="fl">0.2</span>,<span class="fl">0.4</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="fl">0.8</span>,<span class="fl">0.6</span>,<span class="dv">0</span>,<span class="fl">0.5</span>),<span class="at">nrow =</span> <span class="dv">5</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>object <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;markovchain&quot;</span>, <span class="at">states=</span><span class="fu">c</span>(<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>),<span class="at">transitionMatrix=</span>transMatr, <span class="at">name=</span><span class="st">&quot;simpleMc&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="fu">committorAB</span>(object,<span class="fu">c</span>(<span class="dv">5</span>),<span class="fu">c</span>(<span class="dv">3</span>))</span></code></pre></div>
+<p>Here we get probability that the process will hit state “e” before
+state “c” given different initial states.</p>
+</div>
+<div id="first-passage-probability-for-set-of-states" class="section level1">
+<h1>First Passage probability for set of states</h1>
+<p>Currently computation of the first passage time for individual states
+has been implemented in the package. <code>firstPassageMultiple</code>
+function provides a method to get first passage probability for given
+provided set of states.</p>
+<p>Consider this example markovchain object:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>statesNames <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;c&quot;</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>testmarkov <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;markovchain&quot;</span>, <span class="at">states =</span> statesNames, <span class="at">transitionMatrix =</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.3</span>,</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="fl">0.5</span>, <span class="fl">0.1</span>, <span class="fl">0.4</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fl">0.1</span>, <span class="fl">0.8</span>, <span class="fl">0.1</span>), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="at">dimnames =</span> <span class="fu">list</span>(statesNames, statesNames)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>))</span></code></pre></div>
+<p>Now we apply <code>firstPassageMultiple</code> function to calculate
+first passage probabilities for set of states <span class="math inline">\(&quot;b&quot;, &quot;c&quot;\)</span> when initial
+state is <span class="math inline">\(&quot;a&quot;\)</span>.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">firstPassageMultiple</span>(testmarkov,<span class="st">&quot;a&quot;</span>,<span class="fu">c</span>(<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>),<span class="dv">4</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co">#&gt;      set</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; 1 0.8000</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt; 2 0.6000</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt; 3 0.2540</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; 4 0.1394</span></span></code></pre></div>
+<p>This shows us the probability that the process will hit any of the
+state from the set after n number of steps for instance, as shown, the
+probability of the process to hit any of the states among <span class="math inline">\(&quot;b&quot;, &quot;c&quot;\)</span> after <span class="math inline">\(2\)</span> steps is <span class="math inline">\(0.6000\)</span>.</p>
+</div>
+<div id="joint-pdf-of-number-of-visits-to-the-various-states-of-a-markovchain" class="section level1">
+<h1>Joint PDF of number of visits to the various states of a
+markovchain</h1>
+<p>The package provides a function <code>noofVisitsDist</code> that
+returns the PDF of the number of visits to the various states of the
+discrete time markovchain during the first N steps, given initial state
+of the process.</p>
+<p>We will take an example to see how to use the function on a
+<code>markovchain-class</code> object:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>transMatr<span class="ot">&lt;-</span><span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">0.4</span>,<span class="fl">0.6</span>,.<span class="dv">3</span>,.<span class="dv">7</span>),<span class="at">nrow=</span><span class="dv">2</span>,<span class="at">byrow=</span><span class="cn">TRUE</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>simpleMc<span class="ot">&lt;-</span><span class="fu">new</span>(<span class="st">&quot;markovchain&quot;</span>, <span class="at">states=</span><span class="fu">c</span>(<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>),</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>              <span class="at">transitionMatrix=</span>transMatr, </span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>              <span class="at">name=</span><span class="st">&quot;simpleMc&quot;</span>)   </span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="fu">noofVisitsDist</span>(simpleMc,<span class="dv">5</span>,<span class="st">&quot;a&quot;</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt;        a        b </span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt; 0.348148 0.651852</span></span></code></pre></div>
+<p>The output clearly shows the probabilities related to various states
+of the process.</p>
+</div>
+<div id="expected-rewards-for-a-markovchain" class="section level1">
+<h1>Expected Rewards for a markovchain</h1>
+<p>The package provides a function <code>expectedRewards</code> that
+returns a vector of expected rewards for different initial states. The
+user provides reward values, a vector <span class="math inline">\(r\)</span> of size equal to number of states
+having a value corresponding to every state. Given a transition matrix
+<span class="math inline">\([P]\)</span>, we get the vector of expected
+rewards <span class="math inline">\(v\)</span> after <span class="math inline">\(n\)</span> transitions according to the equation
+as follows<span class="citation">(Gallager 2013)</span>:</p>
+<p><span class="math inline">\(v[n] = r + [P]*v[n-1]\)</span></p>
+<p>Applying this equation on a markovchain-class object</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>transMatr<span class="ot">&lt;-</span><span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">0.99</span>,<span class="fl">0.01</span>,<span class="fl">0.01</span>,<span class="fl">0.99</span>),<span class="at">nrow=</span><span class="dv">2</span>,<span class="at">byrow=</span><span class="cn">TRUE</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>simpleMc<span class="ot">&lt;-</span><span class="fu">new</span>(<span class="st">&quot;markovchain&quot;</span>, <span class="at">states=</span><span class="fu">c</span>(<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>),</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>             <span class="at">transitionMatrix=</span>transMatr)</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="fu">expectedRewards</span>(simpleMc,<span class="dv">1</span>,<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; [1] 0.01 1.99</span></span></code></pre></div>
+<div id="expected-rewards-for-a-set-of-states-in-a-markovchain-process" class="section level2">
+<h2>Expected Rewards for a set of states in a markovchain process</h2>
+<p>The package provides a function
+<code>expectedRewardsBeforeHittingA</code> that returns the value of
+expected first passage rewards <span class="math inline">\(E\)</span>
+given rewards corresponding to every state, an initial state. This means
+the function returns expected reward for given initial state <span class="math inline">\(s_{0}\)</span>, number of transitions <span class="math inline">\(n\)</span> and for a set of states <span class="math inline">\(A\)</span> with a constraint such that the process
+does not hit any of the states that belong to state <span class="math inline">\(A\)</span>. <span class="math inline">\(S\)</span>
+is the set of all possible states.</p>
+<p>The function uses an equation which is as follows:</p>
+<p><span class="math display">\[E =
+\sum_{i=1}^{n}{1_{s_{0}}P_{S-A}^{i}R_{S-A}}\]</span> here <span class="math inline">\(1_{s_{0}} = [0,0,...0,1,0,...,0,0,0]\)</span>, 1
+being on <span class="math inline">\(s_{0}\)</span> position and <span class="math inline">\(R_{S-A}\)</span> being the rewards vector for
+<span class="math inline">\(S-A\)</span> state.</p>
+</div>
+</div>
+<div id="checking-irreducibly-of-a-ctmc" class="section level1">
+<h1>Checking Irreducibly of a CTMC</h1>
+<p>The package provides a function <code>is.CTMCirreducible</code> that
+returns a Boolean value stating whether the ctmc object is irreducible.
+We know that a continuous time markovchain is irreducible if and only if
+its embedded chain is irreducible<span class="citation">(Sigman
+2009)</span>.</p>
+<p>We demonstrate an example running the function:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>energyStates <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;sigma_star&quot;</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>byRow <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>gen <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>,</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>                      <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>             <span class="at">byrow =</span> byRow, <span class="at">dimnames =</span> <span class="fu">list</span>(energyStates, energyStates))</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>molecularCTMC <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;ctmc&quot;</span>, <span class="at">states =</span> energyStates, </span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>                    <span class="at">byrow =</span> byRow, <span class="at">generator =</span> gen, </span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>                    <span class="at">name =</span> <span class="st">&quot;Molecular Transition Model&quot;</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="fu">is.CTMCirreducible</span>(molecularCTMC)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="simulation-of-higher-order-multivariate-markovchains" class="section level1">
+<h1>Simulation of Higher Order Multivariate Markovchains</h1>
+<p>The package provides <code>predictHommc</code> function. This
+function provides a simulation system for higher order multivariate
+markovchains. The function assumes that the state probability
+distribution of the jth sequence at time <span class="math inline">\(r+1\)</span> depends on the state probability
+distribution of all the sequences at n previous mon=ments of time
+i.e. <span class="math inline">\(t = r\)</span> to <span class="math inline">\(t = r-n+1\)</span> . Hence the proposed model
+takes the form mathematically as:<span class="citation">(Ching, Ng, and
+Fung 2008)</span></p>
+<p><span class="math display">\[
+  X_{r+1}^{j} =
+\sum_{k=1}^{s}\sum_{h=1}^n{\lambda_{jk}^{(h)}P_{h}^{(jk)}X_{r-h+1}^{(k)}},
+\ \ \ j =  1,2,....s, \ \ r = n-1,n,...
+\]</span> with initals <span class="math inline">\(X_{0}^{(k)},X_{1}^{(k)},......,X_{n-1}^{(k)} \ (k
+= 1,2,...s)\)</span>. Here,</p>
+<p><span class="math inline">\(\lambda_{jk}^{(k)}, \ 1 \leq j,k \leq s,
+\ 1 \leq h \leq n \ \ \  and \ \
+\  \sum_{k=1}^{s}\sum_{h=1}^{n}{\lambda_{jk}^{(h)} = 1}, \ \ \ j =
+1,2,....s.\)</span></p>
+<p>Now we run an example on sample hommc object for simulating next 3
+steps using <code>predictHommc</code> function. The function provides a
+choice of entering initial states according to the hommc object. In case
+the user does not enter initial states, the function takes all initial
+states to be the first state from the set of states.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;Rsolnp&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>statesName <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="dv">0</span>, <span class="at">dim =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="at">dimnames =</span> <span class="fu">list</span>(statesName, statesName))</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>P[,,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>P[,,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>P[,,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>P[,,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>Lambda <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span>, <span class="fl">0.7</span>)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a>ob <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;hommc&quot;</span>, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">states =</span> statesName, <span class="at">P =</span> P, </span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>         <span class="at">Lambda =</span> Lambda, <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">name =</span> <span class="st">&quot;FOMMC&quot;</span>)</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="fu">predictHommc</span>(ob,<span class="dv">3</span>)</span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>  <span class="fu">print</span>(<span class="st">&quot;Rsolnp unavailable&quot;</span>)</span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>}</span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="co">#&gt; [1,] &quot;a&quot;  &quot;b&quot;  &quot;a&quot; </span></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="co">#&gt; [2,] &quot;a&quot;  &quot;a&quot;  &quot;a&quot;</span></span></code></pre></div>
+</div>
+<div id="check-time-reversibility-of-continuous-time-markovchains" class="section level1">
+<h1>Check Time Reversibility of Continuous-time markovchains</h1>
+<p>A Continuous-time markovchain with generator <span class="math inline">\(Q\)</span> and stationary distribution <span class="math inline">\(\pi\)</span> is said to be time reversible
+if:<span class="citation">(Dobrow 2016)</span></p>
+<p><span class="math display">\[
+\pi_{i}q_{ij} = \pi_{j}q_{ji}
+\]</span></p>
+<p>Intuitively, a continuous-time Markov chain is time reversible if the
+process in forward time is indistinguishable from the process in
+reversed time. A consequence is that for all states i and j, the
+long-term forward transition rate from i to j is equal to the long-term
+backward rate from j to i.</p>
+<p>The package provides <code>is.TimeReversible</code> function to check
+if a <code>ctmc</code> object is time-reversible. We follow with an
+example run on a <code>ctmc</code> object.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>energyStates <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;sigma_star&quot;</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>byRow <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>gen <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>                        <span class="dv">1</span>, <span class="sc">-</span><span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>             <span class="at">byrow =</span> byRow, <span class="at">dimnames =</span> <span class="fu">list</span>(energyStates, energyStates))</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>molecularCTMC <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;ctmc&quot;</span>, <span class="at">states =</span> energyStates, </span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>                    <span class="at">byrow =</span> byRow, <span class="at">generator =</span> gen, </span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>                    <span class="at">name =</span> <span class="st">&quot;Molecular Transition Model&quot;</span>)</span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="fu">is.TimeReversible</span>(molecularCTMC)</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1 class="unnumbered">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-freqArticle" class="csl-entry">
+Alexander Kreinin, Marina Sidelnikova. 2001. <span>“Regularization
+Algorithms for Transition Matrices.”</span> <em>Algo Research
+Quarterly</em> 4 (1/2): 23–40.
+</div>
+<div id="ref-ching2008higher" class="csl-entry">
+Ching, Wai-Ki, Michael K Ng, and Eric S Fung. 2008. <span>“Higher-Order
+Multivariate Markov Chains and Their Applications.”</span> <em>Linear
+Algebra and Its Applications</em> 428 (2): 492–507.
+</div>
+<div id="ref-dobrow2016introduction" class="csl-entry">
+Dobrow, Robert P. 2016. <em>Introduction to Stochastic Processes with
+r</em>. John Wiley &amp; Sons.
+</div>
+<div id="ref-GallagerBook" class="csl-entry">
+Gallager, Robert G. 2013. <em>Stochastic Processes: Theory for
+Applications</em>. Cambridge University Press.
+</div>
+<div id="ref-NorrisBook" class="csl-entry">
+Norris, J. R. 1998. <em>Markovchains</em>. Cambridge University Press.
+</div>
+<div id="ref-pkg:ctmcd" class="csl-entry">
+Pfeuffer, Marius. 2017. <em>Ctmcd: Estimating the Parameters of a
+Continuous-Time Markov Chain from Discrete-Time Data</em>. <a href="https://CRAN.R-project.org/package=ctmcd">https://CRAN.R-project.org/package=ctmcd</a>.
+</div>
+<div id="ref-Sigman" class="csl-entry">
+Sigman, Karl. 2009. <span>“Continuous Time Markovchains.”</span>
+Columbia University.
+</div>
+<div id="ref-committorlink" class="csl-entry">
+StackOverflow. 2015. <a href="https://math.stackexchange.com/questions/1450399/probability-that-a-chain-will-enter-state-5-before-it-enters-state-3?newreg=82f90b66b949495a91661caad24db915">https://math.stackexchange.com/questions/1450399/probability-that-a-chain-will-enter-state-5-before-it-enters-state-3?newreg=82f90b66b949495a91661caad24db915</a>.
+</div>
+<div id="ref-ictmcpaper" class="csl-entry">
+Thomas Krak, Arno Siebes, Jasper De Bock. 2017. <span>“Imprecise
+Continuous Time Markov Chains.”</span> <em>International Journal of
+Approximate Reasoning</em> 88: 452–528.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

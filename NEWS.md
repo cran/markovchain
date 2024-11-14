@@ -1,9 +1,11 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
-title: News
----
+# markovchain 0.10.0
+
+-  Uptick pandoc requirements and handling of sparse matrices
+
+# News for version 0.9.6
+
+-   Handling change of pandoc requirements
+
 
 # News for version 0.9.5
 

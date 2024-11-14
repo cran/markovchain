@@ -1,3 +1,11 @@
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE,
+                      collapse = TRUE,
+                      comment = "#>")
+
+## ----setup_2, include=FALSE---------------------------------------------------
+require(markovchain)
+
 ## ----message = FALSE----------------------------------------------------------
 library(markovchain)
 states <- c("a","b","c","d")
@@ -53,9 +61,9 @@ freq2Generator(sample_rel,1)
 }
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  transMatr <- matrix(c(0,0,0,1,0.5,0.5,0,0,0,0,0.5,0,0,0,0,0,0.2,0.4,0,0,0,0.8,0.6,0,0.5),nrow = 5)
-#  object <- new("markovchain", states=c("a","b","c","d","e"),transitionMatrix=transMatr, name="simpleMc")
-#  committorAB(object,c(5),c(3))
+# transMatr <- matrix(c(0,0,0,1,0.5,0.5,0,0,0,0,0.5,0,0,0,0,0,0.2,0.4,0,0,0,0.8,0.6,0,0.5),nrow = 5)
+# object <- new("markovchain", states=c("a","b","c","d","e"),transitionMatrix=transMatr, name="simpleMc")
+# committorAB(object,c(5),c(3))
 
 ## -----------------------------------------------------------------------------
 statesNames <- c("a", "b", "c")
