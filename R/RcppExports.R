@@ -232,7 +232,7 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #' 
 #' @export
 #' 
-markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, confint = TRUE, hyperparam = matrix(), sanitize = FALSE, possibleStates = character()) {
+.markovchainFitRcpp <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, confint = TRUE, hyperparam = matrix(), sanitize = FALSE, possibleStates = character()) {
     .Call(`_markovchain_markovchainFit`, data, method, byrow, nboot, laplacian, name, parallel, confidencelevel, confint, hyperparam, sanitize, possibleStates)
 }
 
@@ -304,6 +304,7 @@ markovchainFit <- function(data, method = "mle", byrow = TRUE, nboot = 10L, lapl
     .Call(`_markovchain_gcd`, a, b)
 }
 
+#' @name period
 #' @rdname structuralAnalysis
 #' 
 #' @export
@@ -440,6 +441,10 @@ priorDistribution <- function(transMatr, hyperparam = matrix()) {
 
 .minNumVisitsRcpp <- function(obj) {
     .Call(`_markovchain_meanNumVisits`, obj)
+}
+
+.is_stochastically_monotone_cpp <- function(P) {
+    .Call(`_markovchain_is_stochastically_monotone_cpp`, P)
 }
 
 .isProbability <- function(prob) {

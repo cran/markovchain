@@ -2,8 +2,13 @@
 knitr::opts_chunk$set(fig.width=8.5, fig.height=6, out.width = "70%")
 set.seed(123)
 library(knitr)
+# ANSI colour codes (U+001B) break the LaTeX build, so keep the output plain
+options(crayon.enabled = FALSE, cli.num_colors = 1, cli.hyperlink = FALSE)
+Sys.setenv(NO_COLOR = "1")
 hook_output <- knit_hooks$get("output")
 knit_hooks$set(output = function(x, options) {
+   x <- gsub("\033\\[[0-9;]*[A-Za-z]", "", x)
+   x <- gsub("\033", "", x, fixed = TRUE)
    lines <- options$output.lines
    if (is.null(lines)) {
      return(hook_output(x, options))  # pass to default hook
@@ -361,8 +366,43 @@ hittingProbabilities(hittingTest)
 ## ----hitting-weather----------------------------------------------------------
 hittingProbabilities(mcWeather)
 
+## ----stochasticMonotonicity---------------------------------------------------
+# Define the state space for income classes
+incomeStates <- c("low", "mid", "high")
+
+# Example 1: A stochastically monotone transition matrix
+# Higher starting income leads to higher probabilities of reaching/staying in higher brackets
+monotoneMatrix <- matrix(c(0.6, 0.3, 0.1,
+                           0.3, 0.5, 0.2,
+                           0.1, 0.4, 0.5), 
+                         byrow = TRUE, nrow = 3, 
+                         dimnames = list(incomeStates, incomeStates))
+
+mcIncomeMonotone <- new("markovchain", states = incomeStates, 
+                        transitionMatrix = monotoneMatrix, 
+                        name = "Monotone Income MC")
+
+is.stochasticallyMonotone(mcIncomeMonotone)
+
+## ----stochasticMonotonicityNonMonotone----------------------------------------
+# Example 2: A non-monotone transition matrix
+# Here, a person in the "mid" class has an unusually high chance of dropping 
+# to "low" (0.7), which is worse than a person already in the "low" class (0.5).
+# This violates the stochastic monotonicity property.
+notMonotoneMatrix <- matrix(c(0.5, 0.3, 0.2,
+                              0.7, 0.2, 0.1,
+                              0.1, 0.4, 0.5), 
+                            byrow = TRUE, nrow = 3, 
+                            dimnames = list(incomeStates, incomeStates))
+
+mcIncomeNotMonotone <- new("markovchain", states = incomeStates, 
+                           transitionMatrix = notMonotoneMatrix, 
+                           name = "Non-Monotone Income MC")
+
+is.stochasticallyMonotone(mcIncomeNotMonotone)
+
 ## ----simulatingAMarkovChain---------------------------------------------------
-weathersOfDays <- rmarkovchain(n = 365, object = mcWeather, t0 = "sunny")
+weathersOfDays <- rmarkovchain(n = 220, object = mcWeather, t0 = "sunny")
 weathersOfDays[1:30]
 
 ## ----simulatingAListOfMarkovChain---------------------------------------------
@@ -390,7 +430,7 @@ createSequenceMatrix(stringchar = myMatr,toRowProbs = TRUE)
 
 ## ----fitMcbyBootStrap1--------------------------------------------------------
 weatherFittedBOOT <- markovchainFit(data = weathersOfDays, 
-                                    method = "bootstrap", nboot = 20)
+                                    method = "bootstrap", nboot = 10)
 weatherFittedBOOT$estimate
 weatherFittedBOOT$standardError
 
@@ -450,9 +490,25 @@ predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5)
 predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5, continue = TRUE)
 
 ## ----test1--------------------------------------------------------------------
-sample_sequence<-c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
-                   "b", "a", "a", "b", "b", "b", "a")
-verifyMarkovProperty(sample_sequence)
+sample_sequence <- c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
+                     "b", "a", "a", "b", "b", "b", "a")
+verifyMarkovProperty(sample_sequence, method = "G")
+
+## ----test1b-------------------------------------------------------------------
+burkett_counts <- matrix(
+  c(127, 59,
+     11,  7,
+     36, 20,
+      9,  4),
+  nrow = 4,
+  byrow = TRUE,
+  dimnames = list(
+    c("previous state 1", "previous state 2",
+      "previous state 4", "previous state 5"),
+    c("transition to state 1", "transition elsewhere")
+  )
+)
+chisq.test(burkett_counts, correct = FALSE)
 
 ## ----test2--------------------------------------------------------------------
 data(rain)
@@ -461,19 +517,63 @@ assessOrder(rain$rain)
 ## ----test3--------------------------------------------------------------------
 assessStationarity(rain$rain, 10)
 
+## ----test4--------------------------------------------------------------------
+structural.zeros <- matrix(FALSE, 3, 3,
+                           dimnames = list(c("a", "b", "c"),
+                                           c("a", "b", "c")))
+structural.zeros["a", "a"] <- TRUE
+
+structural_sequence <- c(
+  "a", "b", "a", "c", "a", "b", "c", "a",
+  "b", "c", "b", "a", "c", "b", "a", "c",
+  "a", "b", "c", "a", "b", "c", "b", "a"
+)
+
+assessStationarity(structural_sequence, nblocks = 4,
+                   structural.zeros = structural.zeros)
+
 ## ----divergence1--------------------------------------------------------------
-sequence<-c(0,1,2,2,1,0,0,0,0,0,0,1,2,2,2,1,0,0,1,0,0,0,0,0,0,1,1,
-2,0,0,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,1,0,
-0,2,1,0,0,0,0,0,0,1,1,1,2,2,0,0,2,1,1,1,1,2,1,1,1,1,1,1,1,1,1,0,2,
-0,1,1,0,0,0,1,2,2,0,0,0,0,0,0,2,2,2,1,1,1,1,0,1,1,1,1,0,0,2,1,1,
-0,0,0,0,0,2,2,1,1,1,1,1,2,1,2,0,0,0,1,2,2,2,0,0,0,1,1)
-mc=matrix(c(5/8,1/4,1/8,1/4,1/2,1/4,1/4,3/8,3/8),byrow=TRUE, nrow=3)
-rownames(mc)<-colnames(mc)<-0:2; theoreticalMc<-as(mc, "markovchain")
-verifyEmpiricalToTheoretical(data=sequence,object=theoreticalMc)
+kullback_counts <- matrix(
+  c(51, 11,  8,
+    12, 31,  9,
+     6, 11, 10),
+  nrow = 3,
+  byrow = TRUE,
+  dimnames = list(c("a", "b", "c"), c("a", "b", "c"))
+)
+
+kullback_P <- matrix(
+  c(5/8, 1/4, 1/8,
+    1/4, 1/2, 1/4,
+    1/4, 3/8, 3/8),
+  nrow = 3,
+  byrow = TRUE,
+  dimnames = list(c("a", "b", "c"), c("a", "b", "c"))
+)
+
+kullback_mc <- new("markovchain", states = c("a", "b", "c"),
+                   transitionMatrix = kullback_P)
+
+verifyEmpiricalToTheoretical(kullback_counts, kullback_mc, method = "G")
 
 ## ----divergence2--------------------------------------------------------------
-data(kullback)
-verifyHomogeneity(inputList=kullback,verbose=TRUE)
+homogeneity_P <- matrix(
+  c(.70, .20, .10,
+    .20, .50, .30,
+    .10, .30, .60),
+  nrow = 3,
+  byrow = TRUE,
+  dimnames = list(c("a", "b", "c"), c("a", "b", "c"))
+)
+
+homogeneity_mc <- new("markovchain", states = c("a", "b", "c"),
+                      transitionMatrix = homogeneity_P)
+
+set.seed(123)
+x1 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
+x2 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
+
+verifyHomogeneity(list(x1, x2), method = "G")
 
 ## ----rCtmcInit----------------------------------------------------------------
 energyStates <- c("sigma", "sigma_star")
@@ -579,14 +679,14 @@ pseudoBayesEstimator(
   apriori = aprioriMc@transitionMatrix
 ) - trueMc@transitionMatrix
 
-biggerSample<-rmarkovchain(n=100,object = trueMc)
+biggerSample<-rmarkovchain(n=60,object = trueMc)
 biggerSampleRawTransitions<-createSequenceMatrix(stringchar = biggerSample)
 pseudoBayesEstimator(
   raw = biggerSampleRawTransitions,
   apriori = aprioriMc@transitionMatrix
 ) - trueMc@transitionMatrix
 
-bigSample<-rmarkovchain(n=1000,object = trueMc)
+bigSample<-rmarkovchain(n=100,object = trueMc)
 bigSampleRawTransitions<-createSequenceMatrix(stringchar = bigSample)
 pseudoBayesEstimator(
   raw = bigSampleRawTransitions,
@@ -639,7 +739,7 @@ hyperMatrix4 <- hyperMatrix4$dataInference
 
 ## ----MAPandMLE----------------------------------------------------------------
 data(preproglucacon)
-preproglucacon <- preproglucacon[[2]]
+preproglucacon <- preproglucacon[[2]][1:200]
 MLEest <- markovchainFit(preproglucacon, method = "mle")
 MAPest <- markovchainFit(preproglucacon, method = "map")
 MLEest$estimate
@@ -810,7 +910,7 @@ rmarkovchain(n = 10, object = transitionsSince100,
 
 ## ----healthIns10--------------------------------------------------------------
 transitionsSince80<-getFullTransitionTable(age=80)
-lifeTrajectories<-rmarkovchain(n=1e3, object=transitionsSince80,
+lifeTrajectories<-rmarkovchain(n=1e2, object=transitionsSince80,
                                what="matrix",t0="A",include.t0=TRUE)
 temp<-matrix(0,nrow=nrow(lifeTrajectories),ncol = ncol(lifeTrajectories))
 temp[lifeTrajectories=="I"]<-1

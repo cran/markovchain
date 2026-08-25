@@ -3,87 +3,93 @@
 \name{verifyMarkovProperty}
 \alias{verifyMarkovProperty}
 \alias{assessOrder}
-\alias{assessStationarity}
 \alias{verifyEmpiricalToTheoretical}
 \alias{verifyHomogeneity}
-\title{Various functions to perform statistical inference of DTMC}
+\alias{assessStationarity}
+\title{Test the first-order Markov property of an empirical sequence}
 \usage{
-verifyMarkovProperty(sequence, verbose = TRUE)
+verifyMarkovProperty(
+  sequence,
+  method = c("G", "Pearson", "simulation"),
+  B = 9999,
+  seed = NULL,
+  verbose = TRUE
+)
 
 assessOrder(sequence, verbose = TRUE)
 
-assessStationarity(sequence, nblocks, verbose = TRUE)
+verifyEmpiricalToTheoretical(
+  data,
+  object,
+  method = c("G", "Pearson", "simulation"),
+  B = 9999,
+  seed = NULL,
+  verbose = TRUE
+)
 
-verifyEmpiricalToTheoretical(data, object, verbose = TRUE)
+verifyHomogeneity(
+  inputList,
+  method = c("G", "Pearson", "simulation"),
+  B = 9999,
+  seed = NULL,
+  verbose = TRUE
+)
 
-verifyHomogeneity(inputList, verbose = TRUE)
+assessStationarity(sequence, nblocks, structural.zeros = NULL, verbose = TRUE)
 }
 \arguments{
 \item{sequence}{An empirical sequence.}
 
-\item{verbose}{Should test results be printed out?}
+\item{method}{Test statistic: `"G"`, `"Pearson"`, or `"simulation"`.}
 
-\item{nblocks}{Number of blocks.}
+\item{B}{Number of Monte Carlo replicates for simulation.}
 
-\item{data}{matrix, character or list to be converted in a raw transition matrix}
+\item{seed}{Optional random seed.}
 
-\item{object}{a markovchain object}
+\item{verbose}{Should test results be printed?}
 
-\item{inputList}{A list of items that can coerced to transition matrices}
+\item{data}{An empirical sequence or a matrix of transition counts.}
+
+\item{object}{A `markovchain` object specifying theoretical probabilities.}
+
+\item{inputList}{A list whose elements are empirical sequences or matrices.}
+
+\item{nblocks}{Number of blocks, at least two.}
+
+\item{structural.zeros}{Optional logical matrix marking impossible transitions.}
 }
 \value{
-Verification result
+An `htest` object with additional package-specific components.
 
-a list with following slots: statistic (the chi - square statistic), dof (degrees of freedom), and corresponding p-value. In case a cell in the empirical transition matrix is >0
-that is 0 in the theoretical transition matrix the null hypothesis is rejected. In that case a p-value of 0 and statistic and dof of NA are returned.
+An `htest` object.
 
-a list of transition matrices?
+An `htest` object with observed and expected counts.
+
+An `htest` object with pooled and individual transition counts.
+
+An `htest` object.
 }
 \description{
-These functions verify the Markov property, assess 
-             the order and stationarity of the Markov chain.
+Tests the null hypothesis that the conditional distribution of the next
+state depends only on the current state, against a second-order alternative.
 
-This function tests whether an empirical transition matrix is statistically compatible
-with a theoretical one. It is a chi-square based test. In case a cell in the empirical transition matrix is >0
-that is 0 in the theoretical transition matrix the null hypothesis is rejected.
+Tests whether the sequence is compatible with a first-order Markov chain
+against a second-order alternative, by testing independence of past and
+future states conditional on the present state. Degrees of freedom are
+summed, present-state by present-state, over only the past and future
+states actually observed with that present state, mirroring the other
+functions documented on this page.
 
-Verifies that the s elements in the input list belongs to the same DTMC
-}
-\examples{
-sequence <- c("a", "b", "a", "a", "a", "a", "b", "a", "b",
-              "a", "b", "a", "a", "b", "b", "b", "a")
-mcFit <- markovchainFit(data = sequence, byrow = FALSE)
-verifyMarkovProperty(sequence)
-assessOrder(sequence)
-assessStationarity(sequence, 1)
-
-
-
-#Example taken from Kullback Kupperman Tests for Contingency Tables and Markov Chains
-
-sequence<-c(0,1,2,2,1,0,0,0,0,0,0,1,2,2,2,1,0,0,1,0,0,0,0,0,0,1,1,
-2,0,0,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,2,1,0,
-0,2,1,0,0,0,0,0,0,1,1,1,2,2,0,0,2,1,1,1,1,2,1,1,1,1,1,1,1,1,1,0,2,
-0,1,1,0,0,0,1,2,2,0,0,0,0,0,0,2,2,2,1,1,1,1,0,1,1,1,1,0,0,2,1,1,
-0,0,0,0,0,2,2,1,1,1,1,1,2,1,2,0,0,0,1,2,2,2,0,0,0,1,1)
-
-mc=matrix(c(5/8,1/4,1/8,1/4,1/2,1/4,1/4,3/8,3/8),byrow=TRUE, nrow=3)
-rownames(mc)<-colnames(mc)<-0:2; theoreticalMc<-as(mc, "markovchain")
-
-verifyEmpiricalToTheoretical(data=sequence,object=theoreticalMc)
-
-
-data(kullback)
-verifyHomogeneity(inputList=kullback,verbose=TRUE)
-
+Tests whether transition probabilities are constant across consecutive blocks.
+Structural zeros can be supplied explicitly through a logical transition matrix.
 }
 \references{
-Anderson and Goodman.
-}
-\seealso{
-\code{markovchain}
-}
-\author{
-Tae Seung Kang, Giorgio Alfredo Spedicato
+Anderson, T. W. and Goodman, L. A. (1957). Statistical inference
+about Markov chains. *The Annals of Mathematical Statistics*, 28(1), 89--110.
+
+Kullback, S., Kupperman, M. and Ku, H. H. (1962). Tests for Contingency Tables and Markov Chains. *Technometrics*, 4(4), 573--608.
+
+Anderson, T. W. and Goodman, L. A. (1957). Statistical inference
+about Markov chains. *The Annals of Mathematical Statistics*, 28(1), 89--110.
 }
 \concept{statisticalTests}

@@ -187,8 +187,12 @@ firstPassageMultiple <- function(object,state,set, n){
 
 #' @name communicatingClasses
 #' @rdname structuralAnalysis
-#' @aliases transientStates recurrentStates absorbingStates communicatingClasses
-#'   transientClasses recurrentClasses
+#' @aliases transientStates
+#' @aliases recurrentStates
+#' @aliases absorbingStates
+#' @aliases communicatingClasses
+#' @aliases transientClasses
+#' @aliases recurrentClasses
 #' @title Various function to perform structural analysis of DTMC
 #' @description These functions return absorbing and transient states of the \code{markovchain} objects.
 #' 
@@ -776,6 +780,36 @@ setMethod("is.regular", "markovchain", function(object) {
   .isRegularRcpp(object)
 })
 
+
+#' @title Check if a Markov chain is stochastically monotone
+#' @description Verifies if the transition matrix of the Markov chain is stochastically monotone.
+#' @param object A markovchain object or a transition matrix.
+#' @return A boolean value.
+#' @export
+setGeneric("is.stochasticallyMonotone", function(object) standardGeneric("is.stochasticallyMonotone"))
+
+#' @rdname is.stochasticallyMonotone
+#' @aliases is.stochasticallyMonotone,markovchain-method
+setMethod("is.stochasticallyMonotone", 
+          signature(object = "markovchain"), 
+          function(object) {
+            return(.is_stochastically_monotone_cpp(object@transitionMatrix))
+          })
+
+#' @rdname is.stochasticallyMonotone
+#' @aliases is.stochasticallyMonotone,matrix-method
+setMethod("is.stochasticallyMonotone", 
+          signature(object = "matrix"), 
+          function(object) {
+            return(.is_stochastically_monotone_cpp(object))
+          })
+#' @rdname is.stochasticallyMonotone
+#' @aliases is.stochasticallyMonotone,ANY-method
+setMethod("is.stochasticallyMonotone", 
+          signature(object = "ANY"), 
+          function(object) {
+            stop("must be a `markovchain` object or a matrix")
+          })
 
 #' Hitting probabilities for markovchain
 #' 
