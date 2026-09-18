@@ -227,6 +227,10 @@ gamblerRuinMarkovChain <- function(moneyMax, prob = 0.5) {
 mcGR4 <- gamblerRuinMarkovChain(moneyMax = 4, prob = 0.5)
 steadyStates(mcGR4)
 
+## ----entropy-rate-weather-----------------------------------------------------
+entropyRate(mcWeather)
+entropyRate(mcWeather, base = exp(1))
+
 ## ----absorbingStates----------------------------------------------------------
 absorbingStates(mcGR4)
 absorbingStates(mcWeather)
@@ -318,6 +322,12 @@ meanFirstPassageTime(mcWeather,"rain")
 firstPassagePdF.long <- firstPassage(object = mcWeather, state = "sunny",  n = 100)
 sum(firstPassagePdF.long[,"rain"] * 1:100)
 
+## ----kemeny-weather-----------------------------------------------------------
+kemenyConstant(mcWeather)
+
+piWeather <- as.numeric(steadyStates(mcWeather))
+meanFirstPassageTime(mcWeather) %*% piWeather
+
 ## ----mrt-weather--------------------------------------------------------------
 meanRecurrenceTime(mcWeather)
 
@@ -347,6 +357,9 @@ absorptionProbabilities(drunkMc)
 ## ----at-drunkard--------------------------------------------------------------
 meanAbsorptionTime(drunkMc)
 
+## ----fundamental-matrix-drunkard----------------------------------------------
+fundamentalMatrix(drunkMc)
+
 ## -----------------------------------------------------------------------------
 committorAB(mcWeather,3,1)
 
@@ -358,9 +371,6 @@ M[3,2] <- M[3,4] <- 1/2
 M[4,2] <- M[4,5] <- 1/2
 
 hittingTest <- new("markovchain", transitionMatrix = M)
-hittingProbabilities(hittingTest)
-
-## ----hitting-probabilities----------------------------------------------------
 hittingProbabilities(hittingTest)
 
 ## ----hitting-weather----------------------------------------------------------
@@ -409,6 +419,93 @@ weathersOfDays[1:30]
 patientStates <- rmarkovchain(n = 5, object = mcCCRC, t0 = "H", 
                               include.t0 = TRUE)
 patientStates[1:10,]
+
+## ----lumpability-oz-----------------------------------------------------------
+states_oz <- c("rainy", "nice", "snowy")
+
+P_oz <- matrix(
+  c(0.5,  0.25, 0.25,
+    0.5,  0.00, 0.5,
+    0.25, 0.25, 0.5),
+  byrow = TRUE,
+  nrow = 3,
+  dimnames = list(states_oz, states_oz)
+)
+
+mcOz <- new(
+  "markovchain",
+  states = states_oz,
+  transitionMatrix = P_oz,
+  name = "Land of Oz"
+)
+
+partition_oz <- list(
+  Bad_Weather = c("rainy", "snowy"),
+  Nice_Weather = c("nice")
+)
+
+is.lumpable(mcOz, partition_oz)
+
+lumped_oz <- lump(mcOz, partition_oz)
+lumped_oz
+
+## ----lumpability-nonexact-----------------------------------------------------
+P_bad <- matrix(
+  c(0.5, 0.3, 0.2,
+    0.7, 0.2, 0.1,
+    0.1, 0.4, 0.5),
+  byrow = TRUE,
+  nrow = 3,
+  dimnames = list(c("A1", "A2", "B"), c("A1", "A2", "B"))
+)
+
+mcBad <- new(
+  "markovchain",
+  states = c("A1", "A2", "B"),
+  transitionMatrix = P_bad
+)
+
+partition_bad <- list(
+  Group_A = c("A1", "A2"),
+  Group_B = c("B")
+)
+
+is.lumpable(mcBad, partition_bad)
+
+try(lump(mcBad, partition_bad))
+
+## ----lumpability-forced-------------------------------------------------------
+lump(mcBad, partition_bad, force = TRUE)
+
+## ----autolump-example, eval=FALSE---------------------------------------------
+# rc <- c("AAA", "AA", "A", "BBB", "BB", "B", "CCC", "D")
+# 
+# creditMatrix <- matrix(
+#   c(90.81, 8.33, 0.68, 0.06, 0.08, 0.02, 0.01, 0.01,
+#     0.70, 90.65, 7.79, 0.64, 0.06, 0.13, 0.02, 0.01,
+#     0.09, 2.27, 91.05, 5.52, 0.74, 0.26, 0.01, 0.06,
+#     0.02, 0.33, 5.95, 85.93, 5.30, 1.17, 1.12, 0.18,
+#     0.03, 0.14, 0.67, 7.73, 80.53, 8.84, 1.00, 1.06,
+#     0.01, 0.11, 0.24, 0.43, 6.48, 83.46, 4.07, 5.20,
+#     0.21, 0.00, 0.22, 1.30, 2.38, 11.24, 64.86, 19.79,
+#     0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 100.00),
+#   nrow = 8,
+#   byrow = TRUE,
+#   dimnames = list(rc, rc)
+# ) / 100
+# 
+# creditMc <- new(
+#   "markovchain",
+#   states = rc,
+#   transitionMatrix = creditMatrix,
+#   name = "Credit ratings"
+# )
+# 
+# set.seed(123)
+# auto_lumped <- autoLump(creditMc, k = 3)
+# 
+# auto_lumped$partition
+# auto_lumped$lumped_chain
 
 ## ----fitMcbyMLE2--------------------------------------------------------------
 weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",name = "Weather MLE")

@@ -1,3 +1,17 @@
+# 1.1.1
+
+- Added `entropyRate()` for finite irreducible DTMCs, with configurable logarithm base and support for row- and column-stochastic storage.
+- Added `kemenyConstant()` for finite irreducible DTMCs, with support for both row- and column-stochastic storage and tests for the zero-diagonal hitting-time convention.
+- Hardened public R and native C++ entry points against invalid indices, negative sizes, integer overflow, and unbounded simulations.
+
+
+# 1.1.0
+
+- Added exact and approximate lumpability tools.
+- Made `hittingProbabilities()` robust to arbitrarily small positive transitions by combining graph-based zero/one classification with a relative-residual Neumann iteration.
+- Added `fundamentalMatrix()` for finite absorbing chains, including support for column-stochastic storage.
+- Improved `absorptionProbabilities()` by solving `(I - Q) B = R` directly instead of explicitly forming `(I - Q)^{-1}`.
+
 # markovchain 0.9.0
 
 - Fixed CI calculations
