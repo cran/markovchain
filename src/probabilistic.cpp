@@ -8,6 +8,8 @@
 #include <stack>
 #include <cmath>
 #include <queue>
+#include <sstream>
+#include <iomanip>
 
 using namespace Rcpp;
 using namespace std;
@@ -952,10 +954,182 @@ std::vector<bool> reverseReachable(
   return reachable;
 }
 
+// Format a residual for a warning: std::to_string() uses six decimals, which
+// prints every residual below 1e-6 as "0.000000".
+static std::string formatResidual(double value) {
+  std::ostringstream out;
+  out << std::scientific << std::setprecision(3) << value;
+  return out.str();
+}
+
+// Solver codes for the free-state system (I - Q) h = R. Kept in sync with
+// the `solver` argument of hittingProbabilities() on the R side.
+enum HittingSolver {
+  HITTING_SOLVER_DIRECT = 0,
+  HITTING_SOLVER_BICGSTAB = 1,
+  HITTING_SOLVER_DOUBLING = 2
+};
+
+// Doubled Neumann series for h = R + Q h: the original solver of this
+// function, kept both as an explicit `solver` choice and as the fallback of
+// the direct solver. Each step squares Q, so the number of series terms
+// doubles per iteration, at the price of a dense O(m^3) product per step.
+static arma::vec solveHittingDoubling(const arma::mat& Q, const arma::vec& R,
+                                      double tol, int maxDoublings,
+                                      bool& converged, double& relativeResidual) {
+  arma::mat Qk = Q;
+  arma::vec acc = R;
+  relativeResidual = arma::datum::inf;
+  converged = false;
+
+  for (int it = 0; it < maxDoublings; ++it) {
+    acc += Qk * acc;
+
+    const arma::vec residual = R + Q * acc - acc;
+    const double residualNorm = arma::max(arma::abs(residual));
+    const double scale = std::max(arma::max(arma::abs(acc)),
+                                  arma::max(arma::abs(R)));
+    relativeResidual = (scale == 0.0)
+      ? (residualNorm == 0.0 ? 0.0 : arma::datum::inf)
+      : residualNorm / scale;
+
+    if (relativeResidual <= tol) {
+      converged = true;
+      break;
+    }
+    Qk = Qk * Qk;
+  }
+
+  return acc;
+}
+
+// Unpreconditioned BiCGSTAB (van der Vorst, 1992) for the sparse system
+// (I - Q) h = R. Every iteration costs two sparse matrix-vector products,
+// i.e. O(nnz) rather than the O(m^3) of a dense doubling step, which is what
+// makes it worthwhile on the large sparse chains of #203. The identity is
+// used as preconditioner, as suggested in that report.
+//
+// BiCGSTAB can break down before converging: rho = (rHat, r) or (rHat, v)
+// may vanish (Lanczos breakdown; it happens exactly on small chains such as
+// the five-state example of the vignette), and omega may vanish when s is
+// orthogonal to A s (stagnation). Stopping there would return a vector that
+// is not the solution, so on a breakdown the iteration is restarted with the
+// current residual as shadow vector, which makes rho = ||r||^2 > 0 again.
+// When omega vanishes, the BiCG half step x + alpha p is kept before the
+// restart, since its residual s is already known. `brokeDown` reports a
+// breakdown that persists after `maxRestarts` restarts, so that the caller
+// can switch to the direct solver instead of returning a wrong vector.
+static arma::vec solveHittingBiCGSTAB(const arma::sp_mat& A, const arma::vec& b,
+                                      double tol, int maxIter,
+                                      bool& converged, double& relativeResidual,
+                                      int& iterationsUsed, bool& brokeDown) {
+  const arma::uword m = b.n_elem;
+  arma::vec x(m, arma::fill::zeros);
+  const double bNorm = arma::norm(b, 2);
+  const int maxRestarts = 50;
+  // relative threshold below which an inner product counts as a breakdown
+  const double breakdownTol = 1e-14;
+
+  converged = false;
+  brokeDown = false;
+  iterationsUsed = 0;
+
+  if (bNorm == 0.0) {
+    // The zero vector solves the system exactly.
+    converged = true;
+    relativeResidual = 0.0;
+    return x;
+  }
+
+  arma::vec r = b;              // b - A * 0
+  arma::vec rHat = r;
+  arma::vec v(m, arma::fill::zeros);
+  arma::vec p(m, arma::fill::zeros);
+  double rhoOld = 1.0, alpha = 1.0, omega = 1.0;
+  int restarts = 0;
+  relativeResidual = arma::norm(r, 2) / bNorm;
+
+  // Restart from the current iterate: true residual as residual and as new
+  // shadow vector. Returns false when the restart budget is exhausted.
+  auto restart = [&]() -> bool {
+    if (++restarts > maxRestarts) {
+      brokeDown = true;
+      return false;
+    }
+    r = b - A * x;
+    rHat = r;
+    p.zeros();
+    v.zeros();
+    rhoOld = alpha = omega = 1.0;
+    return true;
+  };
+
+  for (int it = 1; it <= maxIter; ++it) {
+    iterationsUsed = it;
+
+    const double rNorm = arma::norm(r, 2);
+    if (rNorm / bNorm <= tol) {
+      relativeResidual = rNorm / bNorm;
+      converged = true;
+      return x;
+    }
+
+    const double rho = arma::dot(rHat, r);
+    if (!std::isfinite(rho) ||
+        std::abs(rho) <= breakdownTol * arma::norm(rHat, 2) * rNorm) {
+      if (!restart()) break;
+      continue;
+    }
+
+    const double beta = (rho / rhoOld) * (alpha / omega);
+    p = r + beta * (p - omega * v);
+    v = A * p;
+
+    const double rHatV = arma::dot(rHat, v);
+    if (!std::isfinite(rHatV) ||
+        std::abs(rHatV) <= breakdownTol * arma::norm(rHat, 2) * arma::norm(v, 2)) {
+      if (!restart()) break;
+      continue;
+    }
+    alpha = rho / rHatV;
+
+    const arma::vec s = r - alpha * v;
+    const double sNorm = arma::norm(s, 2);
+    if (sNorm / bNorm <= tol) {
+      x += alpha * p;
+      relativeResidual = arma::norm(b - A * x, 2) / bNorm;
+      converged = relativeResidual <= tol;
+      if (converged) return x;
+      if (!restart()) break;
+      continue;
+    }
+
+    const arma::vec t = A * s;
+    const double tt = arma::dot(t, t);
+    omega = (tt > 0.0 && std::isfinite(tt)) ? arma::dot(t, s) / tt : 0.0;
+    if (!std::isfinite(omega) ||
+        std::abs(omega) <= breakdownTol) {
+      // stagnation: keep the BiCG half step, whose residual is s
+      x += alpha * p;
+      if (!restart()) break;
+      continue;
+    }
+
+    x += alpha * p + omega * s;
+    r = s - omega * t;
+    rhoOld = rho;
+  }
+
+  relativeResidual = arma::norm(b - A * x, 2) / bNorm;
+  converged = relativeResidual <= tol;
+  if (converged) brokeDown = false;
+  return x;
+}
+
 // Compute the off-diagonal hitting probabilities for target j as the minimal
 // non-negative solution h = R + Qh. Closed classes provide boundary values;
-// graph checks identify values that are structurally zero or one. Remaining
-// values use a doubled Neumann series with a relative fixed-point residual.
+// graph checks identify values that are structurally zero or one. The
+// remaining values solve the free-state system with the requested `solver`.
 void hittingProbabilitiesColumn(
     const arma::mat& P,
     const std::vector<std::vector<int>>& predecessors,
@@ -963,8 +1137,9 @@ void hittingProbabilitiesColumn(
     const LogicalVector& closedClass,
     const LogicalMatrix& communicating,
     arma::mat& hittingProbs,
-    double tol, int maxDoublings,
-    const CharacterVector& states) {
+    double tol, int maxIter,
+    const CharacterVector& states,
+    int solver) {
   const std::vector<int> targetSeed(1, j);
   const std::vector<bool> canReachTarget =
     reverseReachable(predecessors, targetSeed);
@@ -1007,34 +1182,68 @@ void hittingProbabilitiesColumn(
       }
     }
 
-    arma::mat Qk = Q;
-    arma::vec acc = R;
+    // The free states are transient by construction, so the spectral radius
+    // of Q is below one and (I - Q) is invertible; the three solvers below
+    // therefore target the same unique solution of (I - Q) h = R.
+    arma::vec acc;
     double relativeResidual = arma::datum::inf;
     bool converged = false;
+    const std::string stateName = std::string(states(j));
 
-    for (int it = 0; it < maxDoublings; ++it) {
-      acc += Qk * acc;
+    if (solver == HITTING_SOLVER_DIRECT) {
+      arma::mat A = -Q;
+      A.diag() += 1.0;
 
-      const arma::vec residual = R + Q * acc - acc;
-      const double residualNorm = arma::max(arma::abs(residual));
-      const double scale = std::max(arma::max(arma::abs(acc)),
-                                    arma::max(arma::abs(R)));
-      relativeResidual = (scale == 0.0)
-        ? (residualNorm == 0.0 ? 0.0 : arma::datum::inf)
-        : residualNorm / scale;
-
-      if (relativeResidual <= tol) {
+      if (arma::solve(acc, A, R, arma::solve_opts::no_approx)) {
         converged = true;
-        break;
+        const double bScale = std::max(arma::norm(R, 2), 1.0);
+        relativeResidual = arma::norm(R - A * acc, 2) / bScale;
+      } else {
+        // Numerically singular (I - Q): fall back to the doubled Neumann
+        // series, whose clamping degrades gracefully, instead of returning
+        // the failed solve.
+        warning("hittingProbabilities(): the direct solve failed for target "
+                "state \"" + stateName +
+                "\" (nearly singular system); falling back to solver = "
+                "\"doubling\".");
+        acc = solveHittingDoubling(Q, R, tol, maxIter, converged,
+                                   relativeResidual);
       }
-      Qk = Qk * Qk;
+    } else if (solver == HITTING_SOLVER_BICGSTAB) {
+      arma::sp_mat A(-arma::sp_mat(Q));
+      A.diag() += 1.0;
+
+      int iterationsUsed = 0;
+      bool brokeDown = false;
+      acc = solveHittingBiCGSTAB(A, R, tol, maxIter, converged,
+                                 relativeResidual, iterationsUsed, brokeDown);
+      if (brokeDown) {
+        // The iteration kept breaking down even after restarts: its iterate
+        // is not a solution, so solve the system directly instead of
+        // returning it.
+        warning("hittingProbabilities(): BiCGSTAB broke down for target "
+                "state \"" + stateName +
+                "\"; falling back to solver = \"direct\".");
+        arma::mat D = -Q;
+        D.diag() += 1.0;
+        if (arma::solve(acc, D, R, arma::solve_opts::no_approx)) {
+          converged = true;
+          const double bScale = std::max(arma::norm(R, 2), 1.0);
+          relativeResidual = arma::norm(R - D * acc, 2) / bScale;
+        } else {
+          acc = solveHittingDoubling(Q, R, tol, maxIter, converged,
+                                     relativeResidual);
+        }
+      }
+    } else {
+      acc = solveHittingDoubling(Q, R, tol, maxIter, converged,
+                                 relativeResidual);
     }
 
     if (!converged) {
-      const std::string stateName = std::string(states(j));
       warning("hittingProbabilities(): target state \"" + stateName +
               "\" did not fully converge (last relative residual = " +
-              std::to_string(relativeResidual) +
+              formatResidual(relativeResidual) +
               "); values may be imprecise.");
     }
 
@@ -1055,8 +1264,17 @@ void hittingProbabilitiesColumn(
   }
 }
 
-// [[Rcpp::export(.hittingProbabilitiesRcpp)]]
-NumericMatrix hittingProbabilities(S4 object) {
+// Hitting probabilities towards the states in `targets` (0-based, distinct).
+// Every column is computed independently of the others (column j only needs
+// the jump chain and the closed classes), so restricting the targets gives
+// exactly the corresponding columns of the full matrix at a fraction of the
+// cost. Columns follow the order of `targets`; with `byrow = FALSE` the
+// result is transposed, as for the full matrix.
+NumericMatrix hittingProbabilitiesImpl(S4 object,
+                                       const std::vector<int>& targets,
+                                       int solver = HITTING_SOLVER_DIRECT,
+                                       double tol = 1e-13,
+                                       int maxIter = 200) {
   NumericMatrix transitionMatrix = object.slot("transitionMatrix");
   CharacterVector states = object.slot("states");
   bool byrow = object.slot("byrow");
@@ -1101,17 +1319,17 @@ NumericMatrix hittingProbabilities(S4 object) {
     }
   }
 
-  const double tol = 1e-13;
-  const int maxDoublings = 200;
-  for (int j = 0; j < numStates; ++j) {
+  for (int j : targets) {
+    if (j < 0 || j >= numStates)
+      stop("hittingProbabilities(): target index out of range");
     hittingProbabilitiesColumn(jumpProbs, predecessors, j, numStates,
                                closedClass, communicating, hittingProbs, tol,
-                               maxDoublings, states);
+                               maxIter, states, solver);
   }
 
   // Preserve the package convention that diagonal entries are return
   // probabilities after at least one transition.
-  for (int j = 0; j < numStates; ++j) {
+  for (int j : targets) {
     if (!closedClass(j)) {
       long double returnProbability =
         static_cast<long double>(transitionProbs(j, j));
@@ -1127,14 +1345,32 @@ NumericMatrix hittingProbabilities(S4 object) {
     }
   }
 
-  NumericMatrix result = wrap(hittingProbs);
-  colnames(result) = states;
+  const int numTargets = static_cast<int>(targets.size());
+  NumericMatrix result(numStates, numTargets);
+  CharacterVector targetNames(numTargets);
+  for (int t = 0; t < numTargets; ++t) {
+    for (int i = 0; i < numStates; ++i)
+      result(i, t) = hittingProbs(i, targets[t]);
+    targetNames[t] = states[targets[t]];
+  }
+  colnames(result) = targetNames;
   rownames(result) = states;
 
   if (!byrow)
     result = transpose(result);
 
   return result;
+}
+
+// [[Rcpp::export(.hittingProbabilitiesRcpp)]]
+NumericMatrix hittingProbabilities(S4 object, IntegerVector targets,
+                                   int solver = 0, double tol = 1e-13,
+                                   int maxIter = 200) {
+  // `targets` holds 1-based state indices (validated in R)
+  std::vector<int> idx(targets.size());
+  for (R_xlen_t t = 0; t < targets.size(); ++t)
+    idx[t] = targets[t] - 1;
+  return hittingProbabilitiesImpl(object, idx, solver, tol, maxIter);
 }
 
 
@@ -1627,8 +1863,11 @@ NumericVector meanRecurrenceTime(S4 obj) {
 
 // [[Rcpp::export(.minNumVisitsRcpp)]]
 NumericMatrix meanNumVisits(S4 obj) {
-  NumericMatrix hitting = hittingProbabilities(obj);
   CharacterVector states = obj.slot("states");
+  std::vector<int> allTargets(states.size());
+  for (int t = 0; t < static_cast<int>(allTargets.size()); ++t)
+    allTargets[t] = t;
+  NumericMatrix hitting = hittingProbabilitiesImpl(obj, allTargets);
   bool byrow = obj.slot("byrow");
   
   if (!byrow)

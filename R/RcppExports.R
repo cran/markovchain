@@ -89,6 +89,10 @@ seq2matHigh <- function(sequence, order) {
     .Call(`_markovchain_seq2matHigh`, sequence, order)
 }
 
+.mtdEM <- function(patterns, counts, lambda0, Q0, tol, maxit) {
+    .Call(`_markovchain_mtdEM`, patterns, counts, lambda0, Q0, tol, maxit)
+}
+
 .markovchainSequenceRcpp <- function(n, markovchain, t0, include_t0 = FALSE) {
     .Call(`_markovchain_markovchainSequenceRcpp`, n, markovchain, t0, include_t0)
 }
@@ -101,10 +105,7 @@ seq2matHigh <- function(sequence, order) {
     .Call(`_markovchain_markovchainSequenceParallelRcpp`, listObject, n, include_t0, init_state)
 }
 
-#' @rdname markovchainFit
-#' 
-#' @export
-createSequenceMatrix <- function(stringchar, toRowProbs = FALSE, sanitize = FALSE, possibleStates = character()) {
+.createSequenceMatrixRcpp <- function(stringchar, toRowProbs = FALSE, sanitize = FALSE, possibleStates = character()) {
     .Call(`_markovchain_createSequenceMatrix`, stringchar, toRowProbs, sanitize, possibleStates)
 }
 
@@ -171,8 +172,17 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #'  Laplacian smoother), bootstrap or by MAP (Bayesian) inference.
 #'  
 #' @param data It can be a character vector or a \deqn{n x n} matrix or a \deqn{n x n} data frame or a list
-#' @param method Method used to estimate the Markov chain. Either "mle", "map", "bootstrap" or "laplace"
-#' @param byrow it tells whether the output Markov chain should show the transition probabilities by row.
+#' @param method Method used to estimate the Markov chain. Either "mle", "map", "bootstrap" or "laplace".
+#'               All four are available for a single sequence. For a list of
+#'               sequences, "mle", "map" and "laplace" pool the transition counts
+#'               over the sequences, while "bootstrap" is not available and raises
+#'               an error explaining why.
+#' @param byrow For a character vector or a list of sequences, it tells whether the fitted
+#'              transition matrix is stored by row (the default) or by column; the
+#'              \code{byrow} slot of the returned chain records the choice. For matrix or
+#'              data frame input it instead describes the input data -- whether each
+#'              observed trajectory is a row or a column of \code{data} -- and the fitted
+#'              chain is stored by row either way.
 #' @param nboot Number of bootstrap replicates in case "bootstrap" is used.
 #' @param laplacian Laplacian smoothing parameter, default zero. It is only used when "laplace" method 
 #'                  is chosen.  
@@ -187,11 +197,33 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #'                   should typically be non-negative integers.                        
 #' @param stringchar It can be a \deqn{n x n} matrix or a character vector or a list
 #' @param toRowProbs converts a sequence matrix into a probability matrix
-#' @param sanitize put 1 in all rows having rowSum equal to zero
+#' @param sanitize how to deal with the states that have no observed outgoing
+#'                 transition, which is what \code{possibleStates} typically
+#'                 introduces. \code{FALSE} (the default) leaves their row at
+#'                 zero, which makes a transition matrix that is not
+#'                 stochastic. \code{TRUE}, or equivalently
+#'                 \code{"uniform"}, puts 1 in every entry of such a row, so
+#'                 that the row becomes a uniform distribution over all the
+#'                 states: the unobserved states are then assumed to move to
+#'                 any state with equal probability, which is an assumption
+#'                 about the data and not a consequence of it.
+#'                 \code{"absorbing"} instead puts 1 on the diagonal only,
+#'                 making every unobserved state absorbing; this also gives a
+#'                 stochastic matrix, but adds no transition that was never
+#'                 observed (see #213).
 #' @param possibleStates Possible states which are not present in the given sequence
+#' @param progress Should a text progress bar be shown? It is only used by
+#'                 the "bootstrap" method, the other methods being fast; see Details.
 #' 
 #' @details Disabling confint would lower the computation time on large datasets. If \code{data} or \code{stringchar} 
 #' contain \code{NAs}, the related \code{NA} containing transitions will be ignored.
+#'
+#' With \code{progress = TRUE} the "bootstrap" method shows a text progress bar
+#' (\code{\link[utils]{txtProgressBar}}, style 3) covering the simulation of the
+#' \code{nboot} bootstrap sequences and the estimation of a transition matrix
+#' from each of them. With \code{parallel = TRUE} the sequences are simulated in
+#' parallel threads, which cannot report progress, so the bar only covers the
+#' estimation step. The computation can be interrupted while the bar is shown.
 #' 
 #' @return A list containing an estimate, log-likelihood, and, when "bootstrap" method is used, a matrix 
 #'         of standards deviations and the bootstrap samples. When the "mle", "bootstrap" or "map" method 
@@ -234,8 +266,8 @@ inferHyperparam <- function(transMatr = matrix(), scale = numeric(), data = char
 #' 
 #' @export
 #' 
-.markovchainFitRcpp <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, confint = TRUE, hyperparam = matrix(), sanitize = FALSE, possibleStates = character()) {
-    .Call(`_markovchain_markovchainFit`, data, method, byrow, nboot, laplacian, name, parallel, confidencelevel, confint, hyperparam, sanitize, possibleStates)
+.markovchainFitRcpp <- function(data, method = "mle", byrow = TRUE, nboot = 10L, laplacian = 0, name = "", parallel = FALSE, confidencelevel = 0.95, confint = TRUE, hyperparam = matrix(), sanitize = FALSE, possibleStates = character(), progress = FALSE) {
+    .Call(`_markovchain_markovchainFit`, data, method, byrow, nboot, laplacian, name, parallel, confidencelevel, confint, hyperparam, sanitize, possibleStates, progress)
 }
 
 .noofVisitsDistRCpp <- function(matrix, i, N) {
@@ -401,8 +433,8 @@ priorDistribution <- function(transMatr, hyperparam = matrix()) {
     .Call(`_markovchain_priorDistribution`, transMatr, hyperparam)
 }
 
-.hittingProbabilitiesRcpp <- function(object) {
-    .Call(`_markovchain_hittingProbabilities`, object)
+.hittingProbabilitiesRcpp <- function(object, targets, solver = 0L, tol = 1e-13, maxIter = 200L) {
+    .Call(`_markovchain_hittingProbabilities`, object, targets, solver, tol, maxIter)
 }
 
 .canonicFormRcpp <- function(obj) {

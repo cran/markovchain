@@ -112,7 +112,7 @@ show(mcWeather)
 ## ----mcPlot, echo=FALSE, fig.cap="Weather example. Markov chain plot"---------
 if (requireNamespace("igraph", quietly = TRUE)) {
   library(igraph)
-  plot(mcWeather,layout = layout.fruchterman.reingold)
+  plot(mcWeather,layout = layout_with_fr)
   } else {
   message("igraph unavailable")
   }
@@ -170,7 +170,7 @@ etm2mc
 
 ## ----fromAndTo, echo=FALSE, fig.cap="The markovchain methods for import and export"----
 library(igraph)
-importExportGraph<-graph.formula(dataframe++markovchain,markovchain-+igraph,
+importExportGraph<-graph_from_literal(dataframe++markovchain,markovchain-+igraph,
                                  markovchain++matrix,table-+markovchain,msm-+markovchain,etm-+markovchain,
                                  markovchain++sparseMatrix)
 plot(importExportGraph,main="Import - Export from and to markovchain objects")
@@ -231,6 +231,10 @@ steadyStates(mcGR4)
 entropyRate(mcWeather)
 entropyRate(mcWeather, base = exp(1))
 
+## ----topological-entropy------------------------------------------------------
+topologicalEntropy(mcWeather)
+normalizedEntropyRate(mcWeather)
+
 ## ----absorbingStates----------------------------------------------------------
 absorbingStates(mcGR4)
 absorbingStates(mcWeather)
@@ -252,6 +256,9 @@ colnames(P) <- letters[1:10]
 probMc <- new("markovchain", transitionMatrix = P, 
               name = "Probability MC")
 summary(probMc)
+
+## ----summaryDetails-----------------------------------------------------------
+summary(mcWeather, details = TRUE)
 
 ## ----transientStates----------------------------------------------------------
 transientStates(probMc)
@@ -290,7 +297,7 @@ mathematicaMc <- new("markovchain", transitionMatrix = mathematicaMatr,
                    name = "Mathematica MC", states = statesNames)
 
 ## ----mcMathematics, fig=TRUE, echo=FALSE, fig.align='center', fig.cap="Mathematica 9 example. Markov chain plot."----
-plot(mathematicaMc, layout = layout.fruchterman.reingold)
+plot(mathematicaMc, layout = layout_with_fr)
 
 ## ----mathematica9MC, echo=FALSE-----------------------------------------------
 summary(mathematicaMc)
@@ -328,6 +335,132 @@ kemenyConstant(mcWeather)
 piWeather <- as.numeric(steadyStates(mcWeather))
 meanFirstPassageTime(mcWeather) %*% piWeather
 
+## ----sensitivity-weather------------------------------------------------------
+S <- sensitivity(mcWeather, "sunny")
+S
+
+## ----sensitivity-direction----------------------------------------------------
+eps <- 1e-4
+predictedChange <- eps * (S["rain", ] - S["sunny", ])
+predictedChange
+
+perturbedMatrix <- mcWeather@transitionMatrix
+perturbedMatrix["sunny", "sunny"] <- perturbedMatrix["sunny", "sunny"] - eps
+perturbedMatrix["sunny", "rain"] <- perturbedMatrix["sunny", "rain"] + eps
+mcWeatherPerturbed <- new("markovchain", states = states(mcWeather),
+                          transitionMatrix = perturbedMatrix)
+
+as.numeric(steadyStates(mcWeatherPerturbed)) - as.numeric(steadyStates(mcWeather))
+
+## ----spectral-weather---------------------------------------------------------
+slem(mcWeather)
+spectralGap(mcWeather)
+
+## ----implied-weather----------------------------------------------------------
+impliedTimescales(mcWeather)
+
+## ----cycle-walk-odd-----------------------------------------------------------
+randomWalkOnCycle <- function(n) {
+  cycleP <- matrix(0, n, n)
+  for (i in seq_len(n)) {
+    cycleP[i, ((i - 2) %% n) + 1] <- 1 / 2
+    cycleP[i, (i %% n) + 1] <- 1 / 2
+  }
+  new("markovchain", transitionMatrix = cycleP,
+      states = as.character(seq_len(n)),
+      name = paste("Random walk on the", n, "-cycle"))
+}
+
+mcCycle7 <- randomWalkOnCycle(7)
+slem(mcCycle7)
+abs(cos(2 * pi * 3 / 7)) # closed-form SLEM, attained at k = 3 and k = 4
+
+spectralGap(mcCycle7)
+impliedTimescales(mcCycle7)
+
+## ----cycle-walk-even----------------------------------------------------------
+mcCycle8 <- randomWalkOnCycle(8)
+slem(mcCycle8) # 1, attained at k = 4, where cos(2*pi*4/8) = cos(pi) = -1
+round(spectralGap(mcCycle8), 12) # numerically 0, up to floating-point error
+impliedTimescales(mcCycle8)["tau2"] # the k = 4 mode, sorted first, never decays
+
+## ----reversible-cycle---------------------------------------------------------
+is.reversible(mcCycle7)
+is.reversible(mcCycle8)
+
+## ----reversible-directed-cycle------------------------------------------------
+states3 <- c("a", "b", "c")
+directedCycle <- new("markovchain", states = states3,
+  transitionMatrix = matrix(c(0, 1, 0,
+                              0, 0, 1,
+                              1, 0, 0), byrow = TRUE, nrow = 3,
+                            dimnames = list(states3, states3)))
+is.reversible(directedCycle)
+
+## ----reversible-weather-------------------------------------------------------
+is.reversible(mcWeather)
+
+## ----closest-reversible-cycle-------------------------------------------------
+approximation <- closestReversible(directedCycle)
+approximation$chain
+is.reversible(approximation$chain)
+
+## ----closest-reversible-weather-----------------------------------------------
+weatherReversible <- closestReversible(mcWeather)
+weatherReversible$chain
+weatherReversible$distance
+
+steadyStates(mcWeather)
+steadyStates(weatherReversible$chain) # unchanged
+
+## ----mixing-weather-----------------------------------------------------------
+mixingTime(mcWeather)
+mixingTime(mcWeather, epsilon = 0.01) # a tighter threshold needs more steps
+
+## ----mixing-bound-check-------------------------------------------------------
+piWeather <- as.numeric(steadyStates(mcWeather))
+upperBound <- log(1 / (0.25 * min(piWeather))) / spectralGap(mcWeather)
+upperBound
+mixingTime(mcWeather) <= upperBound
+
+## ----mixing-periodic-error, error=TRUE----------------------------------------
+try({
+mixingTime(mcCycle8)
+})
+
+## ----lazy-cycle---------------------------------------------------------------
+lazyCycle8 <- lazyChain(mcCycle8, alpha = 0.5)
+period(mcCycle8)
+period(lazyCycle8)
+steadyStates(mcCycle8)
+steadyStates(lazyCycle8) # unchanged by laziness
+
+## ----lazy-mixing--------------------------------------------------------------
+mixingTime(lazyCycle8)
+
+## ----lazy-slower--------------------------------------------------------------
+spectralGap(mcCycle7) # aperiodic already, no laziness needed
+spectralGap(lazyChain(mcCycle7, alpha = 0.5))
+spectralGap(lazyChain(mcCycle7, alpha = 0.9))
+
+## ----redistribute-weather-----------------------------------------------------
+redistribute(mcWeather, steps = 5, initial = "rain")
+relaxationTime(mcWeather)
+
+## ----timeCorrelations-weather-------------------------------------------------
+days <- c("sunny", "sunny", "rain", "cloudy", "sunny")
+timeCorrelations(mcWeather, days, timePoints = c(0, 1, 2, 10))
+timeRelaxations(mcWeather, days, initial = "rain",
+                timePoints = c(0, 1, 2, 10))
+
+## ----autoplot-flow, eval = requireNamespace("ggplot2", quietly = TRUE), fig.cap = "Evolution of the distribution of the weather chain, starting from rain.", fig.height = 3.2----
+ggplot2::autoplot(mcWeather, type = "flow", steps = 10, initial = "rain")
+
+## ----autoplot-comparison, eval = requireNamespace("ggplot2", quietly = TRUE), fig.cap = "Transition matrices of the weather chain and of its lazy version with alpha = 0.5.", fig.height = 3.2----
+mcLazyWeather <- lazyChain(mcWeather, alpha = 0.5)
+mcLazyWeather@name <- "Lazy weather"
+ggplot2::autoplot(mcWeather, type = "comparison", other = mcLazyWeather)
+
 ## ----mrt-weather--------------------------------------------------------------
 meanRecurrenceTime(mcWeather)
 
@@ -357,8 +490,38 @@ absorptionProbabilities(drunkMc)
 ## ----at-drunkard--------------------------------------------------------------
 meanAbsorptionTime(drunkMc)
 
+## ----gamblers-ruin-drunkard---------------------------------------------------
+ruinMc <- gamblersRuin(upperBound = 4, prob = 0.5, states = as.character(1:5))
+identical(unclass(ruinMc@transitionMatrix), unclass(drunkMc@transitionMatrix))
+
+## ----gamblers-ruin-formula----------------------------------------------------
+upperBound <- 6
+prob <- 0.35
+ruinAsymmetric <- gamblersRuin(upperBound = upperBound, prob = prob)
+ap <- absorptionProbabilities(ruinAsymmetric)
+
+r <- (1 - prob) / prob
+i <- seq_len(upperBound - 1)
+theoreticalRuin <- (r^i - r^upperBound) / (1 - r^upperBound)
+
+cbind(state = i, package = as.numeric(ap[as.character(i), "0"]),
+      formula = theoreticalRuin)
+
 ## ----fundamental-matrix-drunkard----------------------------------------------
 fundamentalMatrix(drunkMc)
+
+## ----subchain-submatrix-------------------------------------------------------
+Q <- subchain(drunkMc, transientStates(drunkMc), method = "submatrix")
+Q
+rowSums(Q)
+
+## ----subchain-fundamental-check-----------------------------------------------
+solve(diag(nrow(Q)) - Q)
+
+## ----subchain-renormalize-----------------------------------------------------
+watchedDrunk <- subchain(drunkMc, transientStates(drunkMc), method = "renormalize")
+watchedDrunk
+rowSums(watchedDrunk@transitionMatrix)
 
 ## -----------------------------------------------------------------------------
 committorAB(mcWeather,3,1)
@@ -372,6 +535,11 @@ M[4,2] <- M[4,5] <- 1/2
 
 hittingTest <- new("markovchain", transitionMatrix = M)
 hittingProbabilities(hittingTest)
+
+## ----hitting-targets----------------------------------------------------------
+hittingProbabilities(hittingTest, targets = c("1", "5"))
+all.equal(hittingProbabilities(hittingTest, solver = "direct"),
+          hittingProbabilities(hittingTest, solver = "bicgstab"))
 
 ## ----hitting-weather----------------------------------------------------------
 hittingProbabilities(mcWeather)
@@ -410,6 +578,66 @@ mcIncomeNotMonotone <- new("markovchain", states = incomeStates,
                            name = "Non-Monotone Income MC")
 
 is.stochasticallyMonotone(mcIncomeNotMonotone)
+
+## ----birth-death--------------------------------------------------------------
+bd <- birthDeath(p = c(0.3, 0.4, 0.5), q = c(0.2, 0.3, 0.1))
+bd
+
+## ----to-bounded-chain---------------------------------------------------------
+reflected <- toBoundedChain(bd, "reflecting")
+reflected@transitionMatrix[c(1, 4), ]
+
+## ----urn-model----------------------------------------------------------------
+ehrenfest <- urnModel(balls = 6)
+ehrenfest@transitionMatrix
+
+piEhrenfest <- as.numeric(steadyStates(ehrenfest))
+cbind(package = piEhrenfest, binomial = dbinom(0:6, 6, 0.5))
+
+## ----merge-with---------------------------------------------------------------
+drySeason <- new("markovchain", states = c("sunny", "rain"),
+                 transitionMatrix = matrix(c(0.9, 0.1, 0.2, 0.8), byrow = TRUE,
+                   nrow = 2, dimnames = list(c("sunny", "rain"), c("sunny", "rain"))),
+                 name = "Dry season")
+wetSeason <- new("markovchain", states = c("sunny", "rain"),
+                 transitionMatrix = matrix(c(0.5, 0.5, 0.6, 0.4), byrow = TRUE,
+                   nrow = 2, dimnames = list(c("sunny", "rain"), c("sunny", "rain"))),
+                 name = "Wet season")
+
+mergeWith(drySeason, wetSeason, gamma = 0.3)
+
+## ----to-nth-order-------------------------------------------------------------
+identical(unclass(toNthOrder(mcWeather, 5)@transitionMatrix),
+          unclass((mcWeather ^ 5)@transitionMatrix))
+
+## ----popgen-neutral-----------------------------------------------------------
+n <- 8
+neutralMoran <- populationGeneticsModel(model = "moran", n = n, s = 0)
+neutralWF <- populationGeneticsModel(model = "wright-fisher", n = n, s = 0)
+
+i <- 1:(n - 1)
+fixation <- function(mc) {
+  B <- absorptionProbabilities(mc)
+  as.numeric(B[as.character(i), as.character(n)])
+}
+cbind(i = i, moran = fixation(neutralMoran),
+      wrightFisher = fixation(neutralWF), theoretical = i / n)
+
+## ----popgen-selection---------------------------------------------------------
+favouredMoran <- populationGeneticsModel(model = "moran", n = n, s = 0.5)
+favouredWF <- populationGeneticsModel(model = "wright-fisher", n = n, s = 0.5)
+
+# fixation probability starting from 4 copies out of 8, neutral vs favoured
+c(neutral = as.numeric(absorptionProbabilities(neutralMoran)["4", "8"]),
+  favoured = as.numeric(absorptionProbabilities(favouredMoran)["4", "8"]))
+
+## ----randomChains-------------------------------------------------------------
+fixed <- matrix(NA, 3, 3)
+fixed[1, 1] <- 0.5
+randomMarkovChain(3, zeros = 2, mask = fixed, seed = 1)@transitionMatrix
+dirichletChain(4, diffusion = 1, diagonalBias = 2,
+               seed = 1)@transitionMatrix
+identityChain(states = c("a", "b"))@transitionMatrix
 
 ## ----simulatingAMarkovChain---------------------------------------------------
 weathersOfDays <- rmarkovchain(n = 220, object = mcWeather, t0 = "sunny")
@@ -507,6 +735,65 @@ lump(mcBad, partition_bad, force = TRUE)
 # auto_lumped$partition
 # auto_lumped$lumped_chain
 
+## ----aggregate-oz-------------------------------------------------------------
+agg_oz <- aggregateStates(mcOz, k = 2)
+agg_oz$partition
+
+isTRUE(all.equal(unname(agg_oz$aggregatedChain@transitionMatrix),
+                  unname(lumped_oz@transitionMatrix)))
+
+## ----aggregate-oz-kld---------------------------------------------------------
+agg_oz$klDivergence
+
+## ----aggregate-dmm------------------------------------------------------------
+states_dmm <- as.character(1:4)
+P_dmm <- matrix(
+  c(0.5, 0.4, 0.0, 0.1,
+    0.4, 0.5, 0.1, 0.0,
+    0.0, 0.1, 0.5, 0.4,
+    0.1, 0.0, 0.4, 0.5),
+  byrow = TRUE, nrow = 4,
+  dimnames = list(states_dmm, states_dmm)
+)
+mcDMM <- new("markovchain", states = states_dmm, transitionMatrix = P_dmm,
+             name = "Deng-Mehta-Meyn (2009) example")
+
+agg_dmm <- aggregateStates(mcDMM, k = 2)
+agg_dmm$partition
+agg_dmm$aggregatedChain@transitionMatrix
+
+## ----aggregate-dmm-kld--------------------------------------------------------
+agg_dmm$klDivergence
+
+## ----serialize-oz-dictionary--------------------------------------------------
+oz_dict <- toDictionary(mcOz)
+str(oz_dict)
+
+## ----serialize-oz-roundtrip---------------------------------------------------
+identical(fromDictionary(oz_dict)@transitionMatrix, mcOz@transitionMatrix)
+
+## ----serialize-oz-json--------------------------------------------------------
+oz_json <- tempfile(fileext = ".json")
+toFile(mcOz, oz_json)
+cat(readLines(oz_json), sep = "\n")
+
+identical(fromFile(oz_json)@transitionMatrix, mcOz@transitionMatrix)
+
+## ----serialize-oz-csv---------------------------------------------------------
+oz_csv <- tempfile(fileext = ".csv")
+toFile(mcOz, oz_csv)
+cat(readLines(oz_csv), sep = "\n")
+
+fromFile(oz_csv)@name # the package's own default, not "Land of Oz"
+
+## ----serialize-oz-xml---------------------------------------------------------
+oz_xml <- tempfile(fileext = ".xml")
+toFile(mcOz, oz_xml)
+cat(readLines(oz_xml)[1:4], sep = "\n")
+
+## ----export-oz-graph----------------------------------------------------------
+cat(toMermaid(mcOz, digits = 2), "\n")
+
 ## ----fitMcbyMLE2--------------------------------------------------------------
 weatherFittedMLE <- markovchainFit(data = weathersOfDays, method = "mle",name = "Weather MLE")
 weatherFittedMLE$estimate
@@ -520,6 +807,13 @@ weatherFittedLAPLACE$estimate
 
 ## ----fitSequenceMatrix--------------------------------------------------------
 createSequenceMatrix(stringchar = weathersOfDays)
+
+## ----fitSanitizeAbsorbing-----------------------------------------------------
+partial <- c("a", "b", "a", "b", "a")
+markovchainFit(partial, possibleStates = c("a", "b", "c"),
+               sanitize = "uniform")$estimate@transitionMatrix
+markovchainFit(partial, possibleStates = c("a", "b", "c"),
+               sanitize = "absorbing")$estimate@transitionMatrix
 
 ## ----fitSequenceMatrix2-------------------------------------------------------
 myMatr<-matrix(c("a","b","b","a","a","b","b","b","b","a","a","a","b","a"),ncol=2)
@@ -539,7 +833,8 @@ weatherFittedBOOT$standardError
 # weatherFittedBOOTParallel$standardError
 
 ## ----fitMcbyBootStrap3, eval=FALSE--------------------------------------------
-# RcppParallel::setNumThreads(2)
+# markovchainFit(data = weathersOfDays, method = "bootstrap", nboot = 200,
+#                parallel = TRUE, num.cores = 4)
 
 ## ----fitMcbyMLE1--------------------------------------------------------------
 weatherFittedMLE$logLikelihood
@@ -585,6 +880,18 @@ predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5)
 
 ## ----markovchainListPredict2--------------------------------------------------
 predict(mcCCRC, newdata = c("H", "H"), n.ahead = 5, continue = TRUE)
+
+## ----testIndependence---------------------------------------------------------
+data(rain)
+assessIndependence(rain$rain)
+data(preproglucacon)
+assessIndependence(preproglucacon$preproglucacon, method = "G")
+chisq.test(createSequenceMatrix(rain$rain), correct = FALSE)$statistic
+
+## ----testIndependencePublished------------------------------------------------
+koeberg <- as.character(read.csv(system.file("extdata", "koeberg_wind.csv",
+                                             package = "markovchain"))$state)
+assessIndependence(koeberg[14:length(koeberg)], method = "G")
 
 ## ----test1--------------------------------------------------------------------
 sample_sequence <- c("a", "b", "a", "a", "a", "a", "b", "a", "b", "a", 
@@ -671,68 +978,6 @@ x1 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
 x2 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
 
 verifyHomogeneity(list(x1, x2), method = "G")
-
-## ----rCtmcInit----------------------------------------------------------------
-energyStates <- c("sigma", "sigma_star")
-byRow <- TRUE
-gen <- matrix(data = c(-3, 3,
-                       1, -1), nrow = 2,
-              byrow = byRow, dimnames = list(energyStates, energyStates))
-molecularCTMC <- new("ctmc", states = energyStates, 
-                 byrow = byRow, generator = gen, 
-                 name = "Molecular Transition Model")      
-
-## ----rctmcRandom0-------------------------------------------------------------
-statesDist <- c(0.8, 0.2)
-rctmc(n = 3, ctmc = molecularCTMC, initDist = statesDist, out.type = "df", include.T0 = FALSE)
-
-## ----ctmcRandom1--------------------------------------------------------------
-statesDist <- c(0.8, 0.2)
-rctmc(n = Inf, ctmc = molecularCTMC, initDist = statesDist, T = 2)
-
-## ----rctmcSteadyStates--------------------------------------------------------
-steadyStates(molecularCTMC)
-
-## ----rctmcFitting-------------------------------------------------------------
-data <- list(c("a", "b", "c", "a", "b", "a", "c", "b", "c"), 
-             c(0, 0.8, 2.1, 2.4, 4, 5, 5.9, 8.2, 9))
-ctmcFit(data)
-
-## ----mcWeatherQ---------------------------------------------------------------
-mcWeatherQ <- expm::logm(mcWeather@transitionMatrix,method='Eigen')
-mcWeatherQ
-
-## ----mcWeatherHalfDay---------------------------------------------------------
-mcWeatherHalfDayTM <- expm::expm(mcWeatherQ*.5)
-mcWeatherHalfDay <- new("markovchain",transitionMatrix=mcWeatherHalfDayTM,name="Half Day Weather Transition Matrix")
-mcWeatherHalfDay
-
-## ----ctmcd1-------------------------------------------------------------------
-if(requireNamespace(package='ctmcd', quietly = TRUE)) {
-require(ctmcd)
-require(expm)
-#defines a function to transform a GM into a TM
-gm_to_markovchain<-function(object, t=1) {
-  if(!(class(object) %in% c("gm","matrix","Matrix")))
-    stop("Error! Expecting either a matrix or a gm object")
-  if ( class(object) %in% c("matrix","Matrix")) generator_matrix<-object else generator_matrix<-as.matrix(object[["par"]])
-  #must add importClassesFrom("markovchain",markovchain) in the NAMESPACE
-  #must add importFrom(expm, "expm")
-  transitionMatrix<-expm(generator_matrix*t)
-  out<-as(transitionMatrix,"markovchain")
-  return(out)
-}
-#loading ctmcd dataset
-data(tm_abs)
-gm0=matrix(1,8,8) #initializing
-diag(gm0)=0
-diag(gm0)=-rowSums(gm0)
-gm0[8,]=0
-gmem=gm(tm_abs,te=1,method="EM",gmguess=gm0) #estimating GM
-mc_at_2=gm_to_markovchain(object=gmem, t=2) #converting to TM at time 2
-} else {
-  warning('package ctmcd unavailable')
-}
 
 ## ----pseudobayes--------------------------------------------------------------
 pseudoBayesEstimator <- function(raw, apriori){
@@ -842,6 +1087,72 @@ MAPest <- markovchainFit(preproglucacon, method = "map")
 MLEest$estimate
 MAPest$estimate
 
+## ----rCtmcInit----------------------------------------------------------------
+energyStates <- c("sigma", "sigma_star")
+byRow <- TRUE
+gen <- matrix(data = c(-3, 3,
+                       1, -1), nrow = 2,
+              byrow = byRow, dimnames = list(energyStates, energyStates))
+molecularCTMC <- new("ctmc", states = energyStates, 
+                 byrow = byRow, generator = gen, 
+                 name = "Molecular Transition Model")      
+
+## ----rctmcRandom0-------------------------------------------------------------
+statesDist <- c(0.8, 0.2)
+rctmc(n = 3, ctmc = molecularCTMC, initDist = statesDist, out.type = "df", include.T0 = FALSE)
+
+## ----ctmcRandom1--------------------------------------------------------------
+statesDist <- c(0.8, 0.2)
+rctmc(n = Inf, ctmc = molecularCTMC, initDist = statesDist, T = 2)
+
+## ----rctmcSteadyStates--------------------------------------------------------
+steadyStates(molecularCTMC)
+
+## ----rctmcExpectedTime--------------------------------------------------------
+ExpectedTime(molecularCTMC, 1, 2)
+probabilityatT(molecularCTMC, 0.5, 1)
+
+## ----rctmcFitting-------------------------------------------------------------
+data <- list(c("a", "b", "c", "a", "b", "a", "c", "b", "c"), 
+             c(0, 0.8, 2.1, 2.4, 4, 5, 5.9, 8.2, 9))
+ctmcFit(data)
+
+## ----mcWeatherQ---------------------------------------------------------------
+mcWeatherQ <- expm::logm(mcWeather@transitionMatrix,method='Eigen')
+mcWeatherQ
+
+## ----mcWeatherHalfDay---------------------------------------------------------
+mcWeatherHalfDayTM <- expm::expm(mcWeatherQ*.5)
+mcWeatherHalfDay <- new("markovchain",transitionMatrix=mcWeatherHalfDayTM,name="Half Day Weather Transition Matrix")
+mcWeatherHalfDay
+
+## ----ctmcd1-------------------------------------------------------------------
+if(requireNamespace(package='ctmcd', quietly = TRUE)) {
+require(ctmcd)
+require(expm)
+#defines a function to transform a GM into a TM
+gm_to_markovchain<-function(object, t=1) {
+  if(!inherits(object, c("gm","matrix","Matrix")))
+    stop("Error! Expecting either a matrix or a gm object")
+  if (inherits(object, c("matrix","Matrix"))) generator_matrix<-object else generator_matrix<-as.matrix(object[["par"]])
+  #must add importClassesFrom("markovchain",markovchain) in the NAMESPACE
+  #must add importFrom(expm, "expm")
+  transitionMatrix<-expm(generator_matrix*t)
+  out<-as(transitionMatrix,"markovchain")
+  return(out)
+}
+#loading ctmcd dataset
+data(tm_abs)
+gm0=matrix(1,8,8) #initializing
+diag(gm0)=0
+diag(gm0)=-rowSums(gm0)
+gm0[8,]=0
+gmem=gm(tm_abs,te=1,method="EM",gmguess=gm0) #estimating GM
+mc_at_2=gm_to_markovchain(object=gmem, t=2) #converting to TM at time 2
+} else {
+  warning('package ctmcd unavailable')
+}
+
 ## ----weatPred1----------------------------------------------------------------
 
 mcWP <- new("markovchain", states = c("rainy", "nice", "snowy"),
@@ -914,6 +1225,25 @@ c2 <- 0 + conditionalDistribution(mcP, state = "non customer") %*% M[2,]
 
 ## ----economicAnalysis3--------------------------------------------------------
 as.numeric((c(1, 0)* mcP ^ 5) %*% (as.vector(c(c1, c2))))
+
+## ----tauchen-rouwenhorst------------------------------------------------------
+rho <- 0.979
+sigmaEps <- 0.0072
+theoreticalVar <- sigmaEps^2 / (1 - rho^2)
+theoreticalVar
+
+relativeError <- function(size) {
+  outT <- tauchen(alpha = 0, sigma = sigmaEps, rho = rho, size = size)
+  outR <- rouwenhorst(alpha = 0, sigma = sigmaEps, rho = rho, size = size)
+  piT <- as.numeric(steadyStates(outT$chain))
+  piR <- as.numeric(steadyStates(outR$chain))
+  varT <- sum(piT * (outT$states - sum(piT * outT$states)) ^ 2)
+  varR <- sum(piR * (outR$states - sum(piR * outR$states)) ^ 2)
+  c(tauchen = 100 * abs(varT - theoreticalVar) / theoreticalVar,
+    rouwenhorst = 100 * abs(varR - theoreticalVar) / theoreticalVar)
+}
+
+sapply(c(5, 10, 25), relativeError)
 
 ## ----bonusMalus1--------------------------------------------------------------
 
@@ -1024,7 +1354,7 @@ mobilityMc
 
 ## ----mobility, fig=TRUE, echo=FALSE, fig.align='center', fig.cap="1970 UK cohort mobility data."----
 plot(mobilityMc, main = '1970 mobility',vertex.label.cex = 2,
-		layout = layout.fruchterman.reingold)
+		layout = layout_with_fr)
 
 ## ----blandenEtAlii3-----------------------------------------------------------
 round(steadyStates(mobilityMc), 2)

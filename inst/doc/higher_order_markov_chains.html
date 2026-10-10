@@ -236,20 +236,21 @@ text-decoration: underline; }
 </header>
 
 
-<h1 id="higher-order-markov-chains">Higher Order Markov Chains</h1>
-<p>Continuous time Markov chains are discussed in the CTMC vignette which is a part of the package.</p>
-<p>An experimental <code>fitHigherOrder</code> function has been written in order to fit a higher order Markov chain (<span class="citation" data-cites="ching2013higher">Ching et al. (2008)</span>). <code>fitHigherOrder</code> takes two inputs</p>
+<h1 id="higher-order-markov-chains-as-mixtures-of-lags">Higher order Markov chains as mixtures of lags</h1>
+<p>Discrete time Markov chains of order one and continuous time Markov chains are described in the main vignette of the package, “An introduction to markovchain package”.</p>
+<p>The function <code>fitHigherOrder</code> fits a higher order Markov chain, written as a mixture of transition matrices of different lags <span class="citation" data-cites="ching2013higher ching2008higher">(Ching et al. 2013, 2008)</span>. It takes three inputs:</p>
 <ol type="1">
 <li>sequence: a categorical data sequence.</li>
 <li>order: order of Markov chain to fit with default value 2.</li>
+<li>method: how the weights are estimated, <code>&quot;lsq&quot;</code> (default) or <code>&quot;mle&quot;</code>, see below.</li>
 </ol>
-<p>The output will be a <code>list</code> which consists of</p>
+<p>The output is a <code>list</code> with the following elements:</p>
 <ol type="1">
 <li>lambda: model parameter(s).</li>
-<li>Q: a list of transition matrices. <span class="math inline"><em>Q</em><sub><em>i</em></sub></span> is the <span class="math inline"><em>i</em><em>t</em><em>h</em></span> step transition matrix stored column-wise.</li>
+<li>Q: a list of transition matrices. <span class="math inline"><em>Q</em><sub><em>i</em></sub></span> is the <span class="math inline"><em>i</em></span>-th step transition matrix, stored column-wise.</li>
 <li>X: frequency probability vector of the given sequence.</li>
 </ol>
-<p>Its quadratic programming problem is solved using <code>solnp</code> function of the Rsolnp package <span class="citation" data-cites="pkg:Rsolnp">(Ghalanos and Theussl 2014)</span>.</p>
+<p>The model is a mixture of the empirical lag-<span class="math inline"><em>i</em></span> transition matrices <span class="math inline"><em>Q</em><sub><em>i</em></sub></span> with weights <span class="math inline"><em>λ</em><sub><em>i</em></sub> ≥ 0</span> summing to one, and the matrices <span class="math inline"><em>Q</em><sub><em>i</em></sub></span> are the same for both methods. With the default <code>method = &quot;lsq&quot;</code> the weights solve a quadratic programming problem, the minimization of the squared distance between the stationary distribution and its image under the mixture, which is solved using <code>solnp</code> function of the Rsolnp package <span class="citation" data-cites="pkg:Rsolnp">(Ghalanos and Theussl 2014)</span>. With <code>method = &quot;mle&quot;</code> the weights maximize the log-likelihood of the observations; for fixed <span class="math inline"><em>Q</em><sub><em>i</em></sub></span> this is a concave problem, so its maximum is global, and it is solved by the EM algorithm for mixture weights, without the Rsolnp package.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;Rsolnp&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data</span>(rain)</span>
@@ -257,7 +258,7 @@ text-decoration: underline; }
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fitHigherOrder</span>(rain_small, <span class="dv">2</span>)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $lambda</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.5 0.5</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.77333 0.22667</span></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Q</span></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Q[[1]]</span></span>
@@ -277,7 +278,161 @@ text-decoration: underline; }
 <span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         0       1-5        6+ </span></span>
 <span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.4333333 0.3466667 0.2200000</span></span></code></pre></div>
 </div>
-<h1 id="higher-order-multivariate-markov-chains">Higher Order Multivariate Markov Chains</h1>
+<h1 id="comparing-models-of-different-orders">Comparing models of different orders</h1>
+<p><code>higherOrderLogLik</code> evaluates the log-likelihood of a sequence under the model returned by <code>fitHigherOrder</code>, and derives the deviance (<span class="math inline">−2</span> times the log-likelihood), the AIC and the BIC, so that models of different orders can be compared. The probability of moving to state <span class="math inline"><em>x</em><sub><em>t</em></sub></span> is the mixture <span class="math inline">$\sum_{i=1}^{k}\lambda_i Q_i[x_t, x_{t-i}]$</span>, the form of the mixture transition distribution model of <span class="citation" data-cites="raftery1985model">(Raftery 1985)</span>, and the log-likelihood is the sum of the logarithms of these probabilities over the observations that a model of order <span class="math inline"><em>k</em></span> can predict, that is from observation <span class="math inline"><em>k</em> + 1</span> onwards. To compare orders on exactly the same observations the argument <code>start</code> must be set to one plus the largest order compared.</p>
+<p>Two caveats apply. First, with the default <code>method = &quot;lsq&quot;</code> the weights <span class="math inline"><em>λ</em></span> are chosen by least squares on the stationary distribution, not by maximum likelihood, so the value returned is the log-likelihood <em>of the fitted model</em> and not the maximum attainable one. It can therefore be lower for a higher order than for a lower one, which cannot happen for maximum-likelihood fits of nested models. With <code>method = &quot;mle&quot;</code> the weights maximize this log-likelihood for the observations that a model of that order can predict, and in the examples below the log-likelihood then never decreases with the order. Second, the number of parameters used for the criteria is <span class="math inline">(<em>r</em> − 1) (1 + <em>k</em>(<em>r</em> − 1))</span>, with <span class="math inline"><em>r</em></span> the number of states. Each lag matrix has <span class="math inline"><em>r</em>(<em>r</em> − 1)</span> free probabilities and there are <span class="math inline"><em>k</em> − 1</span> free weights, but in a mixture of lag matrices the weights are not identifiable (a distribution common to all departure states can be moved from one lag to another without changing any transition probability), so the model can represent a set of transition laws of dimension <span class="math inline">(<em>r</em> − 1)(1 + <em>k</em>(<em>r</em> − 1))</span>, that is <span class="math inline"><em>r</em>(<em>k</em> − 1)</span> less than the naive count <span class="math inline"><em>k</em> <em>r</em>(<em>r</em> − 1) + (<em>k</em> − 1)</span>; the two coincide for <span class="math inline"><em>k</em> = 1</span>.</p>
+<p>The example compares orders one to three on the Alofi Island daily rainfall and on the preproglucacon DNA sequence, both analysed by <span class="citation" data-cites="averyHenderson">(P. J. Avery and D. A. Henderson 1999)</span>, with both estimation methods. Maximum likelihood weights raise the log-likelihood of the higher orders, by up to about 11 units for the rainfall and 28 for the DNA sequence, whereas the least squares weights can leave it below that of the first-order model. Even so, the gain is too small to pay for the additional parameters, and both criteria select the first-order model for both sequences with both methods. The values are computed by the package; they are not claimed to reproduce those of the original paper.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;Rsolnp&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  compareOrders <span class="ot">&lt;-</span> <span class="cf">function</span>(sequence, <span class="at">orders =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>) {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    byMethod <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">c</span>(<span class="st">&quot;lsq&quot;</span>, <span class="st">&quot;mle&quot;</span>), <span class="cf">function</span>(method) {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      fits <span class="ot">&lt;-</span> <span class="fu">lapply</span>(orders, <span class="cf">function</span>(k) <span class="fu">fitHigherOrder</span>(sequence, k, <span class="at">method =</span> method))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">sapply</span>(fits, <span class="cf">function</span>(f)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">unlist</span>(<span class="fu">higherOrderLogLik</span>(sequence, f, <span class="at">start =</span> <span class="fu">max</span>(orders) <span class="sc">+</span> <span class="dv">1</span>)[<span class="fu">c</span>(<span class="st">&quot;logLik&quot;</span>, <span class="st">&quot;BIC&quot;</span>)]))</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">rbind</span>(byMethod[[<span class="dv">1</span>]], byMethod[[<span class="dv">2</span>]])</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rownames</span>(out) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;logLik (lsq)&quot;</span>, <span class="st">&quot;BIC (lsq)&quot;</span>, <span class="st">&quot;logLik (mle)&quot;</span>, <span class="st">&quot;BIC (mle)&quot;</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">colnames</span>(out) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;order&quot;</span>, orders)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(out, <span class="dv">1</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data</span>(rain)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">compareOrders</span>(rain<span class="sc">$</span>rain))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data</span>(preproglucacon)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">compareOrders</span>(preproglucacon<span class="sc">$</span>preproglucacon))</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              order 1 order 2 order 3</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; logLik (lsq) -1038.1 -1047.8 -1047.8</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; BIC (lsq)     2118.1  2165.5  2193.5</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; logLik (mle) -1038.1 -1036.5 -1036.5</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; BIC (mle)     2118.1  2142.9  2170.9</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              order 1 order 2 order 3</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; logLik (lsq) -2026.0 -2024.6 -2051.6</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; BIC (lsq)     4140.3  4203.7  4323.9</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; logLik (mle) -2026.0 -2024.0 -2024.0</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; BIC (mle)     4140.3  4202.5  4268.7</span></span></code></pre></div>
+</div>
+<h2 id="selecting-the-order-of-a-full-markov-chain">Selecting the order of a full Markov chain</h2>
+<p>The models above restrict the dependence on the past to a mixture of lags. <code>selectOrder</code> instead fits the fully parameterized Markov chains of order <span class="math inline">0, 1, …, <em>K</em></span> (order 0 is independence) by maximum likelihood, all on the same observations (from <code>start</code>, by default <span class="math inline"><em>K</em> + 1</span>), and selects the order that minimizes the BIC or the AIC <span class="citation" data-cites="tong1975determination katz1981some">(Tong 1975; Katz 1981)</span>. An order-<span class="math inline"><em>k</em></span> chain on <span class="math inline"><em>r</em></span> states has <span class="math inline"><em>r</em><sup><em>k</em></sup>(<em>r</em> − 1)</span> free parameters; with <code>parameters = &quot;observed&quot;</code> only the transition probabilities not estimated as zero are counted, as in <span class="citation" data-cites="berchtold2002mixture">Berchtold and Raftery (2002)</span>. The table also gives the likelihood-ratio statistic of each order against the previous one, with its asymptotic chi-squared p-value <span class="citation" data-cites="anderson1957statistical">(Anderson and Goodman 1957)</span>. BIC is a consistent estimator of the order <span class="citation" data-cites="csiszar2000consistency">(Csiszár and Shields 2000)</span>, whereas AIC tends to choose higher orders, and both become unreliable when <span class="math inline"><em>r</em><sup><em>K</em></sup></span> is not small compared with the number of observations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(rain)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>rainOrder <span class="ot">&lt;-</span> <span class="fu">selectOrder</span>(rain<span class="sc">$</span>rain, <span class="at">maxOrder =</span> <span class="dv">3</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>rainOrder<span class="sc">$</span>order</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 1</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(rainOrder<span class="sc">$</span>table, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  order logLik npar  AIC  BIC     LR df   p.value</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      0  -1134    2 2272 2282     NA NA        NA</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      1  -1038    6 2088 2118 191.53  4 2.487e-40</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      2  -1025   18 2086 2176  25.94 12 1.096e-02</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      3  -1006   54 2119 2389  39.06 36 3.338e-01</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">selectOrder</span>(rain<span class="sc">$</span>rain, <span class="at">maxOrder =</span> <span class="dv">3</span>, <span class="at">criterion =</span> <span class="st">&quot;AIC&quot;</span>)<span class="sc">$</span>order</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 2</span></span></code></pre></div>
+</div>
+<p>For the Alofi rainfall the BIC selects the first-order chain, whereas the AIC slightly prefers the second-order one (2086.2 against 2088.1), which needs 18 parameters instead of 6. For the preproglucacon sequence (<code>selectOrder(preproglucacon$preproglucacon, 3)</code>) the BIC of independence and of the first-order chain differ by about one unit, and the AIC selects order one. These values are computed by the package.</p>
+<h2 id="reproducing-a-published-comparison">Reproducing a published comparison</h2>
+<p><span class="citation" data-cites="berchtold2002mixture">(Berchtold and Raftery 2002)</span> compare, by log-likelihood and BIC, independence, Markov chains of order one to three and mixture transition distribution (MTD) models for the hourly wind direction at Koeberg (South Africa; 744 observations recoded into four directions, originally from <span class="citation" data-cites="macdonald1997hidden">(MacDonald and Zucchini 1997)</span>) and for a daily series of epileptic seizures (204 observations). The authors kindly provided the two series, which are distributed with the package in <code>inst/extdata</code>. Their convention is to condition every model on the first 14 observations, so that all models are evaluated on the same <span class="math inline"><em>n</em> − 14</span> observations, which in <code>higherOrderLogLik</code> corresponds to <code>start = 15</code>; the BIC uses <span class="math inline"><em>n</em> − 14</span> as sample size and counts only the parameters that are not forced to zero.</p>
+<p><code>fitHigherOrder</code> does not estimate the MTD model of that paper: it fits a different transition matrix for each lag, with weights chosen by least squares or, with <code>method = &quot;mle&quot;</code>, by maximum likelihood given those matrices, whereas the MTD model uses a single matrix <span class="math inline"><em>Q</em></span> for all lags and estimates it together with the weights by maximum likelihood (that model is fitted by <code>fitMTD</code>, described in the next section). The comparison below evaluates, with <code>higherOrderLogLik</code>, the first-order chain estimated on the observations entering the likelihood and the MTD(2) model with the weights and the matrix <span class="math inline"><em>Q</em></span> printed in the paper (whose rows are the departure states, hence the transposition).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>koeberg <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="fu">read.csv</span>(<span class="fu">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;koeberg_wind.csv&quot;</span>,</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">package =</span> <span class="st">&quot;markovchain&quot;</span>))<span class="sc">$</span>state)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>n_eff <span class="ot">&lt;-</span> <span class="fu">length</span>(koeberg) <span class="sc">-</span> (start <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># first-order Markov chain, estimated on the transitions that enter the likelihood</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>Q1 <span class="ot">&lt;-</span> <span class="fu">seq2matHigh</span>(koeberg[(start <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">length</span>(koeberg)], <span class="dv">1</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>mc1 <span class="ot">&lt;-</span> <span class="fu">higherOrderLogLik</span>(koeberg, <span class="fu">list</span>(<span class="at">lambda =</span> <span class="dv">1</span>, <span class="at">Q =</span> <span class="fu">list</span>(Q1)), <span class="at">start =</span> start)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># MTD(2) with lambda and Q as printed in Section 1.3 of the paper</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>Qpaper <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">0.8301</span>, <span class="fl">0.0689</span>, <span class="fl">0.0077</span>, <span class="fl">0.0933</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                   <span class="fl">0.0369</span>, <span class="fl">0.9012</span>, <span class="fl">0.0619</span>, <span class="fl">0.0000</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                   <span class="fl">0.0155</span>, <span class="fl">0.1553</span>, <span class="fl">0.8070</span>, <span class="fl">0.0222</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>                   <span class="fl">0.0779</span>, <span class="fl">0.0000</span>, <span class="fl">0.0528</span>, <span class="fl">0.8693</span>), <span class="dv">4</span>, <span class="dv">4</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>Q <span class="ot">&lt;-</span> <span class="fu">t</span>(Qpaper)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">dimnames</span>(Q) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>))</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>mtd2 <span class="ot">&lt;-</span> <span class="fu">higherOrderLogLik</span>(koeberg, <span class="fu">list</span>(<span class="at">lambda =</span> <span class="fu">c</span>(<span class="fl">0.7569</span>, <span class="fl">0.2431</span>), <span class="at">Q =</span> <span class="fu">list</span>(Q, Q)),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> start)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># parameters not forced to zero: 11 for the chain (one empty transition),</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 4 * 3 - 2 + (2 - 1) = 11 for the MTD(2) (two structural zeros in Q)</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">model =</span> <span class="fu">c</span>(<span class="st">&quot;Markov chain, order 1&quot;</span>, <span class="st">&quot;MTD, order 2&quot;</span>),</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">logLik =</span> <span class="fu">c</span>(mc1<span class="sc">$</span>logLik, mtd2<span class="sc">$</span>logLik),</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">BIC =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> mc1<span class="sc">$</span>logLik <span class="sc">+</span> <span class="dv">11</span> <span class="sc">*</span> <span class="fu">log</span>(n_eff), <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> mtd2<span class="sc">$</span>logLik <span class="sc">+</span> <span class="dv">11</span> <span class="sc">*</span> <span class="fu">log</span>(n_eff)),</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">logLik_published =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">413.3</span>, <span class="sc">-</span><span class="fl">393.4</span>),</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">BIC_published =</span> <span class="fu">c</span>(<span class="fl">899.1</span>, <span class="fl">859.3</span>))</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                  model logLik   BIC logLik_published BIC_published</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  Markov chain, order 1 -413.3 899.1           -413.3         899.1</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;           MTD, order 2 -393.4 859.3           -393.4         859.3</span></span></code></pre></div>
+</div>
+<p>The values coincide with Table 2 of the paper up to its rounding to one decimal, and the BIC prefers the MTD(2) model to the first-order chain, as in the paper. The same agreement is obtained for the Markov chains of order two and three and for the seizure series (Table 3); these checks are part of the unit tests of the package. The rows for independence and for the Markov chains of order one to three are obtained in one call with <code>selectOrder(koeberg, maxOrder = 3, start = 15, parameters = &quot;observed&quot;)</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">selectOrder</span>(koeberg, <span class="at">maxOrder =</span> <span class="dv">3</span>, <span class="at">start =</span> <span class="dv">15</span>, <span class="at">parameters =</span> <span class="st">&quot;observed&quot;</span>)<span class="sc">$</span>table[, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>],</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">5</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  order  logLik npar     AIC     BIC</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      0 -954.83    3 1915.66 1929.44</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      1 -413.30   11  848.61  899.13</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      2 -374.92   27  803.84  927.85</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      3 -346.19   39  770.39  949.52</span></span></code></pre></div>
+</div>
+<h1 id="the-mixture-transition-distribution-model">The mixture transition distribution model</h1>
+<p>A Markov chain of order <span class="math inline"><em>k</em></span> on <span class="math inline"><em>r</em></span> states has <span class="math inline"><em>r</em><sup><em>k</em></sup>(<em>r</em> − 1)</span> free transition probabilities, a number that grows so quickly with <span class="math inline"><em>k</em></span> that high orders can rarely be estimated. The mixture transition distribution (MTD) model of <span class="citation" data-cites="raftery1985model">(Raftery 1985)</span> replaces the full transition array with a mixture of contributions of the individual lags, all governed by the same transition matrix: <span class="math display">$$
+P(X_t = j \mid X_{t-1} = i_1, \dots, X_{t-k} = i_k) = \sum_{g=1}^{k} \lambda_g\, q_{i_g j},
+$$</span> where <span class="math inline"><em>Q</em> = (<em>q</em><sub><em>i</em><em>j</em></sub>)</span> is an <span class="math inline"><em>r</em> × <em>r</em></span> transition matrix (rows are departure states) and the lag weights <span class="math inline"><em>λ</em><sub><em>g</em></sub></span> sum to one. The model has only <span class="math inline"><em>r</em>(<em>r</em> − 1) + <em>k</em> − 1</span> parameters, one more for each additional lag, and for <span class="math inline"><em>k</em> = 1</span> it is the first-order Markov chain. <span class="citation" data-cites="berchtold2002mixture">(Berchtold and Raftery 2002)</span> review the model, its extensions and its applications.</p>
+<p><code>fitMTD(sequence, order, start, nstart, tol, maxit)</code> estimates <span class="math inline"><em>Q</em></span> and <span class="math inline"><em>λ</em></span> by maximum likelihood. As in most applications, the weights are constrained to be non-negative (Raftery’s original formulation also admits negative weights, provided that every transition probability stays in <span class="math inline">[0, 1]</span>; this case is not supported). Under this constraint the model is a mixture in which an unobserved lag generates each observation, and the likelihood is maximized by the EM algorithm of <span class="citation" data-cites="lebre2008em">(Lèbre and Bourguignon 2008)</span>, implemented in C++: the E-step computes the posterior probability of each lag for each observation, the M-step updates the weights as the average of these probabilities and <span class="math inline"><em>Q</em></span> as the transition counts weighted by them. Each iteration increases the likelihood, but the MTD likelihood can have several local maxima <span class="citation" data-cites="berchtold2001estimation">(Berchtold 2001)</span>, so the models of order <span class="math inline">1, …, <em>k</em></span> are fitted in turn on the same observations and each order is started both from equal weights and from the fit of the previous order, extended with a zero and with a small positive weight for the new lag. The first extension has the likelihood of the previous order, so the likelihood returned never decreases with the order, as it must for nested models; <code>nstart - 1</code> further random starting points can be added, and the best fit is returned.</p>
+<p>The likelihood is conditional on the observations before <code>start</code>, by default <code>order + 1</code>; as for <code>higherOrderLogLik</code>, models of different orders are comparable only when they share <code>start</code>. The function returns the weights, the matrix <span class="math inline"><em>Q</em></span> as a <code>markovchain</code> object (<code>estimate</code>), the maximized log-likelihood with AIC and BIC (based on <span class="math inline"><em>r</em>(<em>r</em> − 1) + <em>k</em> − 1</span> parameters), and, in the element <code>Q</code>, the matrix in the column layout used by <code>fitHigherOrder</code>, so that the fit can also be passed to <code>higherOrderLogLik</code>.</p>
+<p>The chunk below estimates the MTD models of order two and three on both series of <span class="citation" data-cites="berchtold2002mixture">(Berchtold and Raftery 2002)</span>, with their conventions (<code>start = 15</code>, and the elements of <span class="math inline"><em>Q</em></span> estimated as zero excluded from the number of parameters of the BIC), and compares the results with those published in Tables 2 and 3 of the paper.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>readSeries <span class="ot">&lt;-</span> <span class="cf">function</span>(file, column)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read.csv</span>(<span class="fu">system.file</span>(<span class="st">&quot;extdata&quot;</span>, file, <span class="at">package =</span> <span class="st">&quot;markovchain&quot;</span>))[[column]]</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>series <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Koeberg =</span> <span class="fu">readSeries</span>(<span class="st">&quot;koeberg_wind.csv&quot;</span>, <span class="st">&quot;state&quot;</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">seizures =</span> <span class="fu">readSeries</span>(<span class="st">&quot;epileptic_seizures.csv&quot;</span>, <span class="st">&quot;seizure&quot;</span>))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>published <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">series =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Koeberg&quot;</span>, <span class="st">&quot;seizures&quot;</span>), <span class="at">each =</span> <span class="dv">2</span>),</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                        <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">3</span>),</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                        <span class="at">logLik_published =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">393.4</span>, <span class="sc">-</span><span class="fl">393.2</span>, <span class="sc">-</span><span class="fl">119.5</span>, <span class="sc">-</span><span class="fl">117.7</span>),</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                        <span class="at">BIC_published =</span> <span class="fu">c</span>(<span class="fl">859.3</span>, <span class="fl">865.6</span>, <span class="fl">254.7</span>, <span class="fl">256.4</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>fits <span class="ot">&lt;-</span> <span class="fu">Map</span>(<span class="cf">function</span>(s, k) <span class="fu">fitMTD</span>(series[[s]], <span class="at">order =</span> k, <span class="at">start =</span> <span class="dv">15</span>),</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>            published<span class="sc">$</span>series, published<span class="sc">$</span>order)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(fits) <span class="ot">&lt;-</span> <span class="fu">paste</span>(published<span class="sc">$</span>series, published<span class="sc">$</span>order)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>estimated <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(fits, <span class="cf">function</span>(fit) {</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  zeros <span class="ot">&lt;-</span> <span class="fu">sum</span>(fit<span class="sc">$</span>estimate<span class="sc">@</span>transitionMatrix <span class="sc">&lt;</span> <span class="fl">1e-8</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">logLik =</span> fit<span class="sc">$</span>logLikelihood,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">BIC =</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">*</span> fit<span class="sc">$</span>logLikelihood <span class="sc">+</span> (fit<span class="sc">$</span>npar <span class="sc">-</span> zeros) <span class="sc">*</span> <span class="fu">log</span>(fit<span class="sc">$</span>nobs))</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">cbind</span>(published, <span class="fu">round</span>(estimated, <span class="dv">1</span>)), <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    series order logLik_published BIC_published logLik   BIC</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Koeberg     2           -393.4         859.3 -393.4 859.3</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   Koeberg     3           -393.2         865.6 -393.2 865.6</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  seizures     2           -119.5         254.7 -119.5 254.7</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  seizures     3           -117.7         256.4 -117.7 256.4</span></span></code></pre></div>
+</div>
+<p>All the published values are reproduced. For the wind series the BIC selects the MTD(2) model, with 11 parameters, over the first-order chain and over the Markov chains of order two and three, which need up to 39 parameters (see the previous section and Table 2 of the paper). The estimated weights and transition matrix of the MTD(2) model agree with those printed in Section 1.3 of the paper to the third decimal:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fits[[<span class="st">&quot;Koeberg 2&quot;</span>]]<span class="sc">$</span>lambda</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      lag1      lag2 </span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.7568342 0.2431658</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(fits[[<span class="st">&quot;Koeberg 2&quot;</span>]]<span class="sc">$</span>estimate<span class="sc">@</span>transitionMatrix, <span class="dv">4</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;        1      2      3      4</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 0.8307 0.0687 0.0077 0.0930</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 0.0370 0.9011 0.0619 0.0000</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 0.0154 0.1552 0.8071 0.0223</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 0.0779 0.0000 0.0527 0.8694</span></span></code></pre></div>
+</div>
+<p>The weight of the first lag is about three times that of the second: the wind direction depends mostly on the previous hour, but the hour before still adds information, at the cost of a single extra parameter. More general MTD variants (different matrices for each lag, covariates, hidden states) are described in <span class="citation" data-cites="berchtold2002mixture">(Berchtold and Raftery 2002)</span> and are outside the scope of <code>fitMTD</code>.</p>
+<h2 id="prediction-and-simulation">Prediction and simulation</h2>
+<p><code>higherOrderPredict(fit, history)</code> returns the distribution of the next state given the most recent states (oldest first), and <code>higherOrderSimulate(n, fit, t0)</code> draws a sequence from the fitted model, starting from the states in <code>t0</code>. Both accept the output of <code>fitMTD</code> and of <code>fitHigherOrder</code>, and use the same transition probabilities as <code>higherOrderLogLik</code>, so that summing the logarithms of the predicted probabilities of the observed states gives back the log-likelihood.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> fits[[<span class="st">&quot;Koeberg 2&quot;</span>]]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># next direction after two hours from directions 1 and then 2, and after 2 and then 2</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">higherOrderPredict</span>(fit, <span class="fu">rbind</span>(<span class="st">&quot;1 then 2&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="st">&quot;2 then 2&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))), <span class="dv">3</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              1     2     3     4</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 then 2 0.230 0.699 0.049 0.023</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 then 2 0.037 0.901 0.062 0.000</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">higherOrderSimulate</span>(<span class="dv">24</span>, fit, <span class="at">t0 =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1] &quot;2&quot; &quot;2&quot; &quot;2&quot; &quot;2&quot; &quot;3&quot; &quot;3&quot; &quot;3&quot; &quot;2&quot; &quot;2&quot; &quot;2&quot; &quot;3&quot; &quot;3&quot; &quot;3&quot; &quot;3&quot; &quot;3&quot; &quot;2&quot; &quot;2&quot; &quot;2&quot; &quot;2&quot;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [20] &quot;3&quot; &quot;2&quot; &quot;2&quot; &quot;2&quot; &quot;1&quot;</span></span></code></pre></div>
+</div>
+<h1 id="higher-order-multivariate-markov-chains">Higher order multivariate Markov chains</h1>
 <h2 id="introduction">Introduction</h2>
 <p>HOMMC model is used for modeling behaviour of multiple categorical sequences generated by similar sources. The main reference is <span class="citation" data-cites="ching2008higher">(Ching et al. 2008)</span>. Assume that there are s categorical sequences and each has possible states in M. In nth order MMC the state probability distribution of the jth sequence at time <span class="math inline"><em>t</em> = <em>r</em> + 1</span> depend on the state probability distribution of all the sequences (including itself) at times <span class="math inline"><em>t</em> = <em>r</em>, <em>r</em> − 1, ..., <em>r</em> − <em>n</em> + 1</span>.</p>
 <p>[ x_{r+1}^{(j)} = <em>{k=1}<sup>{s}_{h=1}</sup>{n}</em>{jk}<sup>{(h)}P_{h}</sup>{(jk)}x_{r-h+1}^{(k)}, j = 1, 2, …, s, r = n-1, n, … ]</p>
@@ -296,90 +451,90 @@ text-decoration: underline; }
 <p><span class="math inline"><em>P</em><sub><em>h</em></sub><sup>(<em>i</em><em>j</em>)</sup></span> is represented as <span class="math inline"><em>P</em><em>h</em>(<em>i</em>, <em>j</em>)</span> and <span class="math inline"><em>λ</em><sub><em>i</em><em>j</em></sub><sup>(<em>h</em>)</sup></span> as Lambdah(i,j). For example: <span class="math inline"><em>P</em><sub>2</sub><sup>(13)</sup></span> as <span class="math inline"><em>P</em>2(1, 3)</span> and <span class="math inline"><em>λ</em><sub>45</sub><sup>(3)</sup></span> as Lambda3(4,5).</p>
 <h2 id="definition-of-hommc-class">Definition of HOMMC class</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">showClass</span>(<span class="st">&quot;hommc&quot;</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Class &quot;hommc&quot; [package &quot;markovchain&quot;]</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Slots:</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                   </span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Name:      order    states         P    Lambda     byrow      name</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Class:   numeric character     array   numeric   logical character</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">showClass</span>(<span class="st">&quot;hommc&quot;</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Class &quot;hommc&quot; [package &quot;markovchain&quot;]</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Slots:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                                                                   </span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Name:      order    states         P    Lambda     byrow      name</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Class:   numeric character     array   numeric   logical character</span></span></code></pre></div>
 </div>
-<p>Any element of <code>hommc</code> class is comprised by following slots:</p>
+<p>Every <code>hommc</code> object has the following slots:</p>
 <ol type="1">
 <li>states: a character vector, listing the states for which transition probabilities are defined.</li>
 <li>byrow: a logical element, indicating whether transition probabilities are shown by row or by column.</li>
 <li>order: order of Multivariate Markov chain.</li>
 <li>P: an array of all transition matrices.</li>
-<li>Lambda: a vector to store the weightage of each transition matrix.</li>
-<li>name: optional character element to name the HOMMC</li>
+<li>Lambda: a vector storing the weight of each transition matrix.</li>
+<li>name: optional character element to name the HOMMC.</li>
 </ol>
 <h2 id="how-to-create-an-object-of-class-hommc">How to create an object of class HOMMC</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>states <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="at">dim =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="at">dimnames =</span> <span class="fu">list</span>(states, states))</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>Lambda <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">8</span>, .<span class="dv">2</span>, .<span class="dv">3</span>, .<span class="dv">7</span>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>hob <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;hommc&quot;</span>, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">Lambda =</span> Lambda, <span class="at">P =</span> P, <span class="at">states =</span> states, </span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">name =</span> <span class="st">&quot;FOMMC&quot;</span>)</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>hob</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Order of multivariate markov chain = 1 </span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; states = a b </span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; List of Lambda&#39;s and the corresponding transition matrix (by cols) :</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(1,1) : 0.8</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(1,1) : </span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;           a b</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.3333333 1</span></span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.6666667 0</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(1,2) : 0.2</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(1,2) : </span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   a b</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0 1</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 1 0</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(2,1) : 0.3</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(2,1) : </span></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;           a b</span></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.6666667 0</span></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.3333333 1</span></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(2,2) : 0.7</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(2,2) : </span></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     a   b</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.5 0.5</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.5 0.5</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>states <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;a&#39;</span>, <span class="st">&#39;b&#39;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="at">dim =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">4</span>), <span class="at">dimnames =</span> <span class="fu">list</span>(states, states))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>P[ , , <span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>), <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>Lambda <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">8</span>, .<span class="dv">2</span>, .<span class="dv">3</span>, .<span class="dv">7</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>hob <span class="ot">&lt;-</span> <span class="fu">new</span>(<span class="st">&quot;hommc&quot;</span>, <span class="at">order =</span> <span class="dv">1</span>, <span class="at">Lambda =</span> Lambda, <span class="at">P =</span> P, <span class="at">states =</span> states, </span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">byrow =</span> <span class="cn">FALSE</span>, <span class="at">name =</span> <span class="st">&quot;FOMMC&quot;</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>hob</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Order of multivariate markov chain = 1 </span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; states = a b </span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; List of Lambda&#39;s and the corresponding transition matrix (by cols) :</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(1,1) : 0.8</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(1,1) : </span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;           a b</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.3333333 1</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.6666667 0</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(1,2) : 0.2</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(1,2) : </span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   a b</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0 1</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 1 0</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(2,1) : 0.3</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(2,1) : </span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;           a b</span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.6666667 0</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.3333333 1</span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Lambda1(2,2) : 0.7</span></span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; P1(2,2) : </span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     a   b</span></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; a 0.5 0.5</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; b 0.5 0.5</span></span></code></pre></div>
 </div>
 <h2 id="fit-hommc">Fit HOMMC</h2>
-<p><code>fitHighOrderMultivarMC</code> method is available to fit HOMMC. Below are the 3 parameters of this method.</p>
+<p>The <code>fitHighOrderMultivarMC</code> function fits a HOMMC. It takes three arguments:</p>
 <ol type="1">
 <li>seqMat: a character matrix or a data frame, each column represents a categorical sequence.</li>
 <li>order: order of Multivariate Markov chain. Default is 2.</li>
 <li>Norm: Norm to be used. Default is 2.</li>
 </ol>
-<h1 id="a-marketing-example">A Marketing Example</h1>
-<p>We tried to replicate the example found in <span class="citation" data-cites="ching2008higher">(Ching et al. 2008)</span> for an application of HOMMC. A soft-drink company in Hong Kong is facing an in-house problem of production planning and inventory control. A pressing issue is the storage space of its central warehouse, which often finds itself in the state of overflow or near capacity. The company is thus in urgent needs to study the interplay between the storage space requirement and the overall growing sales demand. The product can be classified into six possible states (1, 2, 3, 4, 5, 6) according to their sales volumes. All products are labeled as 1 = no sales volume, 2 = very slow-moving (very low sales volume), 3 = slow-moving, 4 = standard, 5 = fast-moving or 6 = very fast-moving (very high sales volume). Such labels are useful from both marketing and production planning points of view. The data is cointaind in <code>sales</code> object.</p>
+<h2 id="a-marketing-example">A marketing example</h2>
+<p>We replicate the example found in <span class="citation" data-cites="ching2008higher">(Ching et al. 2008)</span> for an application of HOMMC. A soft-drink company in Hong Kong is facing an in-house problem of production planning and inventory control. A pressing issue is the storage space of its central warehouse, which often finds itself in the state of overflow or near capacity. The company is thus in urgent needs to study the interplay between the storage space requirement and the overall growing sales demand. The product can be classified into six possible states (1, 2, 3, 4, 5, 6) according to their sales volumes. All products are labeled as 1 = no sales volume, 2 = very slow-moving (very low sales volume), 3 = slow-moving, 4 = standard, 5 = fast-moving or 6 = very fast-moving (very high sales volume). Such labels are useful from both marketing and production planning points of view. The data are contained in the <code>sales</code> object.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(sales)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sales)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      A   B   C   D   E  </span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;6&quot; &quot;6&quot;</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] &quot;6&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] &quot;6&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] &quot;2&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [6,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;3&quot; &quot;3&quot;</span></span></code></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(sales)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sales)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      A   B   C   D   E  </span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;6&quot; &quot;6&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] &quot;6&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] &quot;6&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] &quot;2&quot; &quot;6&quot; &quot;6&quot; &quot;2&quot; &quot;2&quot;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [6,] &quot;6&quot; &quot;1&quot; &quot;6&quot; &quot;3&quot; &quot;3&quot;</span></span></code></pre></div>
 </div>
-<p>The company would also like to predict sales demand for an important customer in order to minimize its inventory build-up. More importantly, the company can understand the sales pattern of this customer and then develop a marketing strategy to deal with this customer. Customer’s sales demand sequences of five important products of the company for a year. We expect sales demand sequences generated by the same customer to be correlated to each other. Therefore by exploring these relationships, one can obtain a better higher-order multivariate Markov model for such demand sequences, hence obtain better prediction rules.</p>
-<p>In <span class="citation" data-cites="ching2008higher">(Ching et al. 2008)</span> application, they choose the order arbitrarily to be eight, i.e., n = 8. We first estimate all the transition probability matrices <span class="math inline"><em>P</em><sub><em>h</em></sub><sup><em>i</em><em>j</em></sup></span> and we also have the estimates of the stationary probability distributions of the five products:.</p>
+<p>The company would also like to predict sales demand for an important customer in order to minimize its inventory build-up. More importantly, the company can understand the sales pattern of this customer and then develop a marketing strategy to deal with this customer. The data are the sales demand sequences, for a year, of five important products of the company for this customer. We expect the sales demand sequences generated by the same customer to be correlated with each other. By exploring these relationships, one can obtain a better higher-order multivariate Markov model for such demand sequences, and hence better prediction rules.</p>
+<p>In the application of <span class="citation" data-cites="ching2008higher">(Ching et al. 2008)</span> the order is arbitrarily set to eight, i.e., <span class="math inline"><em>n</em> = 8</span>. We first estimate all the transition probability matrices <span class="math inline"><em>P</em><sub><em>h</em></sub><sup>(<em>i</em><em>j</em>)</sup></span>; the estimates of the stationary probability distributions of the five products are:</p>
 <p><span class="math inline">$\widehat{\boldsymbol{x}}^{(1)} = \begin{pmatrix}
 0.0818&amp;  0.4052&amp;  0.0483&amp;  0.0335&amp; 0.0037&amp; 0.4275
 \end{pmatrix}^{\boldsymbol{T}}$</span></p>
@@ -401,25 +556,57 @@ text-decoration: underline; }
 <p><span class="math inline"><strong>x</strong><sub><em>r</em> + 1</sub><sup>(3)</sup> = <strong>P</strong><sub>1</sub><sup>(35)</sup><strong>x</strong><sub><em>r</em></sub><sup>(5)</sup></span></p>
 <p><span class="math inline"><strong>x</strong><sub><em>r</em> + 1</sub><sup>(4)</sup> = 0.2994<strong>P</strong><sub>8</sub><sup>(42)</sup><strong>x</strong><sub><em>r</em></sub><sup>(2)</sup> + 0.4324<strong>P</strong><sub>1</sub><sup>(45)</sup><strong>x</strong><sub><em>r</em></sub><sup>(5)</sup> + 0.2681<strong>P</strong><sub>2</sub><sup>(45)</sup><strong>x</strong><sub><em>r</em></sub><sup>(5)</sup></span></p>
 <p><span class="math inline"><strong>x</strong><sub><em>r</em> + 1</sub><sup>(5)</sup> = 0.2718<strong>P</strong><sub>8</sub><sup>(52)</sup><strong>x</strong><sub><em>r</em></sub><sup>(2)</sup> + 0.6738<strong>P</strong><sub>1</sub><sup>(54)</sup><strong>x</strong><sub><em>r</em></sub><sup>(4)</sup> + 0.0544<strong>P</strong><sub>2</sub><sup>(55)</sup><strong>x</strong><sub><em>r</em></sub><sup>(5)</sup></span></p>
-<p>According to the constructed 8th order multivariate Markov model, Products A and B are closely related. In particular, the sales demand of Product A depends strongly on Product B. The main reason is that the chemical nature of Products A and B is the same, but they have different packaging for marketing purposes. Moreover, Products B, C, D and E are closely related. Similarly, products C and E have the same product flavor, but different packaging. In this model, it is interesting to note that both Product D and E quite depend on Product B at order of 8, this relationship is hardly to be obtained in conventional Markov model owing to huge amount of parameters. The results show that higher-order multivariate Markov model is quite significant to analyze the relationship of sales demand.</p>
+<p>According to the constructed 8th order multivariate Markov model, Products A and B are closely related. In particular, the sales demand of Product A depends strongly on Product B. The main reason is that the chemical nature of Products A and B is the same, but they have different packaging for marketing purposes. Moreover, Products B, C, D and E are closely related. Similarly, products C and E have the same product flavor, but different packaging. In this model, it is interesting to note that both Product D and E quite depend on Product B at order of 8, this relationship can hardly be obtained with a conventional Markov model, owing to the huge number of parameters. The results show that higher-order multivariate Markov model is quite significant to analyze the relationship of sales demand.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># fit 8th order multivariate markov chain</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;Rsolnp&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>object <span class="ot">&lt;-</span> <span class="fu">fitHighOrderMultivarMC</span>(sales, <span class="at">order =</span> <span class="dv">8</span>, <span class="at">Norm =</span> <span class="dv">2</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># fit 8th order multivariate markov chain</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;Rsolnp&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>object <span class="ot">&lt;-</span> <span class="fu">fitHighOrderMultivarMC</span>(sales, <span class="at">order =</span> <span class="dv">8</span>, <span class="at">Norm =</span> <span class="dv">2</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <p>We choose to show only results shown in the paper. We see that <span class="math inline"><em>λ</em></span> values are quite close, but not equal, to those shown in the original paper.</p>
-<h2 id="references">References</h2>
+<h1 id="acknowledgments">Acknowledgments</h1>
+<p>We are grateful to Professors Adrian E. Raftery and André Berchtold for kindly sharing the Koeberg wind-direction and epileptic-seizure series of <span class="citation" data-cites="berchtold2002mixture">(Berchtold and Raftery 2002)</span>, which made it possible to check <code>higherOrderLogLik</code> and <code>fitMTD</code> against the published results.</p>
+<h1 id="references">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-anderson1957statistical" class="csl-entry" role="listitem">
+Anderson, Theodore W, and Leo A Goodman. 1957. <span>“Statistical Inference about Markov Chains.”</span> <em>The Annals of Mathematical Statistics</em>, 89–110.
+</div>
+<div id="ref-berchtold2001estimation" class="csl-entry" role="listitem">
+Berchtold, André. 2001. <span>“Estimation in the Mixture Transition Distribution Model.”</span> <em>Journal of Time Series Analysis</em> 22 (4): 379–97.
+</div>
+<div id="ref-berchtold2002mixture" class="csl-entry" role="listitem">
+Berchtold, André, and Adrian E. Raftery. 2002. <span>“The Mixture Transition Distribution Model for High-Order <span>M</span>arkov Chains and Non-<span>G</span>aussian Time Series.”</span> <em>Statistical Science</em> 17 (3): 328–56.
+</div>
 <div id="ref-ching2013higher" class="csl-entry" role="listitem">
 Ching, Wai-Ki, Ximin Huang, Michael K Ng, and Tak-Kuen Siu. 2013. <span>“Higher-Order Markov Chains.”</span> In <em>Markov Chains</em>. Springer.
 </div>
 <div id="ref-ching2008higher" class="csl-entry" role="listitem">
 Ching, Wai-Ki, Michael K Ng, and Eric S Fung. 2008. <span>“Higher-Order Multivariate Markov Chains and Their Applications.”</span> <em>Linear Algebra and Its Applications</em> 428 (2): 492–507.
 </div>
+<div id="ref-csiszar2000consistency" class="csl-entry" role="listitem">
+Csiszár, Imre, and Paul C. Shields. 2000. <span>“The Consistency of the <span>BIC</span> <span>M</span>arkov Order Estimator.”</span> <em>The Annals of Statistics</em> 28 (6): 1601–19.
+</div>
 <div id="ref-pkg:Rsolnp" class="csl-entry" role="listitem">
 Ghalanos, Alexios, and Stefan Theussl. 2014. <em>Rsolnp: General Non-Linear Optimization Using Augmented Lagrange Multiplier Method</em>.
+</div>
+<div id="ref-katz1981some" class="csl-entry" role="listitem">
+Katz, Richard W. 1981. <span>“On Some Criteria for Estimating the Order of a <span>M</span>arkov Chain.”</span> <em>Technometrics</em> 23 (3): 243–49.
+</div>
+<div id="ref-lebre2008em" class="csl-entry" role="listitem">
+Lèbre, Sophie, and Pierre-Yves Bourguignon. 2008. <span>“An <span>EM</span> Algorithm for Estimation in the Mixture Transition Distribution Model.”</span> <em>Journal of Statistical Computation and Simulation</em> 78 (1): 1–15. <a href="https://doi.org/10.1080/00949650701266666">https://doi.org/10.1080/00949650701266666</a>.
+</div>
+<div id="ref-macdonald1997hidden" class="csl-entry" role="listitem">
+MacDonald, Iain L., and Walter Zucchini. 1997. <em>Hidden <span>M</span>arkov and Other Models for Discrete-Valued Time Series</em>. Chapman &amp; Hall.
+</div>
+<div id="ref-averyHenderson" class="csl-entry" role="listitem">
+P. J. Avery, and D. A. Henderson. 1999. <span>“Fitting Markov Chain Models to Discrete State Series.”</span> <em>Applied Statistics</em> 48 (1): 53–61.
+</div>
+<div id="ref-raftery1985model" class="csl-entry" role="listitem">
+Raftery, Adrian E. 1985. <span>“A Model for High-Order <span>M</span>arkov Chains.”</span> <em>Journal of the Royal Statistical Society, Series B</em> 47 (3): 528–39.
+</div>
+<div id="ref-tong1975determination" class="csl-entry" role="listitem">
+Tong, Howell. 1975. <span>“Determination of the Order of a <span>M</span>arkov Chain by <span>A</span>kaike’s Information Criterion.”</span> <em>Journal of Applied Probability</em> 12 (3): 488–97.
 </div>
 </div>
 

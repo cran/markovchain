@@ -5,6 +5,9 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppParallel.h>
 #include <ctime>
+#include <random>
+#include <cstdint>
+#include <unordered_map>
 #include <RcppArmadilloExtensions/sample.h>
 
 using namespace Rcpp;
@@ -17,6 +20,66 @@ using namespace std;
 #include <math.h>
 #include <armadillo>
 
+// --- Thread-safe sampling helpers used by the RcppParallel workers -----------
+//
+// R's RNG (R::unif_rand and the global .Random.seed) is not reentrant and
+// MUST NOT be touched from a worker thread; RcppArmadillo's sample() calls
+// it internally, so it cannot be used from a Worker either. We instead seed
+// a per-sub-range std::mt19937_64 from a 64-bit seed drawn once in the main
+// thread (inside an RNGScope, so set.seed() still controls it). This
+// preserves reproducibility conditional on set.seed(), the sub-range split
+// and the thread count, and removes the data race on .Random.seed.
+static inline uint64_t _mc_draw_seed() {
+  // Mix two 32-bit draws through SplitMix64 so a 0 draw does not collapse
+  // the state. Called only on the main thread inside an RNGScope.
+  uint64_t a = static_cast<uint64_t>(R::unif_rand() * 4294967295.0);
+  uint64_t b = static_cast<uint64_t>(R::unif_rand() * 4294967295.0);
+  uint64_t s = (a << 32) ^ b;
+  s += 0x9E3779B97F4A7C15ULL;
+  s = (s ^ (s >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  s = (s ^ (s >> 27)) * 0x94D049BB133111EBULL;
+  s = s ^ (s >> 31);
+  return s;
+}
+
+// Deterministically derive a per-SEQUENCE seed from the Worker's base seed
+// and the sequence index. Seeding per sequence (not per sub-range) is
+// essential for reproducibility: TBB may split the input range differently
+// across runs even with the same thread count, so a seed indexed by the
+// sub-range's begin would make set.seed() produce run-dependent output.
+// With a per-sequence index, the same `p` always maps to the same seed and
+// therefore to the same generated sequence, regardless of how TBB packed
+// it with its neighbours. SplitMix64 avalanche keeps consecutive indices
+// well-separated. Reinitialising a std::mt19937_64 per sequence costs
+// ~a few hundred ns and is negligible against the per-step work.
+static inline uint64_t _mc_mix_seed(uint64_t base, std::size_t index) {
+  uint64_t x = base ^ (static_cast<uint64_t>(index) * 0x9E3779B97F4A7C15ULL);
+  x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+  return x ^ (x >> 31);
+}
+
+// Weighted sample of one index in [0, n) given non-negative weights.
+// Does not require the weights to sum to 1; the total mass is computed
+// on the fly. Returns 0 when the total mass is non-positive, matching
+// the convention of the arma::sample() fallbacks on degenerate rows.
+// O(n), no allocation.
+static inline unsigned int _mc_sample_weighted(const arma::vec& w,
+                                               std::mt19937_64& rng) {
+  double tot = 0.0;
+  const unsigned int n = static_cast<unsigned int>(w.size());
+  for (unsigned int i = 0; i < n; ++i) tot += w[i];
+  if (!(tot > 0.0)) return 0u;
+  std::uniform_real_distribution<double> U(0.0, 1.0);
+  double u = U(rng) * tot;
+  double cum = 0.0;
+  for (unsigned int i = 0; i < n; ++i) {
+    cum += w[i];
+    if (u <= cum) return i;
+  }
+  return n - 1u;
+}
+
 // [[Rcpp::export(.markovchainSequenceRcpp)]]
 CharacterVector markovchainSequenceRcpp(int n, S4 markovchain, CharacterVector t0,
                                         bool include_t0 = false) {
@@ -28,6 +91,9 @@ CharacterVector markovchainSequenceRcpp(int n, S4 markovchain, CharacterVector t
   
   // transition mastrix
   NumericMatrix transitionMatrix = markovchain.slot("transitionMatrix");
+  
+  // storage orientation: rows (default) or columns hold the outgoing probabilities
+  bool byrow = markovchain.slot("byrow");
   
   // possible states
   CharacterVector states = markovchain.slot("states");
@@ -57,7 +123,7 @@ CharacterVector markovchainSequenceRcpp(int n, S4 markovchain, CharacterVector t
     }
     
     for (int j = 0; j < states.size(); j++) {
-      rowProbs[j] = transitionMatrix(row_no, j);
+      rowProbs[j] = byrow ? transitionMatrix(row_no, j) : transitionMatrix(j, row_no);
     }
     
     // calculate next state
@@ -192,131 +258,128 @@ List markovchainListRcpp(int n, List object, bool include_t0 = false, CharacterV
 }
 
 struct MCList : public Worker
-{   
-  // 3-D matrix where each slice is a transition matrix
-  const arma::cube mat;
-  
+{
+  // 3-D matrix of transition matrices, stored row-stochastic (the caller
+  // transposes column-stochastic chains before populating the cube; see the
+  // byrow handling in the wrapper below). Held by reference: read-only,
+  // shared across threads, and copying the whole cube per Split would waste
+  // O(max_dim^2 * num_mat) per worker on large inputs.
+  const arma::cube& mat;
+
   // number of transition matrices
   const int num_mat;
-  
-  // matrix where ith row vector store the list of states 
-  // names present in ith transition matrix 
-  const vector<vector<string> > names;
-  
-  // vector whose ith element store the dimension of ith
-  // transition matrix
-  const vector<int> size_emat;
-  
-  // whether to include first state
+
+  // state names per transition matrix (shared, read-only)
+  const vector<vector<string> >& names;
+
+  // name -> row index map per transition matrix (precomputed once in the
+  // main thread). Replaces the per-step O(n) linear search over state
+  // names with an O(1) hash lookup.
+  const vector<unordered_map<string, unsigned int> >& name_to_idx;
+
+  // dimension of each transition matrix
+  const vector<int>& size_emat;
+
+  // whether to include first state in each generated sequence
   const bool include_t0;
-  
+
   // info about initial state
-  const bool init; // whether initial state is passed to the method
-  const string init_state; // if yes what's the name
-  
-  // each element of list is a sequence
-  list<vector<string> > output;
-  
+  const bool init;
+  const string init_state;
+
+  // base seed for the per-sub-range PRNGs; drawn once in the main thread.
+  const uint64_t base_seed;
+
+  // Each element is one generated sequence, tagged with its sequence index
+  // p so the caller can restore the input order after parallelReduce (TBB
+  // joins sub-ranges in a non-deterministic order). std::vector + reserve
+  // beats the previous std::list for append-only workloads: contiguous
+  // storage, amortised allocation, cheap bulk join().
+  vector<pair<size_t, vector<string> > > output;
+
   // constructor for initialization
-  MCList(const arma::cube &pmat, const int &pnum_mat,
-         const vector<vector<string> > &pnames, 
-         const vector<int> psize_emat, const bool &pinclude_t0,
-         const bool &pinit, const string &pinit_state) : 
-    mat(pmat), num_mat(pnum_mat), names(pnames), size_emat(psize_emat),
-    include_t0(pinclude_t0), init(pinit), init_state(pinit_state) {}
-  
-  
-  MCList(const MCList& mclist, Split) : 
+  MCList(const arma::cube& pmat, int pnum_mat,
+         const vector<vector<string> >& pnames,
+         const vector<unordered_map<string, unsigned int> >& pname_to_idx,
+         const vector<int>& psize_emat, bool pinclude_t0,
+         bool pinit, const string& pinit_state, uint64_t pbase_seed) :
+    mat(pmat), num_mat(pnum_mat), names(pnames), name_to_idx(pname_to_idx),
+    size_emat(psize_emat), include_t0(pinclude_t0), init(pinit),
+    init_state(pinit_state), base_seed(pbase_seed) {}
+
+  MCList(const MCList& mclist, Split) :
     mat(mclist.mat), num_mat(mclist.num_mat), names(mclist.names),
-    size_emat(mclist.size_emat), include_t0(mclist.include_t0),
-    init(mclist.init), init_state(mclist.init_state) {}
-  
+    name_to_idx(mclist.name_to_idx), size_emat(mclist.size_emat),
+    include_t0(mclist.include_t0), init(mclist.init),
+    init_state(mclist.init_state), base_seed(mclist.base_seed) {}
+
   void operator()(std::size_t begin, std::size_t end) {
-    
-    // to take care of include_t0
-    unsigned int ci = 0;
-    if (include_t0) ci = 1;
-    
-    // to store single sequence generated each time
-    vector<string> temp(num_mat+ci);
-    
-    // initial probability and states indices
-    arma::vec in_probs(size_emat[0]);
-    arma::vec in_states(size_emat[0]);
-    
-    // assume equal chances of selection of states for the first time
-    for (unsigned int i = 0; i < in_probs.size(); i++) {
-      in_probs[i] = 1.0 / size_emat[0];
-      in_states[i] = i;
-    }
-    
-    // to store the index of the state selected
-    arma::vec istate;
-    string t0;
-    
-    // every time generate one sequence
-    for (unsigned int p = begin; p < end; p++) {
-      
-      if (not init) {
-        
-        // randomly selected state
-        istate = sample(in_states, 1, false, in_probs);
-        t0 = names[0][istate[0]];  
-      }
-      
-      else {
+
+    const unsigned int ci = include_t0 ? 1u : 0u;
+
+    // Row buffer reused across every step; sized to the largest chain.
+    unsigned int max_dim = 0;
+    for (int i = 0; i < num_mat; ++i)
+      if (static_cast<unsigned int>(size_emat[i]) > max_dim)
+        max_dim = static_cast<unsigned int>(size_emat[i]);
+    arma::vec probs_buf(max_dim);
+
+    // Reserve the sequence buffer and the local output once per sub-range.
+    vector<string> temp(num_mat + ci);
+    output.reserve(output.size() + (end - begin));
+
+    for (std::size_t p = begin; p < end; ++p) {
+
+      // Per-sequence PRNG. The seed depends only on base_seed and p, so
+      // sequence #p is reproducible regardless of how TBB packed it into a
+      // sub-range -- replaces arma::sample(), which touches R's RNG and is
+      // not reentrant (see _mc_sample_weighted docs).
+      std::mt19937_64 rng(_mc_mix_seed(base_seed, p));
+
+      string t0;
+      if (!init) {
+        // Uniform over the first chain's states (matches the previous
+        // behaviour: equal in_probs on size_emat[0]).
+        std::uniform_int_distribution<unsigned int> U(
+            0u, static_cast<unsigned int>(size_emat[0]) - 1u);
+        t0 = names[0][U(rng)];
+      } else {
         t0 = init_state;
       }
-      
-      // include the state in the sequence
+
       if (include_t0) temp[0] = t0;
-      
-      // to generate one sequence
-      for (unsigned int i = 0; i < (unsigned int)num_mat; i++) {
-        
-        // useful for generating rows probabilty vector
-        unsigned int j = 0;
-        for (j = 0; j < (unsigned int)size_emat[i]; j++) {
-          if (names[i][j] == t0) break;
+
+      for (unsigned int i = 0; i < static_cast<unsigned int>(num_mat); ++i) {
+        const unsigned int n_i = static_cast<unsigned int>(size_emat[i]);
+
+        // O(1) lookup of the current state's row index in the i-th chain.
+        unsigned int j;
+        {
+          auto it = name_to_idx[i].find(t0);
+          // When the state is missing from this chain (checkSequenceRcpp
+          // already warns the caller), fall back to row 0 instead of
+          // reading past the end -- matches the pre-existing behaviour of
+          // the linear search, which left j == size_emat[i] in that case.
+          j = (it == name_to_idx[i].end()) ? 0u : it->second;
         }
-        
-        // vector to be passed to sample method
-        arma::vec probs(size_emat[i]);
-        arma::vec states(size_emat[i]);
-        
-        for (unsigned int k=0; k < probs.size(); k++) {
-          probs[k] = mat(j, k, i);
-          states[k] = k;
-        }
-        
-        
-        // new state selected
-        arma::vec elmt = sample(states, 1, false, probs);
-        t0 = names[i][elmt[0]];
-        
-        // populate sequence
-        temp[i+ci] = t0;
-        
+
+        arma::vec probs_view(probs_buf.memptr(), n_i, false, true);
+        for (unsigned int k = 0; k < n_i; ++k) probs_view[k] = mat(j, k, i);
+
+        const unsigned int next_idx = _mc_sample_weighted(probs_view, rng);
+        t0 = names[i][next_idx];
+        temp[i + ci] = t0;
       }
-      
-      // insert one sequence to the output
-      output.push_back(temp);  
+
+      output.emplace_back(p, temp);
     }
-    
   }
-  
-  void join(const MCList& rhs) { 
-    
-    // constant iterator to the first element of rhs.output  
-    list<vector<string> >::const_iterator it = rhs.output.begin();
-    
-    // merge the result of two parallel computation
-    for (;it != rhs.output.end();it++) {
-      output.push_back(*it);
-    }
-    
+
+  void join(const MCList& rhs) {
+    // std::vector::insert is O(k) with amortised allocation; much faster
+    // than copying one element at a time out of a std::list.
+    output.insert(output.end(), rhs.output.begin(), rhs.output.end());
   }
-  
 };
 
 
@@ -388,6 +451,10 @@ List markovchainSequenceParallelRcpp(S4 listObject, int n, bool include_t0 = fal
     // list of states in ith markovchain object
     states = ob.slot("states");
     
+    // a chain without states cannot be simulated, and would make the worker
+    // index into empty vectors
+    if (states.size() < 1) stop("every markovchain in the list must have at least one state");
+
     // keep track of maximun dimension
     if (states.size() > max_dim_mat) max_dim_mat = states.size();
     
@@ -397,52 +464,88 @@ List markovchainSequenceParallelRcpp(S4 listObject, int n, bool include_t0 = fal
   
   // Matrix with ith row store the states in ith t-matrix
   vector<vector<string> > names(num_matrix, vector<string>(max_dim_mat));
-  
-  // to store all t-matrix
+
+  // Transition matrices stacked as a cube. We always store the row-stochastic
+  // orientation here, regardless of each chain's byrow slot, so that the
+  // worker can read probabilities as mat(current_state, next_state, i).
   arma::cube mat(max_dim_mat, max_dim_mat, num_matrix);
   mat.fill(0);
-  
+
+  // Precompute name -> row index maps for O(1) lookup inside the worker.
+  vector<unordered_map<string, unsigned int> > name_to_idx(num_matrix);
+
   for (int i = 0; i < num_matrix;i++) {
-    
+
     // ith markovchain object
     S4  ob = object[i];
-    
-    // t-matrix and states names
-    NumericMatrix tmat = ob.slot("transitionMatrix"); 
+
+    // t-matrix, states and storage orientation
+    NumericMatrix tmat = ob.slot("transitionMatrix");
     CharacterVector stat_names = ob.slot("states");
-    
-    // populate 3-D matrix
-    for (int j = 0;j < tmat.nrow();j++) {
-      for (int k = 0; k < tmat.ncol();k++) {
-        
-        mat(j, k, i) = tmat(j, k);
-        
+    const bool byrow_i = as<bool>(ob.slot("byrow"));
+
+    // Rcpp's operator[] and operator() are not bounds checked: make sure the
+    // matrix is square and agrees with the state names before indexing it.
+    if (tmat.nrow() != tmat.ncol() || tmat.nrow() != stat_names.size())
+      stop("the transition matrix and the states of every markovchain in the list must have consistent dimensions");
+
+    name_to_idx[i].reserve(static_cast<size_t>(tmat.nrow()) * 2u);
+
+    // Populate the i-th slice of the cube row-stochastic. For byrow = FALSE
+    // (column-stochastic storage) we transpose on read: previously the
+    // parallel path copied tmat(j, k) verbatim and so simulated the
+    // transposed chain, as in the single-threaded path before #148 was
+    // extended to markovchainSequenceRcpp.
+    for (int j = 0; j < tmat.nrow(); ++j) {
+      for (int k = 0; k < tmat.ncol(); ++k) {
+        mat(j, k, i) = byrow_i ? tmat(j, k) : tmat(k, j);
       }
-      
-      // populate names of states
-      names[i][j] = stat_names[j];
+      // populate names of states and the lookup map
+      const string nm = as<string>(stat_names[j]);
+      names[i][j] = nm;
+      name_to_idx[i].emplace(nm, static_cast<unsigned int>(j));
     }
-    
   }
-  
+
   // initial state is passed or not
   bool init = false;
   string ini_state;
-  
+
   if (init_state.size() != 0) {
     init = true;
     ini_state = as<string>(init_state[0]);
   }
-  
+
+  // Draw the base seed on the main thread, inside an RNGScope, so that
+  // set.seed() still controls reproducibility. Workers must never touch
+  // R's RNG state themselves (see _mc_sample_weighted docs).
+  uint64_t base_seed;
+  {
+    RNGScope scope;
+    base_seed = _mc_draw_seed();
+  }
+
   // create an object of MCList class
-  MCList mcList(mat, num_matrix, names, size_emat, include_t0, init, ini_state);
-  
+  MCList mcList(mat, num_matrix, names, name_to_idx, size_emat,
+                include_t0, init, ini_state, base_seed);
+
   // start parallel computation
   parallelReduce(0, n, mcList);
-  
-  // list of sequences  
-  return wrap(mcList.output);
-  
+
+  // Restore the input order so that set.seed() produces an identical list
+  // across runs (TBB joins sub-ranges in a non-deterministic order).
+  std::sort(mcList.output.begin(), mcList.output.end(),
+            [](const pair<size_t, vector<string> >& a,
+               const pair<size_t, vector<string> >& b) {
+              return a.first < b.first;
+            });
+
+  List out(mcList.output.size());
+  for (size_t i = 0; i < mcList.output.size(); ++i) {
+    out[i] = mcList.output[i].second;
+  }
+  return out;
+
 }
 
 
@@ -480,10 +583,11 @@ NumericMatrix _toRowProbs(NumericMatrix x, bool sanitize = false) {
 }
 
 // Create a frequency matrix
-//' @rdname markovchainFit
-//' 
-//' @export
-// [[Rcpp::export]]
+//
+// The user-facing createSequenceMatrix() is the R wrapper in
+// R/fittingFunctions.R, which also implements sanitize = "absorbing"; this
+// routine only knows the historical logical behaviour.
+// [[Rcpp::export(.createSequenceMatrixRcpp)]]
 NumericMatrix createSequenceMatrix(SEXP stringchar, bool toRowProbs = false, bool sanitize = false,
                                    CharacterVector possibleStates = CharacterVector()) {
   
@@ -807,22 +911,47 @@ List _mcFitMle(SEXP data, bool byrow, double confidencelevel, bool sanitize = fa
   // create markov chain object
   S4 outMc("markovchain");
   outMc.slot("transitionMatrix") = initialMatr;
-  
-  outMc.slot("name") = "MLE Fit";  
-  
+
+  // The byrow slot must record the orientation the matrix was actually
+  // stored in just above. Leaving it at its TRUE default while storing a
+  // transposed (column-stochastic) matrix produces an object that fails
+  // validObject() and that every method reading the slot -- steadyStates(),
+  // is.irreducible(), and so on -- silently misinterprets.
+  outMc.slot("byrow") = byrow;
+
+  outMc.slot("name") = "MLE Fit";
+
   List CI = generateCI(confidencelevel, freqMatr);
-  
+  NumericMatrix standardError = CI["standardError"];
+  NumericMatrix lowerEndpointMatr = CI["lowerEndpointMatrix"];
+  NumericMatrix upperEndpointMatr = CI["upperEndpointMatrix"];
+
+  // generateCI() works on the row-oriented frequency matrix, so its output
+  // has to follow the estimate into column-stochastic orientation as well;
+  // otherwise entry (i,j) of the estimate and entry (i,j) of its standard
+  // error would refer to two different transitions.
+  if (byrow == false) {
+    standardError = transposeMatrix(standardError);
+    lowerEndpointMatr = transposeMatrix(lowerEndpointMatr);
+    upperEndpointMatr = transposeMatrix(upperEndpointMatr);
+  }
+
   // return a list of important results
   return List::create(_["estimate"] = outMc,
-                      _["standardError"] = CI[0],
-                      _["confidenceLevel"] = CI[1],
-                      _["lowerEndpointMatrix"] = CI[2],
-                      _["upperEndpointMatrix"] = CI[3]
+                      _["standardError"] = standardError,
+                      _["confidenceLevel"] = CI["confidenceLevel"],
+                      _["lowerEndpointMatrix"] = lowerEndpointMatr,
+                      _["upperEndpointMatrix"] = upperEndpointMatr
                       );
 }
 
 // Fit DTMC using Laplacian smooth
-List _mcFitLaplacianSmooth(CharacterVector stringchar, bool byrow, double laplacian = 0.01, bool sanitize = false,
+// stringchar is taken as SEXP rather than CharacterVector so that a list of
+// sequences is accepted as well as a single one: createSequenceMatrix() below
+// already pools transition counts over a list, and Laplacian smoothing of
+// those pooled counts is the same operation regardless of how many sequences
+// they came from.
+List _mcFitLaplacianSmooth(SEXP stringchar, bool byrow, double laplacian = 0.01, bool sanitize = false,
                            CharacterVector possibleStates = CharacterVector()) {
   
   if (laplacian < 0)
@@ -862,14 +991,51 @@ List _mcFitLaplacianSmooth(CharacterVector stringchar, bool byrow, double laplac
   // create markovchain object
   S4 outMc("markovchain");
   outMc.slot("transitionMatrix") = origNum;
-  outMc.slot("name") = "Laplacian Smooth Fit";  
+  // See the note in _mcFitMle: the slot has to match the orientation the
+  // matrix was just stored in, or the returned object is invalid.
+  outMc.slot("byrow") = byrow;
+  outMc.slot("name") = "Laplacian Smooth Fit";
 
   return List::create(_["estimate"] = outMc);
 }
 
 // bootstrap a sequence to produce a list of sample sequences
+// Optional text progress bar for the bootstrap, drawn with utils::txtProgressBar
+// (style 3) so that it looks like any other progress bar in R. It calls R, so
+// it must only be updated from the main thread, never from RcppParallel workers.
+// Each update also lets the user interrupt the computation.
+class BootstrapProgress {
+  bool active;
+  RObject bar;
+public:
+  BootstrapProgress(bool show, int total) : active(show && total > 0) {
+    if (active) {
+      Environment utils = Environment::namespace_env("utils");
+      Function txtProgressBar = utils["txtProgressBar"];
+      bar = txtProgressBar(_["min"] = 0, _["max"] = total, _["style"] = 3);
+    }
+  }
+  void update(int value) {
+    Rcpp::checkUserInterrupt();
+    if (active) {
+      Environment utils = Environment::namespace_env("utils");
+      Function setTxtProgressBar = utils["setTxtProgressBar"];
+      setTxtProgressBar(bar, value);
+    }
+  }
+  void close() {
+    if (active) {
+      Environment base = Environment::base_namespace();
+      Function closeFun = base["close"];
+      closeFun(bar);
+      active = false;
+    }
+  }
+};
+
 List _bootstrapCharacterSequences(CharacterVector stringchar, int n, R_xlen_t size = -1, 
-                                  CharacterVector possibleStates = CharacterVector()) {
+                                  CharacterVector possibleStates = CharacterVector(),
+                                  BootstrapProgress* progress = NULL) {
   
   // store length of sequence
   if (size == -1) {
@@ -930,6 +1096,7 @@ List _bootstrapCharacterSequences(CharacterVector stringchar, int n, R_xlen_t si
     
     // every add one sequence
     samples.push_back(charseq);
+    if (progress != NULL) progress->update(i + 1);
   }
 
   // return a list of n sequence of same length as of given sequence
@@ -976,147 +1143,146 @@ List _fromBoot2Estimate(List listMatr) {
 }
 
 struct BootstrapList : public Worker {
-  
-  // transition matrix
+
+  // Row-stochastic transition matrix (read-only). RMatrix is RcppParallel's
+  // thread-safe view: it does not touch R's protect stack from a worker.
   const RMatrix<double> input;
-  
-  // unique states
-  const vector<string> states;
-  
-  // length of sequence
+
+  // unique states (shared, read-only).
+  const vector<string>& states;
+
+  // length of each generated sequence
   const int len;
-  
-  // list of new sequences
-  list<vector<string> > output;
-  
-  // constructor
-  BootstrapList(const NumericMatrix input, const vector<string> states, const int len) : 
-    input(input), states(states), len(len) {}
-  
-  BootstrapList(const BootstrapList& bsList, Split) : 
-    input(bsList.input), states(bsList.states), len(bsList.len) {}
-  
-  // generate (end-begin) sequences
+
+  // base seed drawn on the main thread; see MCList for the rationale.
+  const uint64_t base_seed;
+
+  // list of new sequences tagged with their bootstrap-replicate index p;
+  // the caller sorts by p so that set.seed() produces an identical list
+  // across runs (TBB joins sub-ranges in a non-deterministic order).
+  vector<pair<size_t, vector<string> > > output;
+
+  BootstrapList(const NumericMatrix input, const vector<string>& states,
+                int len, uint64_t base_seed) :
+    input(input), states(states), len(len), base_seed(base_seed) {}
+
+  BootstrapList(const BootstrapList& bsList, Split) :
+    input(bsList.input), states(bsList.states), len(bsList.len),
+    base_seed(bsList.base_seed) {}
+
   void operator()(std::size_t begin, std::size_t end) {
-    
-    // number of unique states
-    unsigned int n = states.size();
-    
-    // initial probability vector
-    arma::vec iprobs(n); 
-    
-    // probability vector (can be any row of transition matrix)
-    arma::vec probs(n);
-    
-    // unique states indices
-    arma::vec ustates(n); 
-    
-    // initialization
-    for (unsigned int i = 0;i < n;i++) {
-      iprobs[i] = 1.0/n;
-      ustates[i] = i;
-    }
-    
-    // to store new state generated
-    arma::vec istate;
-    
-    // every time generate one sequence
-    for (unsigned int p = begin; p < (unsigned int)end;p++) {
-      
-      // randomly select starting state
+
+    const unsigned int n = static_cast<unsigned int>(states.size());
+    std::uniform_int_distribution<unsigned int> U_init(0u, n - 1u);
+
+    // Row buffer reused across the length of each sequence.
+    arma::vec probs_buf(n);
+
+    output.reserve(output.size() + (end - begin));
+
+    for (std::size_t p = begin; p < end; ++p) {
+
+      // Per-bootstrap-replicate PRNG; see MCList::operator() for the
+      // reproducibility rationale.
+      std::mt19937_64 rng(_mc_mix_seed(base_seed, p));
+
       vector<string> result(len);
-      istate = sample(ustates, 1, false, iprobs);
-      result[0] = states[istate[0]];
-      
-      // given a present state generate a future state
-      for (unsigned int j = 1; j < (unsigned int)len;j++) {
-        
-        // row vector corresponding to state istate[0]
-        for (unsigned int k = 0;k < (unsigned int)n;k++) {
-          probs[k] = input(istate[0], k);
-        }
-        
-        // select future state
-        istate = sample(ustates, 1, false, probs);
-        result[j] = states[istate[0]];
+
+      // Uniform starting state (matches the previous iprobs = 1/n).
+      unsigned int cur = U_init(rng);
+      result[0] = states[cur];
+
+      for (int j = 1; j < len; ++j) {
+        // Copy the current row of the contingency matrix into the buffer.
+        for (unsigned int k = 0; k < n; ++k) probs_buf[k] = input(cur, k);
+        cur = _mc_sample_weighted(probs_buf, rng);
+        result[j] = states[cur];
       }
-      
-      // populate a sequence
-      output.push_back(result);
+
+      output.emplace_back(p, std::move(result));
     }
   }
-  
+
   void join(const BootstrapList& rhs) {
-    
-    // constant iterator to the first element of rhs.output  
-    list<vector<string> >::const_iterator it = rhs.output.begin();
-    
-    // merge the result of two parallel computation
-    for (;it != rhs.output.end();it++) {
-      output.push_back(*it);
-    }
-    
+    output.insert(output.end(), rhs.output.begin(), rhs.output.end());
   }
-  
 };
 
-List _bootstrapCharacterSequencesParallel(CharacterVector stringchar, int n, R_xlen_t size = -1, 
+List _bootstrapCharacterSequencesParallel(CharacterVector stringchar, int n, R_xlen_t size = -1,
                                           CharacterVector possibleStates = CharacterVector()) {
   // store length of sequence
   if (size == -1) {
-    size = stringchar.size();  
+    size = stringchar.size();
   }
-  
-  // frequency matrix
+
+  // frequency matrix (row-stochastic by construction from createSequenceMatrix)
   NumericMatrix contingencyMatrix = createSequenceMatrix(stringchar, true, true, possibleStates);
-  
+
   // state names
   vector<string> itemset = as<vector<string> >(rownames(contingencyMatrix));
-  
-  
-  // number of distinct states
-  // int itemsetsize = itemset.size();
-  
-  BootstrapList bsList(contingencyMatrix, itemset, size);
+
+  // The worker draws the first state uniformly over the states and writes
+  // result[0]: it needs at least one state and a positive sequence length.
+  if (itemset.empty() || size < 1 || n < 0)
+    stop("the bootstrap needs at least one observed state and a positive sequence length");
+
+  // Draw the base seed on the main thread (see MCList).
+  uint64_t base_seed;
+  {
+    RNGScope scope;
+    base_seed = _mc_draw_seed();
+  }
+
+  BootstrapList bsList(contingencyMatrix, itemset, static_cast<int>(size), base_seed);
   parallelReduce(0, n, bsList);
-  
-  return wrap(bsList.output);
+
+  // Restore the input order so that set.seed() produces an identical list
+  // across runs; see the matching code in markovchainSequenceParallelRcpp.
+  std::sort(bsList.output.begin(), bsList.output.end(),
+            [](const pair<size_t, vector<string> >& a,
+               const pair<size_t, vector<string> >& b) {
+              return a.first < b.first;
+            });
+
+  List out(bsList.output.size());
+  for (size_t i = 0; i < bsList.output.size(); ++i) {
+    out[i] = bsList.output[i].second;
+  }
+  return out;
 }
 
 // Fit DTMC using bootstrap method
 List _mcFitBootStrap(CharacterVector data, int nboot, bool byrow, bool parallel, double confidencelevel, bool sanitize = false,
-                     CharacterVector possibleStates = CharacterVector()) {
+                     CharacterVector possibleStates = CharacterVector(), bool progress = false) {
+  
+  // The progress bar counts the generation of the nboot sequences (only when
+  // it runs on the main thread, i.e. not in parallel) and the estimation of a
+  // transition matrix from each of them.
+  BootstrapProgress bar(progress, parallel ? nboot : 2 * nboot);
   
   // list of sequence generated using given sequence
   List theList = (parallel) ? _bootstrapCharacterSequencesParallel(data, nboot, data.size()) : 
-    _bootstrapCharacterSequences(data, nboot, data.size());
+    _bootstrapCharacterSequences(data, nboot, data.size(), CharacterVector(), &bar);
   
   // number of new sequence
   int n = theList.size();
+  int offset = parallel ? 0 : n;
   
   // to store frequency matrix for every sequence
   List pmsBootStrapped(n);
 
   // populate pmsBootStrapped 
-  if (parallel)
-    for (int i = 0; i < n; i++)
-      pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, sanitize, possibleStates);
-  
-  else 
-    for (int i = 0; i < n; i++) 
-      pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, sanitize, possibleStates);
+  for (int i = 0; i < n; i++) {
+    pmsBootStrapped[i] = createSequenceMatrix(theList[i], true, sanitize, possibleStates);
+    bar.update(offset + i + 1);
+  }
+  bar.close();
   
   
   List estimateList = _fromBoot2Estimate(pmsBootStrapped);
   
-  // transition matrix
+  // transition matrix, built row-stochastic by _toRowProbs
   NumericMatrix transMatr = _toRowProbs(estimateList["estMu"], sanitize);
-
-  // markovchain object
-  S4 estimate("markovchain");
-  estimate.slot("transitionMatrix") = transMatr;
-  estimate.slot("byrow") = byrow;
-  estimate.slot("name") = "BootStrap Estimate";  
 
   // z score for given confidence interval
   double alpha = 1.0 - confidencelevel;
@@ -1164,9 +1330,27 @@ List _mcFitBootStrap(CharacterVector data, int nboot, bool byrow, bool parallel,
   }
   
   // set the rows and columns name as states names
-  standardError.attr("dimnames") = upperEndpointMatr.attr("dimnames") 
-    = lowerEndpointMatr.attr("dimnames") = transMatr.attr("dimnames"); 
-  
+  standardError.attr("dimnames") = upperEndpointMatr.attr("dimnames")
+    = lowerEndpointMatr.attr("dimnames") = transMatr.attr("dimnames");
+
+  // transMatr is row-stochastic above, so a caller asking for
+  // byrow = false needs it transposed here. Setting the byrow slot without
+  // transposing (which is what this function used to do) yields an object
+  // that fails validObject() and that downstream methods read the wrong way
+  // round. The uncertainty matrices follow the estimate's orientation.
+  if (byrow == false) {
+    transMatr = transposeMatrix(transMatr);
+    standardError = transposeMatrix(standardError);
+    lowerEndpointMatr = transposeMatrix(lowerEndpointMatr);
+    upperEndpointMatr = transposeMatrix(upperEndpointMatr);
+  }
+
+  // markovchain object
+  S4 estimate("markovchain");
+  estimate.slot("transitionMatrix") = transMatr;
+  estimate.slot("byrow") = byrow;
+  estimate.slot("name") = "BootStrap Estimate";
+
   // return a list of important results
   List out = List::create(_["estimate"] = estimate,
                           _["standardError"] = standardError,
@@ -1536,8 +1720,17 @@ List inferHyperparam(NumericMatrix transMatr = NumericMatrix(), NumericVector sc
 //'  Laplacian smoother), bootstrap or by MAP (Bayesian) inference.
 //'  
 //' @param data It can be a character vector or a \deqn{n x n} matrix or a \deqn{n x n} data frame or a list
-//' @param method Method used to estimate the Markov chain. Either "mle", "map", "bootstrap" or "laplace"
-//' @param byrow it tells whether the output Markov chain should show the transition probabilities by row.
+//' @param method Method used to estimate the Markov chain. Either "mle", "map", "bootstrap" or "laplace".
+//'               All four are available for a single sequence. For a list of
+//'               sequences, "mle", "map" and "laplace" pool the transition counts
+//'               over the sequences, while "bootstrap" is not available and raises
+//'               an error explaining why.
+//' @param byrow For a character vector or a list of sequences, it tells whether the fitted
+//'              transition matrix is stored by row (the default) or by column; the
+//'              \code{byrow} slot of the returned chain records the choice. For matrix or
+//'              data frame input it instead describes the input data -- whether each
+//'              observed trajectory is a row or a column of \code{data} -- and the fitted
+//'              chain is stored by row either way.
 //' @param nboot Number of bootstrap replicates in case "bootstrap" is used.
 //' @param laplacian Laplacian smoothing parameter, default zero. It is only used when "laplace" method 
 //'                  is chosen.  
@@ -1552,11 +1745,33 @@ List inferHyperparam(NumericMatrix transMatr = NumericMatrix(), NumericVector sc
 //'                   should typically be non-negative integers.                        
 //' @param stringchar It can be a \deqn{n x n} matrix or a character vector or a list
 //' @param toRowProbs converts a sequence matrix into a probability matrix
-//' @param sanitize put 1 in all rows having rowSum equal to zero
+//' @param sanitize how to deal with the states that have no observed outgoing
+//'                 transition, which is what \code{possibleStates} typically
+//'                 introduces. \code{FALSE} (the default) leaves their row at
+//'                 zero, which makes a transition matrix that is not
+//'                 stochastic. \code{TRUE}, or equivalently
+//'                 \code{"uniform"}, puts 1 in every entry of such a row, so
+//'                 that the row becomes a uniform distribution over all the
+//'                 states: the unobserved states are then assumed to move to
+//'                 any state with equal probability, which is an assumption
+//'                 about the data and not a consequence of it.
+//'                 \code{"absorbing"} instead puts 1 on the diagonal only,
+//'                 making every unobserved state absorbing; this also gives a
+//'                 stochastic matrix, but adds no transition that was never
+//'                 observed (see #213).
 //' @param possibleStates Possible states which are not present in the given sequence
+//' @param progress Should a text progress bar be shown? It is only used by
+//'                 the "bootstrap" method, the other methods being fast; see Details.
 //' 
 //' @details Disabling confint would lower the computation time on large datasets. If \code{data} or \code{stringchar} 
 //' contain \code{NAs}, the related \code{NA} containing transitions will be ignored.
+//'
+//' With \code{progress = TRUE} the "bootstrap" method shows a text progress bar
+//' (\code{\link[utils]{txtProgressBar}}, style 3) covering the simulation of the
+//' \code{nboot} bootstrap sequences and the estimation of a transition matrix
+//' from each of them. With \code{parallel = TRUE} the sequences are simulated in
+//' parallel threads, which cannot report progress, so the bar only covers the
+//' estimation step. The computation can be interrupted while the bar is shown.
 //' 
 //' @return A list containing an estimate, log-likelihood, and, when "bootstrap" method is used, a matrix 
 //'         of standards deviations and the bootstrap samples. When the "mle", "bootstrap" or "map" method 
@@ -1604,7 +1819,7 @@ List markovchainFit(SEXP data, String method = "mle", bool byrow = true, int nbo
                     double laplacian = 0, String name = "", bool parallel = false,
                     double confidencelevel = 0.95, bool confint = true, 
                     NumericMatrix hyperparam = NumericMatrix(), bool sanitize = false, 
-                    CharacterVector possibleStates = CharacterVector()) {
+                    CharacterVector possibleStates = CharacterVector(), bool progress = false) {
 
   if (method != "mle" && method != "bootstrap" && method != "map" && method != "laplace") {
      stop ("method should be one of \"mle\", \"bootstrap\", \"map\" or \"laplace\"");
@@ -1660,8 +1875,14 @@ List markovchainFit(SEXP data, String method = "mle", bool byrow = true, int nbo
       
       for (int i = 0; i < nrows; i++)
         manyseq[i] = mat(i, _);
-  	  
-      out = _mcFitMle(manyseq, byrow, confidencelevel, sanitize, possibleStates);
+
+      // For matrix/data.frame input, byrow describes how the *observations*
+      // are laid out (one trajectory per row, or per column) and `mat` has
+      // already been transposed accordingly above. The estimate returned to
+      // the caller is _matr2Mc's, which is row-stochastic either way, so the
+      // MLE call here is only used for its uncertainty matrices and must be
+      // made in row orientation to keep them aligned with that estimate.
+      out = _mcFitMle(manyseq, true, confidencelevel, sanitize, possibleStates);
       out[0] = outMc;
     } else {
       out = List::create(_["estimate"] = outMc);
@@ -1672,15 +1893,28 @@ List markovchainFit(SEXP data, String method = "mle", bool byrow = true, int nbo
       out = _mcFitMle(data, byrow, confidencelevel, sanitize, possibleStates);
     } else if (method == "map") {
       out = _mcFitMap(data, byrow, confidencelevel, hyperparam, sanitize, possibleStates);
+    } else if (method == "laplace") {
+      // Transition counts are pooled across the sequences of the list and
+      // then smoothed, exactly as for a single sequence.
+      out = _mcFitLaplacianSmooth(data, byrow, laplacian, sanitize, possibleStates);
     } else
-      stop("method not available for a list");
+      // Only bootstrap can reach this point. It is refused rather than
+      // silently reinterpreted: resampling a list of sequences could mean
+      // resampling whole sequences, or resampling transitions within each
+      // of them, and those give different standard errors. Choosing one
+      // silently would hide that decision from the user.
+      stop("method = \"bootstrap\" is not supported for a list of sequences, "
+           "because resampling whole sequences and resampling transitions "
+           "within them are different procedures and this function will not "
+           "pick one for you. Use method = \"mle\", \"laplace\" or \"map\" on "
+           "the list, or pass a single sequence to bootstrap it.");
   }
   else {
     if (method == "mle") {
       out = _mcFitMle(data, byrow, confidencelevel, sanitize, possibleStates);
     } else if (method == "bootstrap") {
       out = _mcFitBootStrap(data, nboot, byrow, parallel,
-                            confidencelevel, sanitize, possibleStates);
+                            confidencelevel, sanitize, possibleStates, progress);
     } else if (method == "laplace") {
       out = _mcFitLaplacianSmooth(data, byrow, laplacian, sanitize, possibleStates);
     } else if (method == "map") {

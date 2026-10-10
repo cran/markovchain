@@ -78,7 +78,8 @@ against a second-order alternative, by testing independence of past and
 future states conditional on the present state. Degrees of freedom are
 summed, present-state by present-state, over only the past and future
 states actually observed with that present state, mirroring the other
-functions documented on this page.
+functions documented on this page. Factors and numeric sequences are
+compared as character strings.
 
 Tests whether transition probabilities are constant across consecutive blocks.
 Structural zeros can be supplied explicitly through a logical transition matrix.
@@ -91,5 +92,9 @@ Kullback, S., Kupperman, M. and Ku, H. H. (1962). Tests for Contingency Tables a
 
 Anderson, T. W. and Goodman, L. A. (1957). Statistical inference
 about Markov chains. *The Annals of Mathematical Statistics*, 28(1), 89--110.
+}
+\seealso{
+Other statisticalTests:
+\code{\link[=assessIndependence]{assessIndependence()}}
 }
 \concept{statisticalTests}

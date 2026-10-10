@@ -48,7 +48,7 @@ plot(molecularCTMC)
 
 
 ## -----------------------------------------------------------------------------
-if(requireNamespace(package='ctmcd', quietly = TRUE)) {
+if(requireNamespace(package='diagram', quietly = TRUE)) {
   plot(molecularCTMC,package = "diagram")
 } else {
   print("diagram package unavailable")
@@ -101,6 +101,10 @@ simpleMc<-new("markovchain", states=c("a","b"),
               transitionMatrix=transMatr,
               name="simpleMc")
 noofVisitsDist(simpleMc,5,"a")
+
+
+## -----------------------------------------------------------------------------
+5 * noofVisitsDist(simpleMc, 5, "a")
 
 
 ## -----------------------------------------------------------------------------
