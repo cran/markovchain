@@ -413,6 +413,17 @@ weatherReversible$distance
 steadyStates(mcWeather)
 steadyStates(weatherReversible$chain) # unchanged
 
+## ----closest-reversible-frobenius---------------------------------------------
+weatherFrobenius <- closestReversible(mcWeather, norm = "frobenius")
+set.seed(2)
+weatherFree <- closestReversible(mcWeather, "free", norm = "frobenius")
+c(additive = weatherReversible$frobeniusDistance,
+  fixedPi = weatherFrobenius$distance,
+  freePi = weatherFree$distance)
+rbind(original = steadyStates(mcWeather)[1, ],
+      freePi = weatherFree$stationaryDistribution)
+weatherFree$chain
+
 ## ----mixing-weather-----------------------------------------------------------
 mixingTime(mcWeather)
 mixingTime(mcWeather, epsilon = 0.01) # a tighter threshold needs more steps
@@ -648,6 +659,23 @@ patientStates <- rmarkovchain(n = 5, object = mcCCRC, t0 = "H",
                               include.t0 = TRUE)
 patientStates[1:10,]
 
+## ----plot-sequence-weather, fig.cap = "Weather chain: thirty simulated sequences started from rain (left) and the state distribution of three hundred, with the distribution expected from the chain (right).", fig.height = 3.6, out.width = "100%"----
+par(mfrow = c(1, 2))
+plotSequence(mcWeather, nSequences = 30, steps = 30, initial = "rain",
+             seed = 1, main = "Weather sequences")
+plotSequence(mcWeather, type = "distribution", nSequences = 300, steps = 15,
+             initial = "rain", seed = 1, main = "Weather state distribution")
+
+## ----plot-sequence-holson, fig.cap = "Holson data: sixty trajectories sorted by their first state (left) and the state distribution of the 1000 trajectories against a time-homogeneous chain fitted to them (right).", fig.height = 3.6, out.width = "100%"----
+data(holson)
+holsonChain <- markovchainFit(holson[, 2:12])$estimate
+par(mfrow = c(1, 2))
+plotSequence(holson[1:60, 2:12], sort = "first", main = "Holson trajectories")
+holsonPlot <- plotSequence(holson[, 2:12], type = "distribution",
+                           chain = holsonChain, main = "Holson distribution")
+gap <- holsonPlot$proportions - holsonPlot$expected
+round(gap[, c(2, 6, 9, 11)], 3)
+
 ## ----lumpability-oz-----------------------------------------------------------
 states_oz <- c("rainy", "nice", "snowy")
 
@@ -871,6 +899,26 @@ mylistMc
 ## ----fitAMarkovChainListfromAlist, output.lines=15----------------------------
 markovchainListFit(data=mylist)
 
+## ----bootstrap-properties-rain------------------------------------------------
+data(rain)
+rainBoot <- bootstrapProperties(rain$rain, nboot = 1000, seed = 1)
+rainBoot
+bootstrapProperties(rain$rain, nboot = 1000, seed = 1,
+  statistics = list(dryDays = function(mc) steadyStates(mc)[1, "0"],
+                    "kemenyConstant"))
+
+## ----bootstrap-properties-coverage, eval = FALSE------------------------------
+# coverage <- function(truth, n, method, reps = 300) {
+#   theta <- c(slem(truth), relaxationTime(truth), mixingTime(truth))
+#   hits <- replicate(reps, {
+#     x <- rmarkovchain(n - 1, truth, t0 = states(truth)[1], include.t0 = TRUE)
+#     ci <- bootstrapProperties(x, nboot = 499, method = method,
+#       statistics = c("slem", "relaxationTime", "mixingTime"))$ci
+#     ci[, 1] <= theta & theta <= ci[, 2]
+#   })
+#   rowMeans(hits)
+# }
+
 ## ----markovchainPredict-------------------------------------------------------
 predict(object = weatherFittedMLE$estimate, newdata = c("cloudy", "sunny"),
         n.ahead = 3)
@@ -978,6 +1026,29 @@ x1 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
 x2 <- rmarkovchain(500, homogeneity_mc, t0 = "a")
 
 verifyHomogeneity(list(x1, x2), method = "G")
+
+## ----divergence-rate-kullback-------------------------------------------------
+data(kullback)
+pooled <- kullback[[1]] + kullback[[2]]
+pooledChain <- new("markovchain", states = rownames(pooled),
+                   transitionMatrix = pooled / rowSums(pooled))
+sum(sapply(kullback, function(counts) {
+  sampleChain <- new("markovchain", states = rownames(counts),
+                     transitionMatrix = counts / rowSums(counts))
+  2 * sum(counts) *
+    divergenceRate(sampleChain, pooledChain, weights = rowSums(counts))
+}))
+verifyHomogeneity(kullback, verbose = FALSE)$statistic
+
+## ----compare-chains-----------------------------------------------------------
+other_P <- homogeneity_P
+other_P["a", ] <- c(.50, .30, .20)
+other_mc <- new("markovchain", states = c("a", "b", "c"),
+                transitionMatrix = other_P)
+set.seed(321)
+x3 <- rmarkovchain(500, other_mc, t0 = "a")
+compareChains(x1, x2)
+compareChains(x1, x3)
 
 ## ----pseudobayes--------------------------------------------------------------
 pseudoBayesEstimator <- function(raw, apriori){
@@ -1244,6 +1315,42 @@ relativeError <- function(size) {
 }
 
 sapply(c(5, 10, 25), relativeError)
+
+## ----tauchen-hussey-floden----------------------------------------------------
+impliedSd <- function(out) {
+  P <- out$chain@transitionMatrix
+  z <- out$states
+  p <- as.numeric(steadyStates(out$chain))
+  condVar <- P %*% z^2 - (P %*% z)^2
+  c(sigmaEps = sqrt(sum(p * condVar)),
+    sigmaY = sqrt(sum(p * (z - sum(p * z))^2)))
+}
+designs <- expand.grid(size = c(5, 9),
+                       sigmaWeight = c("conditional", "unconditional", "floden"),
+                       stringsAsFactors = FALSE)
+ours <- t(mapply(function(n, s)
+  impliedSd(tauchenHussey(alpha = 0, sigma = sqrt(0.03), rho = 0.95,
+                          size = n, sigmaWeight = s)),
+  designs$size, designs$sigmaWeight))
+floden <- rbind(c(0.1576, 0.3275), c(0.1670, 0.4303),
+                c(0.0101, 0.5622), c(0.0561, 0.5556),
+                c(0.1410, 0.4792), c(0.1692, 0.5407))
+colnames(floden) <- c("sigmaEps (Floden)", "sigmaY (Floden)")
+cbind(designs, round(ours, 4), floden)
+
+## ----fit-function-beta--------------------------------------------------------
+kappa <- 20
+m <- function(x) 0.2 + 0.6 * x
+betaKernel <- function(x, y) dbeta(y, kappa * m(x), kappa * (1 - m(x)))
+stationaryVariance <- function(out) {
+  p <- as.numeric(steadyStates(out$chain))
+  sum(p * (out$states - sum(p * out$states))^2)
+}
+(trueVariance <- (0.25 / (kappa + 1)) / (1 - 0.36 + 0.36 / (kappa + 1)))
+sapply(c(5, 10, 20), function(n)
+  c(nodes = n,
+    gaussLegendre = stationaryVariance(fitFunction(betaKernel, n)),
+    trapezoid = stationaryVariance(fitFunction(betaKernel, n, "trapezoid"))))
 
 ## ----bonusMalus1--------------------------------------------------------------
 

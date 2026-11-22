@@ -133,6 +133,55 @@ round(fits[["Koeberg 2"]]$estimate@transitionMatrix, 4)
 
 
 ## -----------------------------------------------------------------------------
+#| label: fitMTDse
+fitSE <- fitMTD(series$Koeberg, order = 2, start = 15, se = TRUE)
+cbind(estimate = fitSE$lambda, se = fitSE$se$lambda)
+round(fitSE$se$Q, 3)
+
+
+## -----------------------------------------------------------------------------
+#| label: negativeWeights
+orders <- 5:8
+negative <- lapply(orders, function(k)
+  fitMTD(series$seizures, order = k, start = 15, negativeWeights = TRUE))
+data.frame(order = orders,
+           published = c(-112.4, -110.4, -107.9, -102.3),
+           negative_weights = round(sapply(negative, `[[`, "logLikelihood"), 2),
+           non_negative = round(sapply(orders, function(k)
+             fitMTD(series$seizures, order = k, start = 15)$logLikelihood), 2))
+round(negative[[4]]$lambda, 4)
+
+
+## -----------------------------------------------------------------------------
+#| label: pewee
+pewee <- as.character(readSeries("pewee_song.csv", "phrase"))
+selectOrder(pewee, maxOrder = 4, start = 5, parameters = "observed")$table[, c("order", "logLik", "npar", "BIC")]
+
+
+## -----------------------------------------------------------------------------
+#| label: peweeMTDg
+peweeFits <- expand.grid(order = 2:3, model = c("MTD", "MTDg"), stringsAsFactors = FALSE)
+peweeFits$logLik <- mapply(function(k, m)
+  fitMTD(pewee, order = k, start = 5, model = m)$logLikelihood,
+  peweeFits$order, peweeFits$model)
+peweeFits$npar <- mapply(function(k, m)
+  fitMTD(pewee, order = k, start = 5, model = m)$npar,
+  peweeFits$order, peweeFits$model)
+peweeFits$BIC <- -2 * peweeFits$logLik + log(1323) * peweeFits$npar
+peweeFits
+
+
+## -----------------------------------------------------------------------------
+#| label: accelerate
+set.seed(1)
+flat <- sample(c("a", "b", "c"), 20000, replace = TRUE)
+plain <- suppressWarnings(fitMTD(flat, order = 3))
+fast <- fitMTD(flat, order = 3, accelerate = TRUE)
+rbind(plain = c(logLik = plain$logLikelihood, steps = plain$iterations, converged = plain$converged),
+      accelerated = c(fast$logLikelihood, fast$iterations, fast$converged))
+
+
+## -----------------------------------------------------------------------------
 #| label: higherOrderPredict
 fit <- fits[["Koeberg 2"]]
 # next direction after two hours from directions 1 and then 2, and after 2 and then 2

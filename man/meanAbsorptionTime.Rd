@@ -11,12 +11,12 @@ meanAbsorptionTime(object)
 }
 \value{
 A named vector with the expected number of steps to go from a
-  transient state to any of the recurrent ones
+transient state to any of the recurrent ones
 }
 \description{
 Computes the expected number of steps to go from any of the
-  transient states to any of the recurrent states. The Markov chain should
-  have at least one transient state for this method to work
+transient states to any of the recurrent states. The Markov chain should
+have at least one transient state for this method to work
 }
 \examples{
 m <- matrix(c(1/2, 1/2, 0,
@@ -30,6 +30,19 @@ times <- meanAbsorptionTime(mc)
 C. M. Grinstead and J. L. Snell. Introduction to Probability.
 American Mathematical Soc., 2012.
 }
+\seealso{
+Other first passage and hitting:
+\code{\link[=absorptionProbabilities]{absorptionProbabilities()}},
+\code{\link[=committorAB]{committorAB()}},
+\code{\link[=firstPassage]{firstPassage()}},
+\code{\link[=firstPassageMultiple]{firstPassageMultiple()}},
+\code{\link[=hittingProbabilities]{hittingProbabilities()}},
+\code{\link[=meanFirstPassageTime]{meanFirstPassageTime()}},
+\code{\link[=meanNumVisits]{meanNumVisits()}},
+\code{\link[=meanRecurrenceTime]{meanRecurrenceTime()}},
+\code{\link[=noofVisitsDist]{noofVisitsDist()}}
+}
 \author{
 Ignacio Cordón
 }
+\concept{first passage and hitting}

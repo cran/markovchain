@@ -1,3 +1,9 @@
+# In plain words: aggregateStates() reduces a chain with many states to a chain with only k
+# 'macro-states', grouping together states that behave similarly, while losing as little
+# information as possible. The reading guide for the code below:
+#   - phi is an n x k 0/1 matrix: phi[i, j] = 1 if state i belongs to macro-state j;
+#   - Q is the k x k transition matrix between macro-states;
+#   - the quality of the reduction is measured by a Kullback-Leibler divergence (smaller = better).
 # Internal helpers for aggregateStates() ------------------------------------
 #
 # These implement the spectral-theoretic Kullback-Leibler (KL) state-space
@@ -26,6 +32,8 @@
 # phi: n x z indicator matrix (z macro-states). Returns the z x z
 # macro-transition matrix Q implied by phi, using the closed-form projection
 # above. Shared by both the bottom-up and top-down heuristics below.
+# Step A: given the grouping phi, compute the macro-chain Q: its entry (a, b) is the
+# stationary probability flow from group a to group b divided by the stationary probability of a.
 .aggregationQ <- function(P, pi, phi) {
   piDiag <- diag(pi, nrow = length(pi))
   z <- ncol(phi)
@@ -44,6 +52,8 @@
 # incurred just by aggregating the stationary distribution itself. Convention
 # 0*log(0/y) = 0 (an all-zero row of P never contributes, including against
 # a superQ/superPi of 0) is applied directly rather than via a NaN patch-up.
+# Step B: measure the loss (KL divergence) of the grouping: how different the original process is
+# from the one that can be described through the macro-states.
 .klDivergenceAggregate <- function(P, pi, phi, Q) {
   superQ <- phi %*% Q %*% t(phi)
   ratioP <- ifelse(P == 0, 1, P / superQ)
@@ -62,6 +72,9 @@
 # logical vector aligned with idx (TRUE/FALSE = the two sides of the cut).
 # Falls back to a rank-based split (guaranteed non-empty on both sides) in
 # the rare degenerate case where the eigenvector does not change sign.
+# Step C: split a set of states in two, using the sign of the second eigenvector of the
+# (symmetrised) transition matrix: states with positive entries go on one side, negative on the other.
+# This is spectral bisection, the same idea used to cut graphs.
 .spectralSplit <- function(M, pi, idx) {
   Msub <- M[idx, idx, drop = FALSE]
   piSub <- diag(pi[idx], nrow = length(idx))
@@ -84,6 +97,7 @@
 # partition `phi` into two, returning the resulting n x (ncol(phi)+1)
 # candidate partition, or NULL if that macro-state is a singleton (nothing
 # to split).
+# Splits ONE macro-state in two, producing a candidate partition with one more group.
 .createBipartitionCandidate <- function(P, pi, phi, index) {
   v <- phi[, index]
   if (sum(v) <= 1) {
@@ -104,6 +118,8 @@
 # one-macro-state partition and, at each step, split whichever macro-state
 # yields the smallest resulting KL divergence, until k macro-states are
 # reached.
+# Bottom-up: begin with one macro-state containing everything; try splitting each group, keep the
+# split with the smallest loss; repeat until k groups.
 .aggregateSpectralBottomUp <- function(P, pi, k) {
   n <- nrow(P)
   phi <- matrix(1, nrow = n, ncol = 1)
@@ -115,6 +131,7 @@
     bestQ <- NULL
     bestR <- Inf
 
+    # Try to split every existing group, and remember the candidate with the lowest divergence.
     for (i in seq_len(ncol(phi))) {
       candidate <- .createBipartitionCandidate(P, pi, phi, i)
       if (is.null(candidate)) {
@@ -144,6 +161,8 @@
 # Q, by simple Cesaro-averaged power iteration; used only to weight the
 # spectral cuts proposed while growing the top-down candidate pairs below,
 # never as the divergence's own pi (which is always the original chain's).
+# Stationary distribution of the macro-chain by power iteration: the distribution is averaged with its
+# own update until it stops changing.
 .calculateInvariant <- function(Q) {
   n <- nrow(Q)
   kappa <- rep(1 / n, n)
@@ -166,6 +185,8 @@
 # still belongs to some ancestor piece, and remains available the next time
 # aggregateStates() rebuilds the candidate list from the (unchanged) states
 # outside whichever pair actually gets merged.
+# Creates the list of PAIRS of macro-states that look similar (the candidates to merge), by splitting
+# recursively in halves until the groups have 2 elements.
 .buildPairCandidates <- function(Q, pi) {
   n <- ncol(Q)
   worklist <- list(seq_len(n))
@@ -194,6 +215,7 @@
 # matrix `eta` into one, preserving every other column (and the relative
 # order of the states within it) exactly. Returns the resulting n x (m-1)
 # matrix together with the macro-chain it implies.
+# Merges two columns of the grouping matrix and recomputes the macro-chain.
 .calculateQTopDown <- function(P, pi, eta, vi0, vi1) {
   mergedCol <- pmax(eta[, vi0], eta[, vi1])
   keep <- setdiff(seq_len(ncol(eta)), c(vi0, vi1))
@@ -211,38 +233,127 @@
 # micro-state as its own macro-state and, at each step, merge whichever pair
 # of current macro-states yields the smallest resulting KL divergence, until
 # only k macro-states remain.
+# Top-down: begin with one group per state; at each step try the merge of every candidate pair and keep
+# the one with the smallest loss, until k groups remain.
+#
+# Speed (since version 1.2.1): the divergence of a partition depends on the chain only through
+# the z x z matrix W of the stationary flows between macro-states, W[a, b] = sum over i in a,
+# j in b of pi[i] * P[i, j], with row sums r[a] and macro-state weights Pi[a] = sum of pi[i]:
+#   divergence = const - sum W log2 W + sum_a (r[a] + Pi[a]) log2 Pi[a]
+# (the constant does not depend on the partition; see .topDownMergeScores()). Merging two
+# macro-states only changes two rows and two columns of W, so every candidate merge is scored
+# in O(z) instead of the O(n^3) of building its macro-chain and divergence from scratch. The
+# scores are used only to select: when two or more candidates are within a tiny tolerance of the
+# best, they are ranked with the original functions, and the macro-chain of the chosen merge is
+# built with .calculateQTopDown() as before. The result is therefore exactly the one of the
+# original algorithm, which evaluated every candidate in full.
 .aggregateSpectralTopDown <- function(P, pi, k) {
   n <- nrow(P)
   Q <- P
   eta <- diag(n)
   iterations <- n - k
 
+  # flows between the current macro-states (initially the states themselves) and their weights
+  W <- pi * P
+  Pi <- pi
+
+  # Each iteration merges two macro-states, from n of them down to k.
+  # Q is the current macro-chain and eta the current n x (n - i) membership matrix.
   for (i in seq_len(iterations)) {
+    # stationary distribution of the current macro-chain (known for the original chain)
     qPi <- if (i == 1L) pi else .calculateInvariant(Q)
+    # the pairs of macro-states worth trying, proposed from the spectrum of Q
     pairs <- .buildPairCandidates(Q, qPi)
 
-    divergences <- numeric(length(pairs))
-    candidates <- vector("list", length(pairs))
-    for (j in seq_along(pairs)) {
-      res <- .calculateQTopDown(P, pi, eta, pairs[[j]][1L], pairs[[j]][2L])
-      candidates[[j]] <- res
-      divergences[j] <- .klDivergenceAggregate(P, pi, res$phi, res$Q)
+    # score the merge of each pair on the ORIGINAL chain (through W) and keep the cheapest
+    scores <- .topDownMergeScores(W, Pi, pairs)
+    best <- which.min(scores)
+    tied <- which(scores <= scores[best] + 1e-9 * max(1, abs(scores[best])))
+    if (length(tied) > 1L) {
+      # near tie: rank these candidates with the original, full computation
+      divergences <- vapply(tied, function(j) {
+        res <- .calculateQTopDown(P, pi, eta, pairs[[j]][1L], pairs[[j]][2L])
+        .klDivergenceAggregate(P, pi, res$phi, res$Q)
+      }, numeric(1))
+      best <- tied[which.min(divergences)]
     }
 
-    best <- which.min(divergences)
-    Q <- candidates[[best]]$Q
-    eta <- candidates[[best]]$phi
+    vi0 <- pairs[[best]][1L]
+    vi1 <- pairs[[best]][2L]
+    res <- .calculateQTopDown(P, pi, eta, vi0, vi1)
+    Q <- res$Q
+    eta <- res$phi
+
+    # merge vi1 into vi0 in W and Pi, with the column order of .calculateQTopDown()
+    W[vi0, ] <- W[vi0, ] + W[vi1, ]
+    W[, vi0] <- W[, vi0] + W[, vi1]
+    W <- W[-vi1, -vi1, drop = FALSE]
+    Pi[vi0] <- Pi[vi0] + Pi[vi1]
+    Pi <- Pi[-vi1]
   }
 
   list(Q = Q, phi = eta)
 }
 
+# Scores of the candidate merges of the top-down heuristic: for each pair (a, b), the divergence of
+# the partition after merging a and b, up to a constant common to all candidates.
+#
+# With f(x) = x log2(x) (f(0) = 0), r = rowSums(W) and Pi the weights of the macro-states,
+# .klDivergenceAggregate() equals
+#   sum_ij pi[i] P[i, j] log2 P[i, j] - sum_i pi[i] log2 pi[i]       (does not depend on the partition)
+#   - sum_ab f(W[a, b]) + sum_a (r[a] + Pi[a]) log2 Pi[a],
+# because log2 Q[a, b] = log2 W[a, b] - log2 Pi[a]. Merging a and b into c replaces rows a, b by
+# their sum and columns a, b by their sum, so only those entries and the two weights change.
+.topDownMergeScores <- function(W, Pi, pairs) {
+  # x log2(x), with 0 log2(0) = 0
+  f <- function(x) {
+    y <- x * log2(x)
+    y[!(x > 0)] <- 0
+    y
+  }
+  A <- vapply(pairs, `[`, integer(1), 1L)
+  B <- vapply(pairs, `[`, integer(1), 2L)
+  m <- length(A)
+  F <- f(W)
+  rowF <- rowSums(F)
+  colF <- colSums(F)
+  r <- rowSums(W)
+
+  # entries that disappear: rows a and b (all columns) and columns a and b (the other rows)
+  removed <- rowF[A] + rowF[B] +
+    colF[A] - F[cbind(A, A)] - F[cbind(B, A)] +
+    colF[B] - F[cbind(A, B)] - F[cbind(B, B)]
+
+  # entries of the merged row and column, without the merged diagonal entry
+  rowM <- W[A, , drop = FALSE] + W[B, , drop = FALSE]      # one merged row per candidate
+  colM <- W[, A, drop = FALSE] + W[, B, drop = FALSE]      # one merged column per candidate
+  idx <- seq_len(m)
+  fRow <- f(rowM)
+  fCol <- f(colM)
+  addedRow <- rowSums(fRow) - fRow[cbind(idx, A)] - fRow[cbind(idx, B)]
+  addedCol <- colSums(fCol) - fCol[cbind(A, idx)] - fCol[cbind(B, idx)]
+  diagM <- W[cbind(A, A)] + W[cbind(A, B)] + W[cbind(B, A)] + W[cbind(B, B)]
+  added <- addedRow + addedCol + f(diagM)
+
+  # the weights of the two macro-states and of the merged one
+  g <- function(w, s) {
+    y <- s * log2(w)
+    y[!(w > 0)] <- 0
+    y
+  }
+  nodes <- g(Pi[A] + Pi[B], r[A] + r[B] + Pi[A] + Pi[B]) -
+    g(Pi[A], r[A] + Pi[A]) - g(Pi[B], r[B] + Pi[B])
+
+  as.numeric(removed - added + nodes)
+}
+
 # Number of macro-states suggested by the eigengap heuristic: the number of
 # eigenvalues (by modulus, including the trivial one) before the largest
 # relative drop, restricted to the valid aggregateStates() range [2, n-1].
+# Choosing k automatically: look at the sorted eigenvalue moduli and cut where the largest gap is.
 .chooseKByEigengap <- function(P) {
   n <- nrow(P)
-  ev <- sort(Mod(eigen(P, only.values = TRUE)$values), decreasing = TRUE)
+  ev <- sort(Mod(.eigenvaluesCached(P)), decreasing = TRUE)
   gaps <- ev[-n] - ev[-1L]
   candidates <- seq(2L, n - 1L)
   candidates[which.max(gaps[candidates])]
@@ -278,7 +389,7 @@
 #'   which suits a small reduction (\code{k} close to the number of
 #'   states). \code{"adaptive"} follows the same rule of thumb as PyDTMC:
 #'   top-down below 30 states, otherwise bottom-up when \code{k} is at most
-#'   30\% of the number of states and top-down otherwise.
+#'   30% of the number of states and top-down otherwise.
 #'
 #' @return A named list:
 #'   \describe{
@@ -375,6 +486,8 @@
 #' result$klDivergence # zero up to rounding
 #'
 #' @exportMethod aggregateStates
+# Public function. Steps: (1) validate the chain, (2) get the stationary distribution, (3) choose k and
+# the method, (4) run bottom-up or top-down, (5) package the partition and the macro-chain.
 setGeneric("aggregateStates", function(object, k = NULL,
                                         method = c("adaptive", "spectral-bottom-up", "spectral-top-down")) {
   standardGeneric("aggregateStates")
@@ -386,6 +499,8 @@ setMethod("aggregateStates", "markovchain",
                    method = c("adaptive", "spectral-bottom-up", "spectral-top-down")) {
   method <- match.arg(method)
 
+  # (1) The divergence used to compare partitions needs a unique, strictly positive
+  # stationary distribution and a convergent power iteration: irreducible and aperiodic.
   if (!is.irreducible(object)) {
     stop("aggregateStates is defined here only for irreducible Markov chains.")
   }
@@ -398,6 +513,7 @@ setMethod("aggregateStates", "markovchain",
     ))
   }
 
+  # All the internal helpers work with a row-stochastic matrix P (rows = departure state).
   P <- as.matrix(object@transitionMatrix)
   if (!object@byrow) {
     P <- t(P)
@@ -410,6 +526,7 @@ setMethod("aggregateStates", "markovchain",
     stop("aggregateStates requires at least 3 states (a 2-state chain cannot be reduced further).")
   }
 
+  # (2) stationary distribution of the original chain: the weights of the divergence
   stateNames <- states(object)
   pi <- as.numeric(steadyStates(object))
   if (length(pi) != n || any(!is.finite(pi)) || any(pi <= 0)) {
@@ -417,6 +534,7 @@ setMethod("aggregateStates", "markovchain",
   }
   pi <- pi / sum(pi)
 
+  # (3) number of macro-states: chosen by the eigengap heuristic, or validated if given
   if (is.null(k)) {
     k <- .chooseKByEigengap(P)
   } else {
@@ -429,6 +547,7 @@ setMethod("aggregateStates", "markovchain",
     }
   }
 
+  # 'adaptive' picks bottom-up for a strong reduction of a large chain, top-down otherwise.
   if (method == "adaptive") {
     if (n < 30L) {
       method <- "spectral-top-down"
@@ -437,6 +556,8 @@ setMethod("aggregateStates", "markovchain",
     }
   }
 
+  # (4) Both algorithms return the macro-chain Q (k x k, row-stochastic) and the n x k
+  # membership matrix phi (phi[i, j] = 1 if state i belongs to macro-state j, else 0).
   result <- if (method == "spectral-bottom-up") {
     .aggregateSpectralBottomUp(P, pi, k)
   } else {
@@ -446,10 +567,12 @@ setMethod("aggregateStates", "markovchain",
   Q <- result$Q
   phi <- result$phi
 
+  # sanity check: every state belongs to exactly one macro-state
   if (!isTRUE(all.equal(rowSums(phi), rep(1, n), check.attributes = FALSE))) {
     stop("Internal error: the aggregation partition does not cover every state exactly once.")
   }
 
+  # Name the groups Macro_1 ... Macro_k and list their states.
   macroStates <- paste0("Macro_", seq_len(k))
   partition <- stats::setNames(vector("list", k), macroStates)
   for (j in seq_len(k)) {
@@ -457,8 +580,10 @@ setMethod("aggregateStates", "markovchain",
   }
 
   dimnames(Q) <- list(macroStates, macroStates)
-  Q <- Q / rowSums(Q)
+  Q <- Q / rowSums(Q)          # remove rounding drift so the rows sum to exactly one
 
+  # (5) information lost by the aggregation: KL divergence rate between the original
+  # chain and the one it induces from the macro-chain (zero for an exact lumping)
   klDivergence <- .klDivergenceAggregate(P, pi, phi, Q)
 
   aggregatedChain <- new("markovchain",

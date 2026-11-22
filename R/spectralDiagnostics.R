@@ -18,6 +18,7 @@
     ))
   }
 
+  # Row-stochastic dense matrix.
   P <- as.matrix(object@transitionMatrix)
   if (!object@byrow) {
     P <- t(P)
@@ -31,15 +32,22 @@
     return(numeric(0))
   }
 
-  # Eigenvectors are not needed by any of the callers.
-  values <- eigen(P, only.values = TRUE)$values
+  # The eigenvalues of P describe how fast the chain forgets its starting point: the eigenvalue 1
+  # corresponds to the stationary distribution, the others (all with modulus <= 1) to the
+  # convergence speed.
+  # Eigenvectors are not needed by any of the callers. The values come from the session cache
+  # (R/eigenCache.R): another spectral function called on the same chain reuses them.
+  values <- .eigenvaluesCached(P)
 
+  # Identify the trivial eigenvalue 1 as the one closest to 1 (it may be slightly off because of
+  # round-off), and check it really is close enough.
   unit <- which.min(Mod(values - 1))
   tol <- sqrt(.Machine$double.eps) * max(1, n)
   if (Mod(values[unit] - 1) > tol) {
     stop("Unable to identify the trivial (unit) eigenvalue of the transition matrix.")
   }
 
+  # Keep the moduli (absolute values; eigenvalues can be complex) of all the others.
   moduli <- Mod(values[-unit])
   sort(moduli, decreasing = TRUE)
 }
@@ -78,6 +86,9 @@
 #' so it never computes eigenvectors. Its time complexity is
 #' \eqn{O(n^3)} and its memory use is \eqn{O(n^2)} for a dense \eqn{n}-state
 #' transition matrix. It supports both row- and column-stochastic storage.
+#' The eigenvalues are kept in a session cache, so other spectral functions
+#' called on the same chain do not recompute them (see
+#' \code{\link{markovchainCache}}).
 #'
 #' @references
 #' Levin, D. A. and Peres, Y. (2017). \emph{Markov Chains and Mixing Times},
@@ -96,9 +107,12 @@
 #' slem(mc)
 #'
 #' @exportMethod slem
+# SLEM = Second Largest Eigenvalue Modulus: the largest modulus among the non-trivial eigenvalues.
+# The closer to 1, the slower the convergence to the stationary distribution.
 setGeneric("slem", function(object) standardGeneric("slem"))
 
 #' @rdname slem
+# Method for markovchain objects. A single-state chain has no other eigenvalue: SLEM = 0.
 setMethod("slem", "markovchain", function(object) {
   moduli <- .nonTrivialEigenvalueModuli(object, "slem")
   value <- if (length(moduli) == 0L) 0 else moduli[1]
@@ -150,6 +164,7 @@ setMethod("slem", "markovchain", function(object) {
 #' spectralGap(mc)
 #'
 #' @exportMethod spectralGap
+# Spectral gap = 1 - SLEM: large gap means fast mixing.
 setGeneric("spectralGap", function(object) standardGeneric("spectralGap"))
 
 #' @rdname spectralGap
@@ -217,6 +232,9 @@ setMethod("spectralGap", "markovchain", function(object) {
 #' so it never computes eigenvectors. Its time complexity is
 #' \eqn{O(n^3)} and its memory use is \eqn{O(n^2)} for a dense \eqn{n}-state
 #' transition matrix. It supports both row- and column-stochastic storage.
+#' The eigenvalues are kept in a session cache, so other spectral functions
+#' called on the same chain do not recompute them (see
+#' \code{\link{markovchainCache}}).
 #'
 #' @references
 #' Swope, W. C., Pitera, J. W. and Suits, F. (2004). Describing protein
@@ -241,6 +259,8 @@ setMethod("spectralGap", "markovchain", function(object) {
 #' impliedTimescales(mc)
 #'
 #' @exportMethod impliedTimescales
+# Implied timescales tau_k = -1 / log(|lambda_k|): the characteristic relaxation time of each
+# non-trivial eigenvalue (a slow process has a large tau).
 setGeneric("impliedTimescales", function(object) standardGeneric("impliedTimescales"))
 
 #' @rdname impliedTimescales
@@ -250,11 +270,13 @@ setMethod("impliedTimescales", "markovchain", function(object) {
     return(stats::setNames(numeric(0), character(0)))
   }
 
+  # Limit cases: modulus ~ 1 means the mode never decays (Inf), modulus ~ 0 means it vanishes at once (0).
   tol <- sqrt(.Machine$double.eps)
   tau <- ifelse(
     moduli >= 1 - tol, Inf,
     ifelse(moduli <= tol, 0, -1 / log(moduli))
   )
+  # Name the result tau2, tau3, ... (tau1 would belong to the trivial eigenvalue).
   names(tau) <- paste0("tau", seq(2L, length(tau) + 1L))
   tau
 })
